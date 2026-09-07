@@ -1,0 +1,51 @@
+{
+  "name": "family-ai-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.16.0",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "npm": ">=11 <12"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "turbo run build --filter=@family/contracts && vitest run",
+    "test:db": "node --env-file=.env packages/database/scripts/test.mjs",
+    "test:e2e": "playwright test",
+    "brain:check": "python scripts/validate_brain.py",
+    "check": "npm run boundaries:check && npm run tokens:check && npm run lint && npm run format:check && npm run typecheck && npm test && npm run brain:check && npm run build",
+    "boundaries:check": "node scripts/check-boundaries.mjs",
+    "tokens:generate": "node scripts/generate-tokens.mjs",
+    "tokens:check": "node scripts/generate-tokens.mjs --check",
+    "env:init": "node scripts/init-env.mjs",
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "node --env-file=.env packages/database/scripts/migrate.mjs",
+    "db:status": "node --env-file=.env packages/database/scripts/status.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^24.0.0",
+    "eslint": "10.10.0",
+    "eslint-config-prettier": "^10.1.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.6.0",
+    "tsx": "^4.20.0",
+    "turbo": "2.10.12",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.0.0"
+  }
+}

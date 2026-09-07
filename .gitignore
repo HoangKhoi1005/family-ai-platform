@@ -1,0 +1,17 @@
+node_modules/
+.npm-cache/
+.turbo/
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+__pycache__/
+*.log
+.DS_Store
+.worktrees/
+.superpowers/

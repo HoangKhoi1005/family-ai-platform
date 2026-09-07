@@ -1,0 +1,30 @@
+/* Generated from design/tokens.json. Run npm run tokens:generate. */
+:root {
+  --color-background-primary: #FFF9F0;
+  --color-surface-primary: #FFFFFF;
+  --color-text-primary: #24352B;
+  --color-text-secondary: #58645C;
+  --color-brand-primary: #2F684D;
+  --color-brand-secondary: #E6EFE7;
+  --color-accent: #A6482B;
+  --color-border-soft: #D6DED5;
+  --color-danger: #A52A2A;
+  --color-on-brand: #FFFFFF;
+  --radius-px-card: 20px;
+  --radius-px-button: 12px;
+  --radius-px-input: 12px;
+  --spacing-px-xs: 4px;
+  --spacing-px-sm: 8px;
+  --spacing-px-md: 16px;
+  --spacing-px-lg: 24px;
+  --spacing-px-xl: 32px;
+  --typography-font-body: system-ui, -apple-system, Segoe UI, sans-serif;
+  --typography-font-title: system-ui, -apple-system, Segoe UI, sans-serif;
+  --typography-font-person-name: system-ui, -apple-system, Segoe UI, sans-serif;
+  --typography-body-size-px: 16px;
+  --typography-large-body-size-px: 20px;
+  --typography-title-size-px: 24px;
+  --typography-body-line-height: 1.5;
+  --interaction-minimum-target-px: 44px;
+  --interaction-motion-duration-ms: 160ms;
+}

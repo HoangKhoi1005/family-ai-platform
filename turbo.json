@@ -1,0 +1,10 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalDependencies": ["tsconfig.base.json", "design/tokens.json"],
+  "tasks": {
+    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"] },
+    "@family/ui#build": { "outputs": [] },
+    "typecheck": { "dependsOn": ["^build"], "outputs": [] },
+    "dev": { "dependsOn": ["^build"], "cache": false, "persistent": true }
+  }
+}

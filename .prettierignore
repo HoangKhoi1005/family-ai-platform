@@ -1,0 +1,13 @@
+node_modules
+.npm-cache
+.next
+.turbo
+dist
+package-lock.json
+coverage
+playwright-report
+test-results
+**/next-env.d.ts
+packages/ui/src/tokens.css
+.worktrees
+.superpowers
