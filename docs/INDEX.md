@@ -1,6 +1,6 @@
 # Mục lục và quản lý context
 
-Context **1.1.0** — 2026-09-08. [Metadata](context.json) là nơi duy nhất khai báo phiên bản bằng máy.
+Context **1.1.1** — 2026-09-08. [Metadata](context.json) là nơi duy nhất khai báo phiên bản bằng máy.
 
 ## Đọc theo nhu cầu
 
@@ -47,6 +47,8 @@ Trạng thái quyết định:
 - Khi tài liệu lớn, ưu tiên mục lục và truy xuất theo file/symbol. RAG cho development chưa cần trong pilot.
 
 ## Lịch sử context
+
+- 1.1.1 / 2026-09-08: ghim Superpowers skills, thêm setup tái lập và quy trình subagents; E2E cổng riêng, bổ sung fixture RLS. Xem [hướng dẫn](SUPERPOWERS.md).
 
 - 1.1.0 / 2026-09-08: chọn stack monorepo và triển khai nền tảng web/API/worker, packages, CI và migration danh tính; chưa có nghiệp vụ MVP.
 

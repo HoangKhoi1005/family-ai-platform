@@ -1,0 +1,21 @@
+{
+  "repository": "https://github.com/obra/superpowers.git",
+  "revision": "b36e0829c6d0140e93cfef2ca599b1b07d4a7797",
+  "installation_mode": "personal-skills-no-plugin-hooks",
+  "skills": [
+    "brainstorming",
+    "dispatching-parallel-agents",
+    "executing-plans",
+    "finishing-a-development-branch",
+    "receiving-code-review",
+    "requesting-code-review",
+    "subagent-driven-development",
+    "systematic-debugging",
+    "test-driven-development",
+    "using-git-worktrees",
+    "using-superpowers",
+    "verification-before-completion",
+    "writing-plans",
+    "writing-skills"
+  ]
+}
