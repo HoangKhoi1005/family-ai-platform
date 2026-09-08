@@ -1,6 +1,6 @@
-# API contract dự kiến
+﻿# API contract và trạng thái triển khai
 
-Các routes nghiệp vụ dưới đây là thiết kế, chưa triển khai. Fastify hiện chỉ có `GET /health/live` với schema trong `packages/contracts`; trả status=ok cho process, không khẳng định database/provider sẵn sàng. Routes khác trả 404, không có dev-auth bypass. Thêm OpenAPI cho nghiệp vụ khi có routes thực để tránh tài liệu tuyên bố API chưa tồn tại.
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept và các routes invitation/membership/claim trong đợt onboarding (commit `4ab10bb`). Danh bạ/hồ sơ đang triển khai; các routes lịch, gia phả, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src/onboarding.ts`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
@@ -10,7 +10,7 @@ ID production là UUID; ngày `YYYY-MM-DD`, timestamp ISO 8601 UTC; timezone IAN
 
 Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp lệ","request_id":"…","fields":{}}}`. Mã: 400 validation, 401 unauthenticated, 403 hành động không được phép khi tài nguyên đã được phép biết, 404 tài nguyên không có/ngoài phạm vi, 409 conflict, 429 rate limit, 503 unavailable. Không trả stack trace/SQL.
 
-## Routes
+## Bản đồ routes (gồm cả thiết kế chưa triển khai)
 
 | Method / path sau prefix                  | Input chính                                                      | Output và quyền                                           |
 | ----------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
@@ -19,10 +19,10 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | PATCH /members/{id}                       | display_name, contacts, version                                  | Owner được liên kết; admin chỉ sửa theo policy; 409 stale |
 | GET /relationships                        | root_member_id, depth tối đa 4                                   | Cạnh đã duyệt và node được phép, không trả graph nhà khác |
 | POST /change-requests                     | type, target_id?, base_version?, payload                         | 201 pending; payload theo schema type                     |
-| POST /change-requests/{id}/decision       | decision approved/rejected, reason?, version                     | Admin; transaction validate + apply + audit; 409 đã xử lý |
+| POST /change-requests/{id}/decision       | decision approved/rejected, version                              | Admin; transaction validate + apply + audit; 409 đã xử lý |
 | POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                  |
 | POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ     |
-| POST /memberships/{id}/revoke             | reason?, version                                                 | Admin; chặn self-revoke admin cuối                        |
+| POST /memberships/{id}/revoke             | version                                                          | Admin; chặn self-revoke admin cuối                        |
 | GET /events                               | from, to, cursor                                                 | Occurrence theo range có giới hạn tối đa 1 năm            |
 | POST /events                              | title, calendar, recurrence, timezone, date_parts, lunar_policy? | Active member; validate lịch, không LLM                   |
 | PATCH /events/{id}                        | changes, version                                                 | Creator/admin; tăng revision, tính lại jobs               |
@@ -42,11 +42,11 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | PATCH /notification-preferences           | offsets, quiet_hours, push_enabled                               | Actor, không sửa người khác                               |
 | POST /ai/query                            | question, conversation_id?                                       | Giai đoạn 2; status, answer, sources, request_id          |
 
-Routes global: `POST /api/v1/invitations/accept` nhận token và credential, tạo pending membership; không trả dữ liệu nhà trước duyệt. `POST/DELETE /api/v1/me/push-subscriptions` chỉ thiết bị của actor. Auth provider callback routes xác định khi chọn stack.
+Routes global: `POST /api/v1/invitations/accept` nhận token và credential, tạo pending membership; không trả dữ liệu nhà trước duyệt. `POST/DELETE /api/v1/me/push-subscriptions` chỉ thiết bị của actor. Auth routes dùng Better Auth theo ADR-002; push-subscriptions chưa triển khai.
 
-## Claim hồ sơ, thiết kế đợt onboarding
+## Claim hồ sơ, đã triển khai backend
 
-Các route sau prefix family dự kiến: `POST /member-claims` (admin, membership active và Member chưa liên kết), `GET /member-claims/{id}/preview` (chỉ candidate được chỉ định, claim còn hạn), `POST /member-claims/{id}/confirm` (candidate xác nhận version/visibility, atomic link+consume), `POST /member-claims/{id}/decline` (candidate) và `POST /member-claims/{id}/revoke` (admin). Claim preview là quyền hẹp theo [privacy](10_PRIVACY_SECURITY.md), không dùng endpoint hồ sơ thông thường để mở self contact trước link. Tất cả vẫn là thiết kế, chưa triển khai.
+Các route sau prefix family đã triển khai: `POST /member-claims` (admin, membership active và Member chưa liên kết), `GET /member-claims/{id}/preview` (chỉ candidate được chỉ định, claim còn hạn), `POST /member-claims/{id}/confirm` (candidate xác nhận version/visibility, atomic link+consume), `POST /member-claims/{id}/decline` (candidate) và `POST /member-claims/{id}/revoke` (admin). Claim preview là quyền hẹp theo [privacy](10_PRIVACY_SECURITY.md), không dùng endpoint hồ sơ thông thường để mở self contact trước link. Mutation dùng session đã xác minh, Origin cùng web và JSON; preview/revoke cùng các thao tác claim khác có rate limit theo actor.
 
 ## Payload sự kiện ngày giỗ
 

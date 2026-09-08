@@ -3,7 +3,7 @@
 - Cập nhật: 2026-09-08.
 - Context version: **1.2.0**, nguồn máy đọc: [context.json](docs/context.json).
 - Pilot: 15 người; hiện là nền tảng và backend onboarding, chưa phải MVP sử dụng đầy đủ.
-- Nhánh đang làm: `feat/family-onboarding`, worktree `.worktrees/onboarding`. Chưa push đợt này, chưa merge hoặc deploy.
+- Nhánh đang làm: `feat/family-onboarding`, worktree `.worktrees/onboarding`. Đã push đến commit `4ab10bb` lên origin; chưa merge hoặc deploy.
 
 ## Đã hoàn tất và review
 
@@ -17,7 +17,7 @@
 
 Theo [spec onboarding](docs/superpowers/specs/2026-09-08-onboarding.md), [spec membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) và [plan backend](docs/superpowers/plans/2026-09-08-membership-backend.md).
 
-Task 2 API membership đã qua review độc lập và kiểm chứng, đang chốt commit:
+Task 2 API membership đã review, kiểm chứng, commit `4ab10bb` và push:
 
 - Mời, nhận lời mời vào trạng thái chờ, duyệt và thu hồi membership.
 - Đề nghị nhận hồ sơ, xem trước có kiểm quyền, xác nhận hoặc từ chối; version, expiry, contact visibility và audit cùng transaction.
@@ -36,8 +36,8 @@ Task 2 API membership đã qua review độc lập và kiểm chứng, đang ch�
 
 ## Bước tiếp theo
 
-1. Hoàn tất review độc lập API membership, sửa findings và chạy quality gate; commit phạm vi đã đạt.
-2. Triển khai Task 3 danh bạ/hồ sơ backend với quyền xem liên hệ, version và kiểm thử chéo nhà/thu hồi quyền.
+1. Task 2 đã hoàn tất và push theo yêu cầu chủ dự án.
+2. Đang giao Luna triển khai Task 3 danh bạ/hồ sơ backend với quyền xem liên hệ, version và kiểm thử chéo nhà/thu hồi quyền.
 3. Chủ dự án duyệt trực quan bản mẫu trước khi triển khai hàng loạt UI nghiệp vụ; backend độc lập được phép tiếp tục.
 4. Kiểm chứng toàn đợt, chia commit và push nhánh feature theo phạm vi đã duyệt; không merge main hoặc deploy.
 
