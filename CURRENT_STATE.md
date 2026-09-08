@@ -23,26 +23,27 @@
 
 ## Chưa triển khai
 
-Authentication/provider, runtime database role và policies theo membership, API nghiệp vụ, UI gia phả/lịch/chat, lịch âm, private storage, outbox/delivery, push/PWA service worker, AI, native/widget. Chưa có hosting/deploy, dữ liệu gia đình thật, GitHub CI run hoặc diễn tập restore backup.
+API authentication, policies runtime theo membership, API nghiệp vụ, UI gia phả/lịch/chat, lịch âm, private storage, outbox/delivery, push/PWA service worker, AI, native/widget. Chưa có hosting/deploy, dữ liệu gia đình thật, GitHub CI run hoặc diễn tập restore backup.
 
 ## Tiếp theo
 
-Đợt đã được duyệt ngày 2026-09-08: [Vào nhà và nhận hồ sơ](docs/superpowers/specs/2026-09-08-onboarding.md), trên nhánh `feat/family-onboarding`, worktree `.worktrees/onboarding`. Đang khảo sát thư viện auth và bản mẫu UX; chưa triển khai auth. Chủ dự án yêu cầu duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt màn hình. Backend độc lập được phép tiếp tục. Subagents dùng GPT-5.6 Luna xhigh; supervisor điều phối và review.
+Đợt đã được duyệt ngày 2026-09-08: [Vào nhà và nhận hồ sơ](docs/superpowers/specs/2026-09-08-onboarding.md), trên nhánh `feat/family-onboarding`, worktree `.worktrees/onboarding`. Bản mẫu đã qua review code; schema xác thực đã có và đang sửa theo review, chưa có API auth hoàn tất. Chủ dự án yêu cầu duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt màn hình. Backend độc lập được phép tiếp tục. Subagents dùng GPT-5.6 Luna xhigh; supervisor điều phối và review.
 
-- Đã chọn baseline [Better Auth và biên quyền](docs/decisions/ADR-002-authentication.md); [plan auth](docs/superpowers/plans/2026-09-08-auth-foundation.md) và [thiết kế membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) đã được viết, chưa triển khai backend.
-- Bản mẫu `/design-preview` và `/design-preview/profile` đang review; chưa được chủ dự án duyệt thị giác. Không nối dữ liệu thật hay đánh dấu các tính năng calendar/chat/moments đã có.
+- Đã chọn baseline [Better Auth và biên quyền](docs/decisions/ADR-002-authentication.md); [plan auth](docs/superpowers/plans/2026-09-08-auth-foundation.md) và [thiết kế membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) đã được viết; mới có schema/local services, chưa có API backend nghiệp vụ.
+- Bản mẫu `/design-preview` và `/design-preview/profile` đã qua review độc lập và vòng sửa ngày minh họa/chữ phụ/320px; chưa được chủ dự án duyệt thị giác. Không nối dữ liệu thật hay đánh dấu các tính năng calendar/chat/moments đã có. Build8/8, focused E2E4/4 sau sửa; trước đó E2E toàn bộ6/6. Ảnh desktop/mobile/320px đã được xem, lưu local tại `.superpowers/design-preview-evidence`.
 - Worktree mới: npm ci thành công, npm test 15/15; web dev cổng3200 Ready và HTTP200 có nội dung tiếng Việt, đã dừng tiến trình smoke của agent. Kết quả này không khẳng định mọi lỗi dev trước đây cùng nguyên nhân.
+- Schema auth commit `ab932a0` đã review độc lập, đang sửa quyền role có sẵn và initializer cấu hình: migration 0002, auth/runtime roles, provisioning local, Mailpit 1.30.4 và môi trường tách biệt. Migration replay, test auth-schema/original DB, login thực bằng roles, env idempotence, lint/typecheck/format và 15 unit tests đã qua theo report; chưa có API đăng nhập. PostgreSQL 54339, SMTP 1035, mail UI 8035 thuộc compose family-ai-onboarding, riêng với checkout chính.
 
 1. Lập inventory điện thoại/trình duyệt và cách đăng nhập thuận tiện cho 15 người; có thể bắt đầu thiết kế với giả định trong context.
 2. Prototype luồng vào nhà, Nhà mình, hồ sơ và gia phả trên điện thoại; lấy phản hồi từ ít nhất một người lớn tuổi.
-3. Stack monorepo đã chọn theo [ADR-001](docs/decisions/ADR-001-monorepo.md); tiếp theo chọn auth/provider và hosting.
+3. Auth đã chọn theo [ADR-002](docs/decisions/ADR-002-authentication.md); triển khai theo plan auth rồi membership backend. Hosting chưa chọn.
 4. Triển khai đăng nhập → membership → hồ sơ với runtime role NOBYPASSRLS, policies và test chéo nhà/thu hồi quyền.
 
 ## Giả định và điểm chưa chốt
 
 - PWA trước và navigation bốn mục là baseline đề xuất cho v1.0, có thể điều chỉnh qua phản hồi.
 - PostgreSQL local đã có migration nền tảng; chưa chọn dịch vụ hosting production.
-- Chưa biết tỷ lệ iPhone/Android, ngân sách vận hành, cách xác thực và nhu cầu chat riêng.
+- Chưa biết tỷ lệ iPhone/Android, ngân sách vận hành và nhu cầu chat riêng. Đăng nhập đợt này đã chọn email/password có xác minh.
 - Chưa chọn thư viện lịch âm đã kiểm chứng hoặc provider AI; không được triển khai cách tính tạm bằng LLM.
 
 ## Kiểm chứng

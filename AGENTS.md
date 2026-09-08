@@ -28,7 +28,7 @@ Không nạp toàn bộ tài liệu vào mọi task. Dùng [mục lục](docs/IN
 
 ## Quy ước triển khai
 
-- Stack monorepo: npm workspaces + Turborepo, TypeScript, Next.js, Fastify, PostgreSQL; xem [ADR-001](docs/decisions/ADR-001-monorepo.md). Hosting, auth provider, storage và LLM chưa chọn. Không tự thêm Flutter/Supabase như đã có quyết định.
+- Stack monorepo: npm workspaces + Turborepo, TypeScript, Next.js, Fastify, PostgreSQL; xem [ADR-001](docs/decisions/ADR-001-monorepo.md). Auth chọn Better Auth theo [ADR-002](docs/decisions/ADR-002-authentication.md); trạng thái triển khai tra CURRENT_STATE. Hosting, storage và LLM chưa chọn. Không tự thêm Flutter/Supabase như đã có quyết định.
 - Dùng định danh tiếng Anh nhất quán với glossary; UI tiếng Việt UTF-8. Dùng design tokens cho giá trị thiết kế dùng lại.
 - Khi chọn stack, bổ sung lệnh build/lint/test thực sự vào README; không bịa lệnh hoặc kết quả.
 - Migration có phiên bản; server validation, authorization và constraints đi cùng tính năng dữ liệu.

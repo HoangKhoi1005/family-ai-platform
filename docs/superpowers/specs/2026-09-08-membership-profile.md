@@ -18,7 +18,7 @@ Người đã được admin chỉ định có thể xem bản xem trước đú
 
 Một membership có tối đa một Member, một Member có tối đa một membership. Claim bị revoke hoặc membership bị revoke không xem/confirm được. Trước khi chuyển quyền, người nhận có thể từ chối; không thay link hay visibility im lặng. Contact self vẫn giữ self nếu không có lựa chọn công bố rõ ràng.
 
-`member_claims` lưu UUID, family_id, membership_id, member_id, status, expires_at, member_version, created_by và timestamps; composite FK cùng nhà, tối đa một claim active theo membership và Member. Admin chỉ tạo claim sau membership active; approve membership không tạo link. Claim mặc định hạn 7 ngày, không gia hạn ngầm; endpoint preview không nhận member_id thay thế. Không cấp quyền private fields này cho danh bạ/search/profile thông thường.
+`member_claims` lưu UUID, family_id, membership_id, member_id, status, expires_at, version, member_version, created_by và timestamps; composite FK cùng nhà, tối đa một claim active theo membership và Member. `version` là phiên bản claim, số nguyên dương mặc định 1, tăng khi consume/decline/revoke hoặc đánh dấu expired; `member_version` là snapshot hồ sơ lúc cấp quyền. Confirm kiểm cả hai phiên bản. Admin chỉ tạo claim sau membership active; approve membership không tạo link. Claim mặc định hạn 7 ngày, không gia hạn ngầm; endpoint preview không nhận member_id thay thế. Không cấp quyền private fields này cho danh bạ/search/profile thông thường.
 
 ## Hồ sơ và danh bạ
 
