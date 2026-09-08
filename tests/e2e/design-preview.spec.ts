@@ -20,12 +20,16 @@ test('preview pages remain usable when browser text is enlarged to 200 percent',
   page.on('pageerror', (error) => errors.push(error.message));
 
   for (const route of ['/design-preview', '/design-preview/profile']) {
+    await page.setViewportSize({ width: 320, height: 720 });
     await page.goto(route);
     if (route === '/design-preview') {
       await expect(page.getByRole('heading', { name: 'Chào cả nhà.' })).toBeVisible();
     } else {
       await expect(page.getByRole('heading', { name: 'Nguyễn Thị Thanh Hương' })).toBeVisible();
     }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
     const scalingStyle = await page.addStyleTag({
       content: `
         html { font-size: 200% !important; }

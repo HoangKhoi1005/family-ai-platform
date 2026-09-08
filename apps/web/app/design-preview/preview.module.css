@@ -2,7 +2,7 @@
   background: var(--color-brand-secondary);
   border-bottom: 1px solid var(--color-border-soft);
   color: var(--color-text-primary);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.5;
   padding: var(--spacing-px-sm) var(--spacing-px-lg);
   text-align: center;
@@ -60,7 +60,7 @@
 
 .kicker {
   color: var(--color-accent);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.4;
@@ -157,7 +157,7 @@
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-px-button);
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.3;
   padding: var(--spacing-px-xs) var(--spacing-px-sm);
   white-space: nowrap;
@@ -216,7 +216,7 @@
 }
 
 .caption {
-  font-size: 14px;
+  font-size: 16px;
   margin-top: var(--spacing-px-sm);
 }
 
@@ -259,7 +259,7 @@
 }
 
 .initials {
-  font-size: 14px;
+  font-size: 16px;
   height: 44px;
   width: 44px;
 }
@@ -281,7 +281,7 @@
 }
 
 .directoryMeta {
-  font-size: 14px;
+  font-size: 16px;
   overflow-wrap: anywhere;
 }
 
