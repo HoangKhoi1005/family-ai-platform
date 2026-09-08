@@ -36,7 +36,7 @@ CI gồm quality, production build, migrate hai lần, integration constraints/R
 
 ### Auth foundation local services
 
-Worktree onboarding uses the isolated Compose project `family-ai-onboarding` with PostgreSQL on `127.0.0.1:54339`, Mailpit SMTP on `127.0.0.1:1035`, and the Mailpit UI on `127.0.0.1:8035`. The API and web development processes use `127.0.0.1:4010` and `127.0.0.1:3200`; they are started by the Node workspaces rather than Compose. The API reads `API_PORT=4010`, while Next reads `PORT=3200`. The Mailpit image is pinned to the official stable release `axllent/mailpit:v1.30.4`.
+Worktree onboarding uses the isolated Compose project `family-ai-onboarding` with PostgreSQL on `127.0.0.1:54339`, Mailpit SMTP on `127.0.0.1:1035`, and the Mailpit UI on `127.0.0.1:8035`. The API and web development processes use `127.0.0.1:4010` and `127.0.0.1:3200`; they are started by the Node workspaces rather than Compose. The env reserves `API_PORT=4010` for the pending Task 2 API wiring; the current scaffold API still reads `PORT`, so run it with `PORT=4010` until that wiring lands. Next reads `PORT=3200`. The Mailpit image is pinned to the official stable release `axllent/mailpit:v1.30.4`.
 
 Run the local setup in this order:
 

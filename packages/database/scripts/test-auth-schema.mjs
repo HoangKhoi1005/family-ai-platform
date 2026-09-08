@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import pg from 'pg';
+import { assertSafeApplicationRoles } from './provision-auth.mjs';
 
 const ownerUrl = process.env.DATABASE_URL;
 if (!ownerUrl) {
@@ -31,7 +32,7 @@ async function mustFail(sql, params, expectedCode = '42501') {
 
 try {
   const roles = await client.query(
-    "SELECT rolname, rolcanlogin, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolinherit FROM pg_roles WHERE rolname IN ('family_auth','family_runtime') ORDER BY rolname",
+    "SELECT rolname, rolcanlogin, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolinherit, rolreplication FROM pg_roles WHERE rolname IN ('family_auth','family_runtime') ORDER BY rolname",
   );
   assert.equal(roles.rowCount, 2, 'Both restricted application roles must exist');
   for (const role of roles.rows) {
@@ -45,6 +46,7 @@ try {
         rolcreatedb: false,
         rolcreaterole: false,
         rolinherit: false,
+        rolreplication: false,
       },
       `${role.rolname} has unsafe PostgreSQL role attributes`,
     );
@@ -52,6 +54,10 @@ try {
 
   await client.query('BEGIN');
   inTransaction = true;
+  await assert.doesNotReject(
+    () => assertSafeApplicationRoles(client),
+    'Provisioning guard must accept the clean local role state',
+  );
   const [familyA, familyB, legacyUser, memberA, memberB, accountA] = Array.from({ length: 6 }, () =>
     randomUUID(),
   );
@@ -193,6 +199,78 @@ try {
       false,
       `family_auth must not read tenant table ${table}`,
     );
+  }
+
+  for (const role of ['family_auth', 'family_runtime']) {
+    assert.equal(
+      (await client.query("SELECT has_schema_privilege($1,'public','USAGE') AS allowed", [role]))
+        .rows[0].allowed,
+      true,
+      `${role} must have explicit public schema usage`,
+    );
+  }
+
+  async function guardMustReject(setup, message, pattern) {
+    await client.query('SAVEPOINT auth_guard');
+    try {
+      await setup();
+      await assert.rejects(() => assertSafeApplicationRoles(client), pattern, message);
+    } finally {
+      await client.query('ROLLBACK TO SAVEPOINT auth_guard');
+    }
+  }
+
+  const guardRole = `test_guard_${randomUUID().replaceAll('-', '')}`;
+  await guardMustReject(
+    async () => {
+      await client.query(`CREATE ROLE ${guardRole} NOLOGIN NOSUPERUSER NOBYPASSRLS`);
+      await client.query(`GRANT ${guardRole} TO family_auth`);
+    },
+    'Provisioning must reject application-role memberships',
+    /membership/,
+  );
+
+  const ownedTable = `test_guard_owned_${randomUUID().replaceAll('-', '')}`;
+  await guardMustReject(
+    async () => {
+      await client.query(`CREATE TABLE ${ownedTable}(id integer)`);
+      await client.query(`ALTER TABLE ${ownedTable} OWNER TO family_auth`);
+    },
+    'Provisioning must reject application-role object ownership',
+    /ownership|owns DDL object/,
+  );
+
+  await guardMustReject(
+    () => client.query('GRANT SELECT ON members TO family_auth'),
+    'Provisioning must reject auth access to tenant tables',
+    /tenant table/,
+  );
+  await guardMustReject(
+    () => client.query('GRANT SELECT ON auth_accounts TO family_runtime'),
+    'Provisioning must reject runtime access to auth tables',
+    /auth table/,
+  );
+  await guardMustReject(
+    () => client.query('GRANT SELECT (auth_subject) ON users TO family_runtime'),
+    'Provisioning must reject runtime access to sensitive user columns',
+    /users\.auth_subject/,
+  );
+
+  await client.query('SAVEPOINT allowed_runtime_grants');
+  try {
+    await client.query('GRANT SELECT (id, name) ON users TO family_runtime');
+    await client.query('GRANT SELECT, INSERT, UPDATE, DELETE ON members TO family_runtime');
+    const helperFunction = `test_guard_helper_${randomUUID().replaceAll('-', '')}`;
+    await client.query(
+      `CREATE FUNCTION ${helperFunction}() RETURNS integer LANGUAGE sql IMMUTABLE AS 'SELECT 1'`,
+    );
+    await client.query(`GRANT EXECUTE ON FUNCTION ${helperFunction}() TO family_runtime`);
+    await assert.doesNotReject(
+      () => assertSafeApplicationRoles(client),
+      'Provisioning must allow planned runtime tenant CRUD, helper EXECUTE, and users(id,name) SELECT',
+    );
+  } finally {
+    await client.query('ROLLBACK TO SAVEPOINT allowed_runtime_grants');
   }
 
   await client.query('SET LOCAL ROLE family_auth');

@@ -62,6 +62,9 @@ function localDatabaseParts(name, value) {
   if (!LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase())) {
     throw new Error(`${name} must point to a loopback host`);
   }
+  if (!parsed.username || !parsed.pathname || parsed.pathname === '/') {
+    throw new Error(`${name} must include an owner username and database`);
+  }
   return {
     host: parsed.hostname,
     port: parsed.port || '5432',
@@ -93,6 +96,24 @@ function ensure(name, value) {
 let existingOwnerParts;
 if (values.has('DATABASE_URL')) {
   existingOwnerParts = localDatabaseParts('DATABASE_URL', values.get('DATABASE_URL'));
+  if (!existingOwnerParts.password) {
+    throw new Error('DATABASE_URL must include a password for local provisioning');
+  }
+  for (const [name, expected, actual] of [
+    ['POSTGRES_USER', existingOwnerParts.user, values.get('POSTGRES_USER')],
+    ['POSTGRES_DB', existingOwnerParts.database, values.get('POSTGRES_DB')],
+    ['POSTGRES_PORT', existingOwnerParts.port, values.get('POSTGRES_PORT')],
+  ]) {
+    if (actual !== undefined && actual !== expected) {
+      throw new Error(`${name} does not match DATABASE_URL`);
+    }
+  }
+  if (
+    values.has('POSTGRES_PASSWORD') &&
+    values.get('POSTGRES_PASSWORD') !== existingOwnerParts.password
+  ) {
+    throw new Error('POSTGRES_PASSWORD does not match DATABASE_URL');
+  }
 }
 const postgresPassword =
   values.get('POSTGRES_PASSWORD') ?? existingOwnerParts?.password ?? randomPassword();
@@ -104,9 +125,6 @@ ensure('POSTGRES_PORT', existingOwnerParts?.port || DEFAULTS.POSTGRES_PORT);
 let ownerParts;
 if (values.has('DATABASE_URL')) {
   ownerParts = existingOwnerParts;
-  if (!ownerParts.password && !values.get('POSTGRES_PASSWORD')) {
-    throw new Error('DATABASE_URL or POSTGRES_PASSWORD must provide the owner password');
-  }
 } else {
   ownerParts = {
     host: '127.0.0.1',

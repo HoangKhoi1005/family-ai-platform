@@ -28,6 +28,7 @@
     "tokens:generate": "node scripts/generate-tokens.mjs",
     "tokens:check": "node scripts/generate-tokens.mjs --check",
     "env:init": "node scripts/init-env.mjs",
+    "test:env-init": "node scripts/test-init-env.mjs",
     "db:up": "docker compose up -d --wait postgres mailpit",
     "db:down": "docker compose down",
     "db:migrate": "node --env-file=.env packages/database/scripts/migrate.mjs",
