@@ -174,7 +174,7 @@ try {
       );
     }
   }
-  for (const table of [...authTables, ...tenantTables]) {
+  for (const table of authTables) {
     assert.equal(
       (
         await client.query('SELECT has_table_privilege($1,$2,$3) AS allowed', [
@@ -185,6 +185,19 @@ try {
       ).rows[0].allowed,
       false,
       `family_runtime must not read ${table}`,
+    );
+  }
+  for (const table of tenantTables) {
+    assert.equal(
+      (
+        await client.query('SELECT has_table_privilege($1,$2,$3) AS allowed', [
+          'family_runtime',
+          table,
+          'SELECT',
+        ])
+      ).rows[0].allowed,
+      true,
+      `family_runtime must have tenant SELECT on ${table}`,
     );
   }
   for (const table of tenantTables) {

@@ -35,7 +35,9 @@
     "db:migrate": "node --env-file=.env packages/database/scripts/migrate.mjs",
     "db:status": "node --env-file=.env packages/database/scripts/status.mjs",
     "db:provision-auth": "node --env-file=.env packages/database/scripts/provision-auth.mjs",
-    "test:auth-schema": "node --env-file=.env packages/database/scripts/test-auth-schema.mjs"
+    "test:auth-schema": "node --env-file=.env packages/database/scripts/test-auth-schema.mjs",
+    "test:tenant": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-tenant.mjs",
+    "db:bootstrap-family": "node --env-file=.env packages/database/scripts/bootstrap-family.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
