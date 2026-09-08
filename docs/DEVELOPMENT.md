@@ -34,6 +34,27 @@ Trước feature auth: chọn provider, tạo runtime role NOSUPERUSER/NOBYPASSR
 
 CI gồm quality, production build, migrate hai lần, integration constraints/RLS và Playwright. Workflow được tạo nhưng chỉ có kết quả GitHub sau khi push/PR thực sự chạy; kết quả local không phải CI xanh trên GitHub.
 
+### Auth foundation local services
+
+Worktree onboarding uses the isolated Compose project `family-ai-onboarding` with PostgreSQL on `127.0.0.1:54339`, Mailpit SMTP on `127.0.0.1:1035`, and the Mailpit UI on `127.0.0.1:8035`. The API and web development processes use `127.0.0.1:4010` and `127.0.0.1:3200`; they are started by the Node workspaces rather than Compose. The API reads `API_PORT=4010`, while Next reads `PORT=3200`. The Mailpit image is pinned to the official stable release `axllent/mailpit:v1.30.4`.
+
+Run the local setup in this order:
+
+```sh
+npm run env:init
+npm run db:up
+npm run db:migrate
+npm run db:provision-auth
+npm run test:auth-schema
+npm run test:db
+```
+
+`env:init` creates missing values in the ignored `.env` with cryptographically random local passwords and a Better Auth secret. Existing values are preserved, and a second run does not rewrite the file. `APP_ENV=local` is required for role provisioning; the owner, auth, and runtime URLs must all point to a loopback host. Provisioning checks that `family_auth` and `family_runtime` are `LOGIN`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS` before setting their passwords. It never prints a URL, password, or SQL statement.
+
+Migration `0002_authentication.sql` adds Better Auth's global tables and preserves historical `users.auth_subject` rows without fabricating email values. `family_auth` has CRUD on `users` and the auth tables only. `family_runtime` has no auth-table privilege, and neither role has tenant-table grants in this phase. Auth tables use forced RLS with explicit auth-role policies; tenant authorization remains a later task.
+
+`db:migrate` is safe to run twice: the second run verifies checksums and does not reapply migrations. `test:auth-schema` seeds only synthetic rows inside a transaction, tests actual role restrictions and legacy identity preservation, and rolls every fixture back. Do not run provisioning against a non-local URL, use the owner URL in an application process, or use `docker compose down -v`; the named volumes are intentionally retained and isolated from the main checkout.
+
 ## Troubleshooting
 
 - Thiếu dist shared package: chạy root build/dev qua Turbo, không gọi node dist khi chưa build.

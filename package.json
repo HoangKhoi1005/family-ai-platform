@@ -28,10 +28,12 @@
     "tokens:generate": "node scripts/generate-tokens.mjs",
     "tokens:check": "node scripts/generate-tokens.mjs --check",
     "env:init": "node scripts/init-env.mjs",
-    "db:up": "docker compose up -d --wait postgres",
+    "db:up": "docker compose up -d --wait postgres mailpit",
     "db:down": "docker compose down",
     "db:migrate": "node --env-file=.env packages/database/scripts/migrate.mjs",
-    "db:status": "node --env-file=.env packages/database/scripts/status.mjs"
+    "db:status": "node --env-file=.env packages/database/scripts/status.mjs",
+    "db:provision-auth": "node --env-file=.env packages/database/scripts/provision-auth.mjs",
+    "test:auth-schema": "node --env-file=.env packages/database/scripts/test-auth-schema.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
