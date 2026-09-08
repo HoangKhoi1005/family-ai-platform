@@ -48,12 +48,16 @@ function cookieHeader(response: {
 async function waitForMessage(recipient: string): Promise<string> {
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
-    const listResponse = await fetch('http://127.0.0.1:8035/api/v1/messages?limit=100');
+    const listResponse = await fetch(
+      `http://127.0.0.1:${process.env.MAILPIT_PORT ?? '8035'}/api/v1/messages?limit=100`,
+    );
     if (!listResponse.ok) throw new Error(`Mailpit list failed with ${listResponse.status}`);
     const list = (await listResponse.json()) as { messages?: Array<{ ID?: string }> };
     for (const summary of list.messages ?? []) {
       if (!summary.ID) continue;
-      const messageResponse = await fetch(`http://127.0.0.1:8035/api/v1/message/${summary.ID}`);
+      const messageResponse = await fetch(
+        `http://127.0.0.1:${process.env.MAILPIT_PORT ?? '8035'}/api/v1/message/${summary.ID}`,
+      );
       if (!messageResponse.ok) continue;
       const detail = (await messageResponse.json()) as unknown;
       const serialized = JSON.stringify(detail);
