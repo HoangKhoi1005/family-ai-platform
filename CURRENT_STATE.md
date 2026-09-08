@@ -23,16 +23,18 @@
 
 ## Chưa triển khai
 
-API authentication, policies runtime theo membership, API nghiệp vụ, UI gia phả/lịch/chat, lịch âm, private storage, outbox/delivery, push/PWA service worker, AI, native/widget. Chưa có hosting/deploy, dữ liệu gia đình thật, GitHub CI run hoặc diễn tập restore backup.
+Policies runtime theo membership, API nghiệp vụ, UI gia phả/lịch/chat, lịch âm, private storage, outbox/delivery, push/PWA service worker, AI, native/widget. Chưa có hosting/deploy, dữ liệu gia đình thật, GitHub CI run hoặc diễn tập restore backup.
 
 ## Tiếp theo
 
-Đợt đã được duyệt ngày 2026-09-08: [Vào nhà và nhận hồ sơ](docs/superpowers/specs/2026-09-08-onboarding.md), trên nhánh `feat/family-onboarding`, worktree `.worktrees/onboarding`. Bản mẫu đã qua review code; schema xác thực đã có và đang sửa theo review, chưa có API auth hoàn tất. Chủ dự án yêu cầu duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt màn hình. Backend độc lập được phép tiếp tục. Subagents dùng GPT-5.6 Luna xhigh; supervisor điều phối và review.
+Đợt đã được duyệt ngày 2026-09-08: [Vào nhà và nhận hồ sơ](docs/superpowers/specs/2026-09-08-onboarding.md), trên nhánh `feat/family-onboarding`, worktree `.worktrees/onboarding`. Bản mẫu đã qua review code; schema xác thực đã qua review, API auth đã qua review, schema membership tạm dừng do giới hạn sử dụng Luna. Chủ dự án yêu cầu duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt màn hình. Backend độc lập được phép tiếp tục. Subagents dùng GPT-5.6 Luna xhigh; supervisor điều phối và review.
 
-- Đã chọn baseline [Better Auth và biên quyền](docs/decisions/ADR-002-authentication.md); [plan auth](docs/superpowers/plans/2026-09-08-auth-foundation.md) và [thiết kế membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) đã được viết; mới có schema/local services, chưa có API backend nghiệp vụ.
+- Đã chọn baseline [Better Auth và biên quyền](docs/decisions/ADR-002-authentication.md); [plan auth](docs/superpowers/plans/2026-09-08-auth-foundation.md) và [thiết kế membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) đã được viết; auth API/session/proxy/local mail đã qua review và commit `04008ce`; schema membership tạm dừng do giới hạn sử dụng Luna, API nghiệp vụ chưa có.
 - Bản mẫu `/design-preview` và `/design-preview/profile` đã qua review độc lập và vòng sửa ngày minh họa/chữ phụ/320px; chưa được chủ dự án duyệt thị giác. Không nối dữ liệu thật hay đánh dấu các tính năng calendar/chat/moments đã có. Build8/8, focused E2E4/4 sau sửa; trước đó E2E toàn bộ6/6. Ảnh desktop/mobile/320px đã được xem, lưu local tại `.superpowers/design-preview-evidence`.
 - Worktree mới: npm ci thành công, npm test 15/15; web dev cổng3200 Ready và HTTP200 có nội dung tiếng Việt, đã dừng tiến trình smoke của agent. Kết quả này không khẳng định mọi lỗi dev trước đây cùng nguyên nhân.
-- Schema auth commit `ab932a0` đã review độc lập, đang sửa quyền role có sẵn và initializer cấu hình: migration 0002, auth/runtime roles, provisioning local, Mailpit 1.30.4 và môi trường tách biệt. Migration replay, test auth-schema/original DB, login thực bằng roles, env idempotence, lint/typecheck/format và 15 unit tests đã qua theo report; chưa có API đăng nhập. PostgreSQL 54339, SMTP 1035, mail UI 8035 thuộc compose family-ai-onboarding, riêng với checkout chính.
+- Schema auth `ab932a0` và bản sửa `96d94d8` đã qua review độc lập: migrations 0002/0003, kiểm role memberships/ownership/grants và cấu hình thiếu mật khẩu, auth/runtime roles, provisioning local, Mailpit 1.30.4 và môi trường tách biệt. Auth foundation thêm migrations 0004/0005 cho ID mặc định tương thích Better Auth 1.7.3. Focused unit 36/36, auth integration 5/5 (gồm logger không lộ callback nhạy cảm) với PostgreSQL/Mailpit, API/database/config build/typecheck, lint/format, boundaries và schema/provision checks đã qua; HTTP two-process proxy smoke cũng PASS qua API 4010/web 3200 với signup/verify/sign-in cookie/me/logout. PostgreSQL 54339, SMTP 1035, mail UI 8035 thuộc compose family-ai-onboarding, riêng với checkout chính.
+
+Supervisor đã chạy lại lệnh chuẩn `npm run check` sau sửa build nạp `.env`: PASS, unit36, typecheck12, build8; E2E6/6. Chưa push auth hoặc kiểm CI GitHub.
 
 1. Lập inventory điện thoại/trình duyệt và cách đăng nhập thuận tiện cho 15 người; có thể bắt đầu thiết kế với giả định trong context.
 2. Prototype luồng vào nhà, Nhà mình, hồ sơ và gia phả trên điện thoại; lấy phản hồi từ ít nhất một người lớn tuổi.
@@ -63,3 +65,14 @@ API authentication, policies runtime theo membership, API nghiệp vụ, UI gia 
 - E2E chuyển sang cổng riêng 3100 (cấu hình E2E_PORT) để không xung đột với dev 3000.
 - E2E trên cổng 3100 đã chạy lại PASS 2/2 desktop/mobile trước push. Bản cài thử Superpowers nằm trong .superpowers/install-verification và đã được ignore.
 - Chưa thử điện thoại thật hoặc chạy đánh giá LLM; không có production deploy. Trạng thái commit/push/CI tra bằng Git và GitHub, không suy ra từ việc có file workflow.
+
+## Điểm tiếp tục sau giới hạn sử dụng
+
+- Auth Task2 có code chưa commit trên worktree onboarding. Implementer báo unit36/36, integration4/4, build8/8 và HTTP proxy đạt; supervisor chưa xác minh lại và review độc lập chưa hoàn tất, không coi đây là gate đã qua.
+- Hai migration bổ sung 0004/0005 cho ID defaults của Better Auth đã được implementer báo apply. Không sửa migration đã chạy; membership plan chuyển sang 0006.
+- Agent implementer/reviewer và automatic approval review báo hết hạn mức; lệnh supervisor `npm run test:auth` bị từ chối trước khi chạy. Thông báo cho phép thử lại lúc16:37 ngày2026-09-08; cần kiểm tra hạn mức thực tế khi tiếp tục.
+- Tiếp theo: lấy/khôi phục report Task2, chạy kiểm chứng auth, review độc lập và sửa findings, rồi commit/push theo scope đã duyệt. Chưa push auth, chưa triển khai membership, chưa merge/deploy. Preview server của supervisor đã dừng để kiểm tra proxy; cần mở lại khi duyệt UI.
+
+## Điểm tiếp tục hiện tại
+
+Auth đã commit 04008ce và qua review. Membership Task1 mới tạo bản nháp packages/database/scripts/test-tenant.mjs; chưa có migration 0006 hoặc kết quả test tenant. Luna báo giới hạn sử dụng, có thể thử lại theo thông báo lúc 16:41; thời điểm này do công cụ cung cấp, không phải lịch tự chạy. Tiếp tục theo docs/superpowers/plans/2026-09-08-membership-backend.md, giữ nguyên migrations 0001–0005. Chưa push nhánh onboarding.

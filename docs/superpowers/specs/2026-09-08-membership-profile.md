@@ -34,7 +34,7 @@ Runtime role không bypass RLS. Mỗi operation chạy transaction với actor t
 
 RLS đối chiếu actor và active membership từ database, không chỉ current_setting family_id. Không nhận actor/role từ request. Quyền trên bảng liên kết/approval không mở mutation trực tiếp tùy ý; API transaction thực thi các bước có audit. Bảng auth không được runtime đọc. Unknown/out-of-scope family/object trả404 không tiết lộ tồn tại.
 
-Narrow lookup helper có thể cần owner NOLOGIN BYPASSRLS để tránh recursion do FORCE RLS; owner này chỉ có SELECT trên membership/link/claim cần thiết, không quyền auth/password/contact value, và không được cấp membership cho runtime. Chỉ helper boolean có search_path cố định được EXECUTE bởi runtime. Đây là ngoại lệ kỹ thuật của helper, không thay bất biến runtime/auth NOBYPASSRLS. Reviewer phải kiểm grants thực và không có đường SET ROLE từ runtime sang helper owner.
+Narrow lookup helper có thể cần owner NOLOGIN BYPASSRLS để tránh recursion do FORCE RLS; owner này chỉ có SELECT trên membership/link/claim cần thiết và SELECT(id,family_id,version) trên members để kiểm snapshot còn mới, không quyền auth/password/contact value, và không được cấp membership cho runtime. Chỉ helper boolean có search_path cố định được EXECUTE bởi runtime. Đây là ngoại lệ kỹ thuật của helper, không thay bất biến runtime/auth NOBYPASSRLS. Reviewer phải kiểm grants thực và không có đường SET ROLE từ runtime sang helper owner.
 
 Audit chỉ actor/action/target/time và version hoặc tên trường thay đổi; không chép contact/token/password. Pending/revoked không đọc audit. Admin được xem audit cùng nhà, không private value.
 
