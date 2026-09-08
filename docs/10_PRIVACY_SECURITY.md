@@ -1,6 +1,6 @@
 # Quyền và riêng tư
 
-Thiết kế baseline. Monorepo mới có policy primitive cho contact và migration RLS deny-all; chưa có auth adapter hoặc authenticated policies/endpoints thực thi đầy đủ ma trận dưới đây. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
+Ma trận dưới đây là baseline sản phẩm. Auth/session và membership/invitation/claim đã có API và runtime RLS được kiểm thử; danh bạ/hồ sơ đang triển khai. Chat, media, export, push và AI chưa triển khai, không coi toàn bộ ma trận đã được thực thi. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
 
 ## Ma trận pilot
 
@@ -23,7 +23,7 @@ Hồ sơ chưa có account: admin đóng vai người quản lý, chịu trách 
 
 ### Quyền hẹp khi nhận hồ sơ, thiết kế đợt onboarding
 
-Để thực hiện bước xác nhận ownership/visibility trong ADM-08, một membership **active** được admin chỉ định bằng claim còn hạn có thể xem trước contact của đúng Member chưa liên kết đó qua endpoint claim-preview riêng. Quyền này không mở danh bạ/search/export/AI hoặc endpoint hồ sơ thông thường với contact self, không áp dụng cho pending/revoked, không suy ra chỉ từ role admin. Claim hết hạn/thu hồi/từ chối/consume hoặc Member đã liên kết làm quyền preview kết thúc. Người nhận xác nhận version và visibility trước khi link được tạo atomically. Xem [thiết kế chi tiết](superpowers/specs/2026-09-08-membership-profile.md). Đây là thiết kế chưa triển khai, không phải tuyên bố API đã bảo vệ luồng này.
+Để thực hiện bước xác nhận ownership/visibility trong ADM-08, một membership **active** được admin chỉ định bằng claim còn hạn có thể xem trước contact của đúng Member chưa liên kết đó qua endpoint claim-preview riêng. Quyền này không mở danh bạ/search/export/AI hoặc endpoint hồ sơ thông thường với contact self, không áp dụng cho pending/revoked, không suy ra chỉ từ role admin. Claim hết hạn/thu hồi/từ chối/consume hoặc Member đã liên kết làm quyền preview kết thúc. Người nhận xác nhận version và visibility trước khi link được tạo atomically. Xem [thiết kế chi tiết](superpowers/specs/2026-09-08-membership-profile.md). Backend claim đã triển khai và được kiểm thử real-cookie cho quyền candidate, expiry, stale version, thu hồi và xác nhận atomic; UI nhận hồ sơ chưa triển khai.
 
 ### Kiểm quyền trên mỗi đường truy cập
 

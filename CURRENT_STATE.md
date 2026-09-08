@@ -1,56 +1,47 @@
-﻿# Trạng thái dự án
+# Trạng thái dự án
 
-- Cập nhật: 2026-09-08.
 - Context version: **1.2.0**, nguồn máy đọc: [context.json](docs/context.json).
-- Pilot: 15 người; hiện là nền tảng và backend onboarding, chưa phải MVP sử dụng đầy đủ.
-- Nhánh đang làm: `feat/family-onboarding`, worktree `.worktrees/onboarding`. Đã push đến commit `4ab10bb` lên origin; chưa merge hoặc deploy.
+- Pilot: 15 người. Backend onboarding/danh bạ đã triển khai; chưa phải MVP sử dụng đầy đủ.
+- Main baseline: `fe0adae`, gồm PR onboarding #6 và năm PR dependency đã merge. Chủ dự án xác nhận CI tốt.
+- Đợt hiện tại: `feat/member-directory-profiles`, worktree `.worktrees/onboarding`; đang chốt commit và PR, không tự merge/deploy.
 
-## Đã hoàn tất và review
+## Đã hoàn tất
 
-- Monorepo npm workspaces/Turborepo, Next.js, Fastify, PostgreSQL và worker skeleton; TypeScript, ESLint, Prettier, Vitest, Playwright và workflow CI.
-- Project Brain, feature specs, design tokens, 24 ca eval AI khởi đầu và quy trình Superpowers. Chưa chạy eval với LLM.
-- Bản mẫu `/design-preview` và `/design-preview/profile`: giao diện tiếng Việt, dữ liệu giả, kiểm tra desktop/mobile/320px và chữ phóng lớn. Đã review code; **chưa được chủ dự án duyệt trực quan**. Ảnh local ở `.superpowers/design-preview-evidence`.
-- Auth commit `04008ce`: Better Auth email/password, xác minh email, reset password, session phía server, proxy cùng origin và Mailpit local. Xem [ADR-002](docs/decisions/ADR-002-authentication.md).
-- Schema membership commit `1fa6a0a`: migrations 0006/0007, runtime RLS theo actor/membership, transaction context, bootstrap admin local, invitation acceptance và claim isolation. Đã sửa findings và review độc lập sạch.
+- Monorepo npm/Turborepo, Next.js, Fastify, PostgreSQL, worker skeleton; Project Brain, tokens, CI và kiểm thử.
+- Auth Better Auth email/password, email verification/reset qua Mailpit local, session server và proxy cùng origin; xem [ADR-002](docs/decisions/ADR-002-authentication.md).
+- Membership/invitation/claim APIs, actor transaction, runtime RLS, audit và bootstrap admin local đã merge.
+- Task 3 backend: danh bạ tìm tên có/không dấu, phân trang theo tên/ID, profile với liên hệ lọc quyền; admin tạo/quản lý người chưa liên kết, chủ hồ sơ tự sửa kể cả admin.
+- PATCH có optimistic version, tăng version khi đổi contacts, audit atomic; claim cũ bị stale sau sửa dữ liệu. Ngày chỉ có năm không sinh ngày giả; hỗ trợ năm 0001–0099, chặn 0000.
+- Cursor ràng buộc family và từ khóa chuẩn hóa. Không tìm qua contact riêng tư.
+- Migration 0009 bổ sung unaccent; migrations 0001–0009 đã áp dụng local, không sửa migration đã chạy.
+- Review độc lập Task 3 và vòng sửa cuối sạch: đã sửa quyền admin-own, low-year date, cursor scope, thêm test API contact PATCH làm claim stale và sửa cleanup FK.
 
-## Đang thực hiện
+## Kiểm chứng Task 3
 
-Theo [spec onboarding](docs/superpowers/specs/2026-09-08-onboarding.md), [spec membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) và [plan backend](docs/superpowers/plans/2026-09-08-membership-backend.md).
+- Supervisor integration auth/membership/profile sau sửa cuối: **3 files, 11/11 đạt**, exit 0.
+- Supervisor `npm run check` bản cuối: PASS boundaries, tokens, lint, format, typecheck, unit, Brain và build 8 tasks (7 cached). Bộ unit hiện 38 ca.
+- `test:tenant` PASS với migration 0009; `db:migrate` chạy lại thành công không áp dụng lại.
+- E2E giao diện hiện có **6/6 đạt**: desktop/mobile, text 200%. Đây là preview/home, không phải UI onboarding hoặc kiểm thử điện thoại thật.
+- Project Brain: 46 Markdown files, liên kết và 24 seed eval hợp lệ. Chưa chạy eval với LLM.
+- CI nhánh mới chỉ được xác nhận sau push; kết quả local không thay cho CI GitHub.
 
-Task 2 API membership đã review, kiểm chứng, commit `4ab10bb` và push:
+## Bước tiếp theo đã duyệt
 
-- Mời, nhận lời mời vào trạng thái chờ, duyệt và thu hồi membership.
-- Đề nghị nhận hồ sơ, xem trước có kiểm quyền, xác nhận hoặc từ chối; version, expiry, contact visibility và audit cùng transaction.
-- Migration additive 0008 chỉ cung cấp metadata claim để xử lý stale; không trả thông tin liên hệ riêng tư.
-- Validation từ chối trường ngoài hợp đồng trước khi AJV có thể loại bỏ chúng; kiểm Origin cho mutation.
-- Đã sửa finding thiếu rate limit: preview và revoke có bucket theo actor trước transaction. Test rate limit dùng app instance riêng để không ảnh hưởng kịch bản claim khác. Reviewer kiểm tra lại sạch; không tìm thấy lộ dữ liệu trong các đường stale/expired/revoked/linked/cross-family đã xem.
-
-## Kiểm chứng có bằng chứng
-
-- Integration chung `npm run test:auth`: implementer chạy lại **2 files, 8/8 tests đạt** sau sửa rate limit và fixture isolation; supervisor đọc report, reviewer kiểm tra code/test. Lần supervisor chạy trước sửa fixture là 7 đạt/1 lỗi do test dùng chung bucket; kết quả 7/7 trước đó không thay thế bộ mới.
-- Supervisor chạy lại `npm run test:tenant` với migration 0008: PASS tenant RLS, actor transaction context, invitation acceptance và role isolation.
-- Quality gate toàn repo ở mốc auth đã đạt: unit 36, typecheck 12 tasks, build 8 tasks; E2E 6/6. Đây là kết quả trước API membership, không thay thế gate hiện tại.
-- Supervisor chạy lại `npm run check` lúc 21:49 sau bản sửa rate limit: **PASS** boundaries, tokens, lint, format, typecheck 12 tasks, unit 38/38, Brain 46 Markdown files và build 8 tasks (7 từ cache). Đã sửa định dạng và gom các checkpoint cũ của file này trước lần chạy đạt.
-- Migrations 0001–0008 đã được áp dụng trong database onboarding local; không sửa migration đã chạy, dùng migration bổ sung.
-- Chưa xác minh CI trên GitHub, chưa kiểm thử điện thoại thật, restore backup hoặc production mail. Chưa chạy HTTP two-process proxy smoke riêng cho Task 2; smoke auth trước đó đã đạt.
-
-## Bước tiếp theo
-
-1. Task 2 đã hoàn tất và push theo yêu cầu chủ dự án.
-2. Đang giao Luna triển khai Task 3 danh bạ/hồ sơ backend với quyền xem liên hệ, version và kiểm thử chéo nhà/thu hồi quyền.
-3. Chủ dự án duyệt trực quan bản mẫu trước khi triển khai hàng loạt UI nghiệp vụ; backend độc lập được phép tiếp tục.
-4. Kiểm chứng toàn đợt, chia commit và push nhánh feature theo phạm vi đã duyệt; không merge main hoặc deploy.
+1. Commit/push backend danh bạ/hồ sơ và mở PR, theo dõi CI. Merge và deploy báo riêng.
+2. Trình lại bản mẫu Nhà mình/hồ sơ và luồng vào nhà để chủ dự án duyệt trực quan, giữ tiêu chí tránh AI slop.
+3. Sau duyệt UI: nối đăng nhập, lời mời, chờ duyệt, nhận hồ sơ, danh bạ và chỉnh sửa hồ sơ với backend; kiểm thử toàn hành trình bằng dữ liệu giả.
 
 ## Chưa triển khai và giới hạn
 
-- Danh bạ/hồ sơ API Task 3; UI onboarding thực; cây gia phả, lịch âm, chat realtime, khoảnh khắc, private storage, outbox/push, PWA service worker, AI, native/widget.
-- Hosting, storage, thư viện lịch âm và LLM chưa chọn. Email chỉ dùng local catcher. Không có dữ liệu gia đình thật.
-- Chưa biết tỷ lệ iPhone/Android, ngân sách vận hành và nhu cầu chat riêng.
-- Runtime DB connection được tin cậy để thiết lập actor; RLS không bảo vệ trước việc đánh cắp credential runtime và giả mạo actor context. Rate limiter API hiện theo process; cần đánh giá lại khi triển khai nhiều instance.
+- UI onboarding/danh bạ nghiệp vụ; cây gia phả, lịch âm, chat realtime, moments, private storage, outbox/push, PWA service worker, AI, native/widget.
+- Bản mẫu `/design-preview` và `/design-preview/profile` đã review code nhưng chưa được chủ dự án duyệt trực quan. Ảnh local trong `.superpowers/design-preview-evidence`.
+- Hosting, storage, lịch âm và LLM chưa chọn; chưa production mail, deploy, restore backup hoặc dữ liệu gia đình thật.
+- Runtime connection được tin cậy thiết lập actor; RLS không bảo vệ credential runtime bị đánh cắp và giả actor. Rate limiter hiện theo process, cần đánh giá khi nhiều instance.
+- Chưa biết tỷ lệ iPhone/Android, ngân sách và nhu cầu chat riêng.
 
-## Môi trường và quy trình
+## Môi trường
 
-- Node 24.18.0, npm 11.16.0; Windows. Sandbox từng chặn child process bằng `spawn EPERM`; kiểm tra cần quyền phù hợp, không tắt test.
-- Compose riêng `family-ai-onboarding`: PostgreSQL 54339, SMTP 1035, Mailpit UI 8035. Không dùng hoặc xóa volume của checkout chính.
-- Subagents GPT-5.6 Luna xhigh; một implementer tại một thời điểm, review độc lập. Supervisor giữ phạm vi và tích hợp.
-- Các lần quota/automatic approval bị từ chối trước đây không phải lỗi ứng dụng. Chỉ ghi nhận kiểm chứng khi lệnh thực sự chạy và có kết quả.
+- Node 24.18.0, npm 11.16.0, Vitest 5; Windows. Dùng UTF-8 và không in secret.
+- Compose riêng `family-ai-onboarding`: PostgreSQL 54339, SMTP 1035, Mailpit HTTP 8035; API 4010/web 3200. CI Mailpit HTTP 8025 qua MAILPIT_PORT.
+- Subagents Luna xhigh; một implementer rồi reviewer độc lập, không agent con. Supervisor quản lý migration/contracts và tích hợp.
+- Các lỗi quota trước đã được ghi nhận nhưng không đồng nghĩa tài khoản hết hạn mức. Kết quả mới ở trên thay thế các checkpoint chưa chạy trước đó.

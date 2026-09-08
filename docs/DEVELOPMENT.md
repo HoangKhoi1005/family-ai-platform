@@ -40,7 +40,7 @@ Worktree onboarding uses the isolated Compose project `family-ai-onboarding` wit
 
 Run the local setup in this order:
 
-```sh
+````sh
 npm run env:init
 npm run db:up
 npm run db:migrate
@@ -52,7 +52,7 @@ npm run test:auth
 
 `env:init` creates missing values in the ignored `.env` with cryptographically random local passwords and a Better Auth secret. Existing values are preserved, and a second run does not rewrite the file. `APP_ENV=local` is required for role provisioning; the owner, auth, and runtime URLs must all point to a loopback host. Provisioning checks that `family_auth` and `family_runtime` are `LOGIN`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS` before setting their passwords. It never prints a URL, password, or SQL statement.
 
-Migration `0002_authentication.sql` adds Better Auth's global tables and preserves historical `users.auth_subject` rows without fabricating email values. `family_auth` has CRUD on `users` and the auth tables only. `family_runtime` has no auth-table privilege, and neither role has tenant-table grants in this phase. Auth tables use forced RLS with explicit auth-role policies; tenant authorization remains a later task.
+Migration `0002_authentication.sql` adds Better Auth's global tables and preserves historical `users.auth_subject` rows without fabricating email values. `family_auth` has CRUD on `users` and the auth tables only. `family_runtime` has no auth-table privilege, while runtime tenant grants are constrained by actor/membership RLS in migrations 0006–0008. Auth tables use forced RLS with explicit auth-role policies; tenant authorization is implemented for membership and claim operations; directory/profile work is tracked in CURRENT_STATE.
 
 `db:migrate` is safe to run twice: the second run verifies checksums and does not reapply migrations. `test:auth-schema` seeds only synthetic rows inside a transaction, tests actual role restrictions and legacy identity preservation, and rolls every fixture back. Do not run provisioning against a non-local URL, use the owner URL in an application process, or use `docker compose down -v`; the named volumes are intentionally retained and isolated from the main checkout.
 
@@ -64,6 +64,21 @@ Migration `0002_authentication.sql` adds Better Auth's global tables and preserv
 - Docker permission/daemon: mở Docker Desktop hoặc dùng quyền được cấp; không đổi filesystem/volume tùy tiện.
 - npm báo only-if-cached: môi trường có thể ép offline; dùng `--offline=false` và cache writable khi đã được phép network. Không lưu cấu hình riêng máy vào lockfile.
 - Tiếng Việt hiện sai ở Windows PowerShell: đọc file bằng `Get-Content -Encoding UTF8`; không chuyển toàn repo sang ANSI.
-- API trả 404 cho /families: đúng trạng thái scaffold; auth/nghiệp vụ chưa triển khai.
+- API nghiệp vụ dùng prefix /api/v1/families/{familyId}; 404 cũng có thể là tài nguyên ngoài phạm vi hoặc membership chưa active, không suy ra tài nguyên tồn tại từ mã lỗi.
 
 Kết thúc task cập nhật [CURRENT_STATE](../CURRENT_STATE.md), spec/contract liên quan và decision khi cần. Không ghi done cho feature chỉ vì thư mục tồn tại.
+
+## Bootstrap nhà local và kiểm thử backend
+
+Tạo tài khoản giả và xác minh email qua Mailpit trước. Lấy UUID của tài khoản đã xác minh từ response đăng nhập/me; chọn UUID mới cho nhà thử nghiệm. Script dưới đây chỉ nhận tài khoản đã xác minh, không tạo mật khẩu hoặc public admin endpoint:
+
+```sh
+npm run db:bootstrap-family -- --user-id <verified-user-uuid> --family-id <new-family-uuid> --name <family-name>
+```
+
+Thay các placeholder bằng giá trị local; tên có khoảng trắng cần được quote theo shell. Chạy lại với cùng family ID bị từ chối. Chưa có UI onboarding hoàn chỉnh; không nhập dữ liệu thật để thử.
+
+- npm run test:tenant: kiểm RLS, actor transaction, invitation acceptance và role isolation.
+- npm run test:auth: chạy chung auth/membership/profile integration với dữ liệu giả; profile thuộc Task3 đang review.
+- Mailpit HTTP test dùng MAILPIT_PORT (local8035, CI8025); SMTP_PORT là cổng gửi thư riêng.
+````
