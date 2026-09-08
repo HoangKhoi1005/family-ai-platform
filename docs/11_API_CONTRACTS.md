@@ -1,6 +1,8 @@
 # API contract và trạng thái triển khai
 
-Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept và các routes invitation/membership/claim trong đợt onboarding (commit `4ab10bb`). Danh bạ/hồ sơ đang triển khai; các routes lịch, gia phả, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src/onboarding.ts`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
+Đợt nối UI 2026-09-09: thêm `GET /api/v1/families/{familyId}/onboarding`, trả `{ member_id: string | null, claims: [{ id, version }] }` của chính actor active. Không trả contacts hoặc claim của người khác. Guest trả 401; pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên. Xem [luồng đã nối](CONNECTED_ONBOARDING.md). Danh bạ/hồ sơ API đã có trong baseline merge `3e411b7`.
+
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim và danh bạ/hồ sơ. Các routes lịch, quan hệ gia phả, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src/onboarding.ts`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
