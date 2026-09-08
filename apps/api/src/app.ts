@@ -1,6 +1,19 @@
 import Fastify, { LogController } from 'fastify';
 import { healthResponseSchema, type HealthResponse, type ApiError } from '@family/contracts';
-export function buildApp() {
+import type { Auth } from './auth/auth.js';
+import { registerAuthRoutes, toAuthHeaders } from './auth/routes.js';
+import { getVerifiedActor } from './auth/session.js';
+
+export interface AppOptions {
+  auth?: Auth;
+  publicOrigin?: string;
+}
+
+export function buildApp(options: AppOptions = {}) {
+  if ((options.auth && !options.publicOrigin) || (!options.auth && options.publicOrigin)) {
+    throw new Error('auth and publicOrigin must be configured together');
+  }
+
   const app = Fastify({
     logger: { level: 'info', redact: ['req.headers.authorization', 'req.headers.cookie'] },
     logController: new LogController({ disableRequestLogging: true }),
@@ -15,6 +28,43 @@ export function buildApp() {
     { schema: { response: { 200: healthResponseSchema } } },
     async (): Promise<HealthResponse> => ({ status: 'ok', service: 'family-api' }),
   );
+
+  if (options.auth && options.publicOrigin) {
+    const { auth, publicOrigin } = options;
+    registerAuthRoutes(app, auth, publicOrigin);
+    app.get('/api/v1/me', async (request, reply) => {
+      const headers = toAuthHeaders(request.headers);
+      const actor = await getVerifiedActor(auth, headers);
+      if (!actor) {
+        return reply.code(401).send({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Yêu cầu xác thực.',
+            request_id: request.id,
+          },
+        });
+      }
+      const session = await auth.api.getSession({ headers });
+      if (!session?.user.emailVerified || session.user.id !== actor.userId) {
+        return reply.code(401).send({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Yêu cầu xác thực.',
+            request_id: request.id,
+          },
+        });
+      }
+      return {
+        user: {
+          id: actor.userId,
+          name: session.user.name,
+          email: session.user.email,
+        },
+        memberships: [],
+      };
+    });
+  }
+
   app.setNotFoundHandler((request, reply) => {
     const response: ApiError = {
       error: { code: 'NOT_FOUND', message: 'Không tìm thấy nội dung.', request_id: request.id },

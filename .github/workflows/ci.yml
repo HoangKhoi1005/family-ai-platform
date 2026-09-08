@@ -2,7 +2,7 @@ name: Monorepo CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
 permissions:
   contents: read
 concurrency:
@@ -21,11 +21,26 @@ jobs:
           POSTGRES_DB: family_test
         ports: ['5432:5432']
         options: --health-cmd "pg_isready -U family_test -d family_test" --health-interval 5s --health-timeout 3s --health-retries 10
+      mailpit:
+        image: axllent/mailpit:v1.30.4
+        ports: ['1025:1025', '8025:8025']
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
       TURBO_TELEMETRY_DISABLED: '1'
+      APP_ENV: local
       DATABASE_URL: postgresql://family_test:ephemeral_ci_only@127.0.0.1:5432/family_test
+      AUTH_DATABASE_URL: postgresql://family_auth:ephemeral_auth_only@127.0.0.1:5432/family_test
+      RUNTIME_DATABASE_URL: postgresql://family_runtime:ephemeral_runtime_only@127.0.0.1:5432/family_test
+      BETTER_AUTH_SECRET: ci-only-better-auth-secret-012345678901234567890123
+      WEB_ORIGIN: http://127.0.0.1:3200
+      API_INTERNAL_URL: http://127.0.0.1:4010
+      API_PORT: '4010'
+      PORT: '3200'
+      HOST: 127.0.0.1
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: '1025'
+      MAIL_FROM: no-reply@family-ai.local
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,10 +51,30 @@ jobs:
         with:
           python-version: '3.12'
       - run: npm ci
+      - name: Prepare auth test environment
+        run: |
+          cat > .env <<'EOF'
+          APP_ENV=local
+          DATABASE_URL=postgresql://family_test:ephemeral_ci_only@127.0.0.1:5432/family_test
+          AUTH_DATABASE_URL=postgresql://family_auth:ephemeral_auth_only@127.0.0.1:5432/family_test
+          RUNTIME_DATABASE_URL=postgresql://family_runtime:ephemeral_runtime_only@127.0.0.1:5432/family_test
+          BETTER_AUTH_SECRET=ci-only-better-auth-secret-012345678901234567890123
+          WEB_ORIGIN=http://127.0.0.1:3200
+          API_INTERNAL_URL=http://127.0.0.1:4010
+          API_PORT=4010
+          PORT=3200
+          HOST=127.0.0.1
+          SMTP_HOST=127.0.0.1
+          SMTP_PORT=1025
+          MAIL_FROM=no-reply@family-ai.local
+          EOF
       - run: npm run check
       - run: node packages/database/scripts/migrate.mjs
       - run: node packages/database/scripts/migrate.mjs
+      - run: node packages/database/scripts/provision-auth.mjs
       - run: node packages/database/scripts/test.mjs
+      - run: node packages/database/scripts/test-auth-schema.mjs
+      - run: npm run test:auth
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4

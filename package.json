@@ -13,14 +13,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
+    "dev": "node --env-file-if-exists=.env ./node_modules/turbo/bin/turbo run dev",
+    "build": "node --env-file-if-exists=.env ./node_modules/turbo/bin/turbo run build",
+    "typecheck": "node --env-file-if-exists=.env ./node_modules/turbo/bin/turbo run typecheck",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "turbo run build --filter=@family/contracts && vitest run",
     "test:db": "node --env-file=.env packages/database/scripts/test.mjs",
+    "test:auth": "node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "brain:check": "python scripts/validate_brain.py",
     "check": "npm run boundaries:check && npm run tokens:check && npm run lint && npm run format:check && npm run typecheck && npm test && npm run brain:check && npm run build",

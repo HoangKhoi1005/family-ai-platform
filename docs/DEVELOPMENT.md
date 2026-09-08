@@ -14,7 +14,7 @@ Tất cả package private. Không deep-import source package khác; dùng expor
 
 ## Development và build
 
-`npm run dev` build prerequisites rồi mở watch cho shared packages, web/API/worker. Khi chỉ làm một app: `npm run build` trước rồi `npm run dev --workspace @family/web` hoặc `@family/api`. `HOST`/`PORT` cấu hình API; default 127.0.0.1:4000. Web 127.0.0.1:3000, cấu hình CLI Next khi cần. Không tự bind mạng LAN; chỉ mở khi thử thiết bị và hiểu phạm vi.
+`npm run dev` build prerequisites rồi mở watch cho shared packages, web/API/worker. Khi chỉ làm một app: `npm run build` trước rồi `npm run dev --workspace @family/web` hoặc `@family/api`. API uses `HOST` and `API_PORT` (default 127.0.0.1:4010 when auth is configured); web uses `PORT` (default 127.0.0.1:3200). Không tự bind mạng LAN; chỉ mở khi thử thiết bị và hiểu phạm vi.
 
 Turbo cache dist/.next; env ảnh hưởng build phải được khai báo trong turbo.json khi thêm. Chưa có build-time secret. Secrets runtime không chuyển thành NEXT_PUBLIC. Có thể tắt telemetry công cụ qua NEXT_TELEMETRY_DISABLED=1 và TURBO_TELEMETRY_DISABLED=1 trong môi trường; CI đã đặt.
 
@@ -36,7 +36,7 @@ CI gồm quality, production build, migrate hai lần, integration constraints/R
 
 ### Auth foundation local services
 
-Worktree onboarding uses the isolated Compose project `family-ai-onboarding` with PostgreSQL on `127.0.0.1:54339`, Mailpit SMTP on `127.0.0.1:1035`, and the Mailpit UI on `127.0.0.1:8035`. The API and web development processes use `127.0.0.1:4010` and `127.0.0.1:3200`; they are started by the Node workspaces rather than Compose. The env reserves `API_PORT=4010` for the pending Task 2 API wiring; the current scaffold API still reads `PORT`, so run it with `PORT=4010` until that wiring lands. Next reads `PORT=3200`. The Mailpit image is pinned to the official stable release `axllent/mailpit:v1.30.4`.
+Worktree onboarding uses the isolated Compose project `family-ai-onboarding` with PostgreSQL on `127.0.0.1:54339`, Mailpit SMTP on `127.0.0.1:1035`, and the Mailpit UI on `127.0.0.1:8035`. The API and web development processes use `127.0.0.1:4010` and `127.0.0.1:3200`; they are started by the Node workspaces rather than Compose. The API reads `API_PORT=4010`; Next reads `PORT=3200`. The Mailpit image is pinned to the official stable release `axllent/mailpit:v1.30.4`.
 
 Run the local setup in this order:
 
@@ -47,6 +47,7 @@ npm run db:migrate
 npm run db:provision-auth
 npm run test:auth-schema
 npm run test:db
+npm run test:auth
 ```
 
 `env:init` creates missing values in the ignored `.env` with cryptographically random local passwords and a Better Auth secret. Existing values are preserved, and a second run does not rewrite the file. `APP_ENV=local` is required for role provisioning; the owner, auth, and runtime URLs must all point to a loopback host. Provisioning checks that `family_auth` and `family_runtime` are `LOGIN`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS` before setting their passwords. It never prints a URL, password, or SQL statement.
@@ -54,6 +55,8 @@ npm run test:db
 Migration `0002_authentication.sql` adds Better Auth's global tables and preserves historical `users.auth_subject` rows without fabricating email values. `family_auth` has CRUD on `users` and the auth tables only. `family_runtime` has no auth-table privilege, and neither role has tenant-table grants in this phase. Auth tables use forced RLS with explicit auth-role policies; tenant authorization remains a later task.
 
 `db:migrate` is safe to run twice: the second run verifies checksums and does not reapply migrations. `test:auth-schema` seeds only synthetic rows inside a transaction, tests actual role restrictions and legacy identity preservation, and rolls every fixture back. Do not run provisioning against a non-local URL, use the owner URL in an application process, or use `docker compose down -v`; the named volumes are intentionally retained and isolated from the main checkout.
+
+`test:auth` runs the real Fastify/Better Auth flow against PostgreSQL and Mailpit. It requires both restricted database URLs, `WEB_ORIGIN`, `API_INTERNAL_URL`, and loopback SMTP settings. The test verifies email verification, database sessions, password reset expiry and replay, session revocation, origin checks, rate limiting, and the empty membership result after signup. Auth model IDs have database defaults in additive migrations because Better Auth 1.7.3 omits IDs for some Kysely inserts; do not edit an applied migration.
 
 ## Troubleshooting
 
