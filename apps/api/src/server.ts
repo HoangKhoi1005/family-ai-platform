@@ -32,7 +32,9 @@ try {
   const auth =
     authConfig && authPool && mailer ? createAuth(authConfig, authPool, mailer) : undefined;
   const app = buildApp(
-    auth && authConfig ? { auth, publicOrigin: authConfig.webOrigin } : undefined,
+    auth && authConfig && runtimePool
+      ? { auth, publicOrigin: authConfig.webOrigin, runtimePool }
+      : undefined,
   );
   let shuttingDown = false;
   const shutdown = async (): Promise<void> => {

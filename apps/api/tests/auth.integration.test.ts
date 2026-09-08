@@ -11,6 +11,12 @@ const runtimePool = createDatabasePool(config.runtimeDatabaseUrl);
 const ownerPool = createDatabasePool(requiredEnv('DATABASE_URL'));
 const mailer = createAuthMailer(config);
 const authLogEntries: Array<{ level: string; event: string }> = [];
+const testAuthRateLimitPaths = [
+  '/sign-up/email',
+  '/sign-in/email',
+  '/request-password-reset',
+  '/reset-password',
+] as const;
 const auth = createAuth(config, authPool, mailer, (level, event) => {
   authLogEntries.push({ level, event });
 });
@@ -71,8 +77,13 @@ describe('real Better Auth sessions', () => {
   });
 
   beforeEach(async () => {
-    // Keep each scenario independent of Better Auth's database-backed buckets.
-    await ownerPool.query('DELETE FROM auth_rate_limits');
+    // Keep each scenario independent of Better Auth's database-backed
+    // buckets without deleting rate-limit state for unrelated endpoints.
+    await ownerPool.query(
+      `DELETE FROM auth_rate_limits
+        WHERE split_part(key, '|', 2) = ANY($1::text[])`,
+      [testAuthRateLimitPaths],
+    );
     authLogEntries.length = 0;
   });
 

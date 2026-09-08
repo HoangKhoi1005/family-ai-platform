@@ -1,17 +1,25 @@
 import Fastify, { LogController } from 'fastify';
 import { healthResponseSchema, type HealthResponse, type ApiError } from '@family/contracts';
+import type { Pool } from 'pg';
+import { withActorTransaction } from '@family/database';
 import type { Auth } from './auth/auth.js';
 import { registerAuthRoutes, toAuthHeaders } from './auth/routes.js';
 import { getVerifiedActor } from './auth/session.js';
+import { registerFamilyRoutes } from './family/routes.js';
+import { listOwnMemberships } from './family/memberships.js';
 
 export interface AppOptions {
   auth?: Auth;
   publicOrigin?: string;
+  runtimePool?: Pool;
 }
 
 export function buildApp(options: AppOptions = {}) {
   if ((options.auth && !options.publicOrigin) || (!options.auth && options.publicOrigin)) {
     throw new Error('auth and publicOrigin must be configured together');
+  }
+  if (options.runtimePool && !options.auth) {
+    throw new Error('runtimePool requires auth');
   }
 
   const app = Fastify({
@@ -32,6 +40,13 @@ export function buildApp(options: AppOptions = {}) {
   if (options.auth && options.publicOrigin) {
     const { auth, publicOrigin } = options;
     registerAuthRoutes(app, auth, publicOrigin);
+    if (options.runtimePool) {
+      registerFamilyRoutes(app, {
+        auth,
+        runtimePool: options.runtimePool,
+        webOrigin: publicOrigin,
+      });
+    }
     app.get('/api/v1/me', async (request, reply) => {
       const headers = toAuthHeaders(request.headers);
       const actor = await getVerifiedActor(auth, headers);
@@ -54,13 +69,18 @@ export function buildApp(options: AppOptions = {}) {
           },
         });
       }
+      const memberships = options.runtimePool
+        ? await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            listOwnMemberships(client, actor.userId),
+          )
+        : [];
       return {
         user: {
           id: actor.userId,
           name: session.user.name,
           email: session.user.email,
         },
-        memberships: [],
+        memberships,
       };
     });
   }
