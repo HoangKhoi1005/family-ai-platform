@@ -1,7 +1,7 @@
 # Trạng thái dự án
 
 - Cập nhật: 2026-09-08
-- Context version: **1.1.1**, nguồn máy đọc: [context.json](docs/context.json).
+- Context version: **1.2.0**, nguồn máy đọc: [context.json](docs/context.json).
 - Giai đoạn: monorepo foundation, chưa phải MVP gia đình.
 - Quy mô pilot: 15 người trong một gia đình.
 
@@ -26,6 +26,8 @@
 Authentication/provider, runtime database role và policies theo membership, API nghiệp vụ, UI gia phả/lịch/chat, lịch âm, private storage, outbox/delivery, push/PWA service worker, AI, native/widget. Chưa có hosting/deploy, dữ liệu gia đình thật, GitHub CI run hoặc diễn tập restore backup.
 
 ## Tiếp theo
+
+Đợt đã được duyệt ngày 2026-09-08: [Vào nhà và nhận hồ sơ](docs/superpowers/specs/2026-09-08-onboarding.md), trên nhánh `feat/family-onboarding`, worktree `.worktrees/onboarding`. Đang khảo sát thư viện auth và bản mẫu UX; chưa triển khai auth. Chủ dự án yêu cầu duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt màn hình. Backend độc lập được phép tiếp tục. Subagents dùng GPT-5.6 Luna xhigh; supervisor điều phối và review.
 
 1. Lập inventory điện thoại/trình duyệt và cách đăng nhập thuận tiện cho 15 người; có thể bắt đầu thiết kế với giả định trong context.
 2. Prototype luồng vào nhà, Nhà mình, hồ sơ và gia phả trên điện thoại; lấy phản hồi từ ít nhất một người lớn tuổi.

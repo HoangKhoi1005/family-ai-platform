@@ -22,6 +22,10 @@ Giới hạn đề xuất: một coordinator + tối đa ba subagents đang ho�
 
 ## Phân công cho tính năng tiếp theo
 
+Chủ dự án đã chọn supervisor Astra ở mức nhẹ nhàng và subagents **GPT-5.6 Luna xhigh** cho triển khai/review chuyên sâu. Supervisor không tự thay mức reasoning của phiên chính trong UI. Khi dispatch, truyền model và reasoning rõ ràng; không tự nâng model ngoài lựa chọn này.
+
+Đợt hiện tại theo [scope onboarding](superpowers/specs/2026-09-08-onboarding.md). [Plan bản mẫu](superpowers/plans/2026-09-08-design-preview.md) có gate duyệt trực quan của chủ dự án trước khi làm hàng loạt màn hình; backend độc lập tiếp tục trong phạm vi đã duyệt. Ledger riêng từng plan tại `.superpowers/sdd/` để phục hồi tiến độ sau đổi context.
+
 1. Coordinator đọc spec admin/member-profile, chốt lựa chọn auth còn thiếu và contracts, lập plan có thứ tự phụ thuộc.
 2. Backend implementer làm auth/membership/runtime RLS trong phạm vi được giao; báo test và những gì chưa kiểm được.
 3. Reviewer kiểm spec và quyền: hai nhà, revoked/pending, admin không vượt contact self. Coordinator xử lý findings trước khi chuyển task.

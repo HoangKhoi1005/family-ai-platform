@@ -35,7 +35,16 @@ Không nạp toàn bộ tài liệu vào mọi task. Dùng [mục lục](docs/IN
 - Test dựa trên rủi ro và business rules, đặc biệt truy cập chéo nhà, thu hồi quyền, lịch âm, cây quan hệ và retry realtime. Không thêm test chỉ để lặp lại code.
 - Đã được chủ dự án cho phép dùng subagents cho feature nhiều bước theo [quy trình Superpowers](docs/SUPERPOWERS.md). Task nhỏ làm trực tiếp. Với SDD: một implementer tại một thời điểm rồi reviewer; chỉ chạy song song điều tra/review độc lập. Coordinator giữ contracts/migrations/lockfile và tích hợp. Worker không tự tạo agent con. Mọi agent đọc cùng baseline và phạm vi file được giao.
 
-## Khi kết thúc task
+## Chất lượng UX/UI bắt buộc
+
+- Chủ dự án yêu cầu tránh giao diện AI slop/generic AI app. Đây là tiêu chí nghiệm thu, không chỉ là sở thích màu sắc. Đọc [UX/UI](docs/05_UX_UI_GUIDELINES.md) trước mọi task giao diện.
+- Hướng đang thử: Album gia đình Việt đương đại. Con người, ảnh và nội dung quyết định bố cục; không dùng một mẫu dashboard/card grid cho mọi màn hình.
+- Không tự thêm gradient tím xanh, glassmorphism, emoji trang trí, số liệu giả, nút AI nổi hoặc hiệu ứng không phục vụ thao tác.
+- Bản mẫu Nhà mình và hồ sơ phải được chủ dự án duyệt trực quan trước khi triển khai hàng loạt màn hình nghiệp vụ. Phần backend độc lập tiếp tục trong phạm vi đã duyệt.
+- Review giao diện chạy thực tế ở desktop/mobile, tên tiếng Việt dài, thiếu ảnh, trạng thái lỗi/rỗng, chữ lớn và bàn phím. Build/test đạt không thay thế visual review.
+- Điều phối theo lựa chọn của chủ dự án: supervisor Astra, subagents GPT-5.6 Luna với reasoning xhigh; không tự đổi model để tăng chi phí. Một implementer tại một thời điểm, reviewer độc lập.
+
+## Bàn giao task
 
 - Chạy kiểm tra phù hợp; ghi rõ đã chạy, chưa chạy, lỗi và giới hạn. Tài liệu: `python scripts/validate_brain.py`.
 - Cập nhật CURRENT_STATE với kết quả có bằng chứng và bước tiếp theo. Cập nhật spec/contract nếu hành vi đổi.
