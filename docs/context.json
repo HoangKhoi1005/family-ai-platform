@@ -1,10 +1,10 @@
 {
   "project": "family-ai-platform",
-  "context_version": "1.1.1",
+  "context_version": "1.2.0",
   "updated_at": "2026-09-08",
-  "stage": "monorepo-foundation",
+  "stage": "onboarding-in-progress",
   "pilot_people": 15,
   "implementation_exists": true,
   "baseline": "web-pwa-first",
-  "technical_stack_status": "npm-turbo-typescript-next-fastify-postgresql; providers-not-selected"
+  "technical_stack_status": "npm-turbo-typescript-next-fastify-postgresql; better-auth-selected; hosting-storage-llm-not-selected"
 }

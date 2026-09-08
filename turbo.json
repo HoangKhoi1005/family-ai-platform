@@ -1,10 +1,50 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": ["tsconfig.base.json", "design/tokens.json"],
+  "globalPassThroughEnv": [
+    "APP_ENV",
+    "AUTH_DATABASE_URL",
+    "RUNTIME_DATABASE_URL",
+    "BETTER_AUTH_SECRET",
+    "WEB_ORIGIN",
+    "API_INTERNAL_URL",
+    "API_PORT",
+    "PORT",
+    "HOST",
+    "SMTP_HOST",
+    "SMTP_PORT",
+    "MAIL_FROM"
+  ],
   "tasks": {
-    "build": { "dependsOn": ["^build"], "outputs": ["dist/**", ".next/**", "!.next/cache/**"] },
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
+      "env": ["API_INTERNAL_URL"]
+    },
     "@family/ui#build": { "outputs": [] },
     "typecheck": { "dependsOn": ["^build"], "outputs": [] },
-    "dev": { "dependsOn": ["^build"], "cache": false, "persistent": true }
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "passThroughEnv": ["API_PORT", "PORT", "HOST", "API_INTERNAL_URL", "WEB_ORIGIN"]
+    },
+    "start": {
+      "cache": false,
+      "passThroughEnv": [
+        "APP_ENV",
+        "AUTH_DATABASE_URL",
+        "RUNTIME_DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "WEB_ORIGIN",
+        "API_INTERNAL_URL",
+        "API_PORT",
+        "PORT",
+        "HOST",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "MAIL_FROM"
+      ]
+    }
   }
 }

@@ -23,7 +23,7 @@ Gia đình khác nhau không thấy dữ liệu của nhau. Trong cùng nhà, qu
 
 ## Phạm vi và trạng thái
 
-Nguồn phạm vi phát hành: [MVP](04_MVP_SCOPE.md). Nguồn tiến độ: [CURRENT_STATE](../CURRENT_STATE.md). Đã có monorepo nền tảng theo [ADR-001](decisions/ADR-001-monorepo.md): npm/Turbo, TypeScript, Next.js, Fastify, PostgreSQL. Tokens đã sinh CSS; schema/API nghiệp vụ phần lớn vẫn là thiết kế, ngoại trừ migration danh tính và endpoint liveness. Hosting, auth và LLM provider chưa chọn; chưa có dữ liệu gia đình thật.
+Nguồn phạm vi phát hành: [MVP](04_MVP_SCOPE.md). Nguồn tiến độ: [CURRENT_STATE](../CURRENT_STATE.md). Đã có monorepo nền tảng theo [ADR-001](decisions/ADR-001-monorepo.md): npm/Turbo, TypeScript, Next.js, Fastify, PostgreSQL. Đợt onboarding đã duyệt đang triển khai; auth chọn Better Auth theo [ADR-002](decisions/ADR-002-authentication.md). Không suy ra API đã hoàn tất từ quyết định stack. Hosting, storage và LLM provider chưa chọn; chưa có dữ liệu gia đình thật.
 
 ## Các giả định cần xác minh
 

@@ -12,7 +12,22 @@ Nhà mình ưu tiên: một lời chào ngắn → sự kiện thật sự cần
 
 Cỡ chữ nội dung mặc định 16 px, chế độ chữ lớn 20 px; không khóa zoom. Nút chính tối thiểu 44×44 CSS px. Trạng thái không chỉ dùng màu; icon luôn có tên truy cập. Mục tiêu độ tương phản: chữ thường 4.5:1, chữ lớn 3:1; kiểm tra trên thiết kế thực, đặc biệt chữ đè lên ảnh.
 
-## Ngôn ngữ
+## Tiêu chí tránh giao diện chung chung
+
+Yêu cầu trực tiếp của chủ dự án ngày 2026-09-08: không AI slop, AI-generated UI hoặc generic AI app. Hướng **Album gia đình Việt đương đại** đang được thử bằng bản mẫu; chưa coi là thiết kế đã duyệt.
+
+- Dùng nhịp bố cục có chủ đích: tên người, ảnh và câu chuyện là điểm nhấn; không xếp mọi nội dung vào các thẻ bo góc giống nhau.
+- Không gradient tím xanh, hiệu ứng kính, emoji trang trí, thống kê giả hoặc lời quảng cáo sáo rỗng. Màu, kiểu chữ, khoảng cách và chuyển động dùng tokens, mỗi lựa chọn phục vụ phân cấp và thao tác.
+- Hồ sơ phải giúp nhận ra và liên hệ đúng người; Nhà mình giúp biết chuyện nhà hôm nay. Không bê cùng bố cục dashboard vào cả hai màn hình.
+- Dữ liệu bản mẫu hoàn toàn hư cấu và có nhãn rõ. Không bịa ảnh/ngày/sự kiện trong sản phẩm thật để làm màn hình đầy hơn.
+- Không suy đoán vai vế từ tên. Ví dụ “Bác Hai” chỉ là tên thường gọi do fixture/người dùng khai báo.
+- Tính năng chưa triển khai không tạo nút chết trên giao diện sản phẩm. Bản mẫu độc lập phải giải thích rõ phần nào chỉ để duyệt thiết kế.
+
+Gate thiết kế: trình bản mẫu Nhà mình và hồ sơ trên desktop/mobile cho chủ dự án trước khi triển khai hàng loạt màn hình. Việc duyệt bản mẫu không đồng nghĩa đã kiểm chứng với người lớn tuổi hoặc thiết bị thật.
+
+Checklist visual review: trọng tâm rõ; nội dung tiếng Việt tự nhiên; tên dài không cắt; thiếu ảnh vẫn nhận diện được; nút bấm đủ lớn; bàn phím/focus rõ; zoom 200% còn dùng được; không tràn ngang; lỗi/rỗng/chờ duyệt được thiết kế; tương phản đạt mục tiêu; không dùng màu làm dấu hiệu duy nhất.
+
+## Câu chữ trong sản phẩm
 
 - “Gửi ảnh cho cả nhà”, “Chờ quản trị viên duyệt”, “Bạn chưa có quyền xem thông tin này”.
 - Dùng tên thường gọi đã cấu hình; không suy đoán tuổi/giới hoặc vai vế từ tên.
