@@ -23,3 +23,9 @@ Trạng thái theo [INDEX](INDEX.md). Ngày khởi tạo: 2026-09-08. Confirmed 
 Quyết định triển khai: [ADR-001 — Monorepo stack](decisions/ADR-001-monorepo.md), Baseline đã thực hiện theo yêu cầu dựng monorepo đầy đủ của người dùng. Không đổi scope pilot.
 
 Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISION.md), đánh dấu bản cũ Superseded và chỉ ra file/spec phải đổi. Không xóa lịch sử hoặc buộc xin xác nhận lại những điều người dùng đã giao rõ.
+
+## Đợt onboarding đã duyệt — 2026-09-08
+
+- **PAD-016 / Confirmed:** triển khai email/mật khẩu qua thư viện xác thực được duy trì, xác minh email và khôi phục mật khẩu qua hộp thư local; OAuth/SMS sau. Admin đầu tiên qua CLI có kiểm soát. [Phạm vi](superpowers/specs/2026-09-08-onboarding.md).
+- **PAD-017 / Confirmed:** tránh AI slop/generic app là tiêu chí nghiệm thu; duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt. Hướng Album gia đình Việt đương đại là đề xuất đang thử, không phải thiết kế đã duyệt.
+- **PAD-018 / Confirmed:** supervisor điều phối subagents GPT-5.6 Luna xhigh; một implementer mỗi lúc, reviewer độc lập; commit/push nhánh feature sau kiểm chứng, không merge main.

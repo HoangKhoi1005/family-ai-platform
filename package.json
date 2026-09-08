@@ -13,14 +13,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
+    "dev": "node --env-file-if-exists=.env ./node_modules/turbo/bin/turbo run dev",
+    "build": "node --env-file-if-exists=.env ./node_modules/turbo/bin/turbo run build",
+    "typecheck": "node --env-file-if-exists=.env ./node_modules/turbo/bin/turbo run typecheck",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "turbo run build --filter=@family/contracts && vitest run",
     "test:db": "node --env-file=.env packages/database/scripts/test.mjs",
+    "test:auth": "node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "brain:check": "python scripts/validate_brain.py",
     "check": "npm run boundaries:check && npm run tokens:check && npm run lint && npm run format:check && npm run typecheck && npm test && npm run brain:check && npm run build",
@@ -28,10 +29,15 @@
     "tokens:generate": "node scripts/generate-tokens.mjs",
     "tokens:check": "node scripts/generate-tokens.mjs --check",
     "env:init": "node scripts/init-env.mjs",
-    "db:up": "docker compose up -d --wait postgres",
+    "test:env-init": "node scripts/test-init-env.mjs",
+    "db:up": "docker compose up -d --wait postgres mailpit",
     "db:down": "docker compose down",
     "db:migrate": "node --env-file=.env packages/database/scripts/migrate.mjs",
-    "db:status": "node --env-file=.env packages/database/scripts/status.mjs"
+    "db:status": "node --env-file=.env packages/database/scripts/status.mjs",
+    "db:provision-auth": "node --env-file=.env packages/database/scripts/provision-auth.mjs",
+    "test:auth-schema": "node --env-file=.env packages/database/scripts/test-auth-schema.mjs",
+    "test:tenant": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-tenant.mjs",
+    "db:bootstrap-family": "node --env-file=.env packages/database/scripts/bootstrap-family.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
