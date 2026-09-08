@@ -21,7 +21,7 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | POST /change-requests                     | type, target_id?, base_version?, payload                         | 201 pending; payload theo schema type                     |
 | POST /change-requests/{id}/decision       | decision approved/rejected, reason?, version                     | Admin; transaction validate + apply + audit; 409 đã xử lý |
 | POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                  |
-| POST /memberships/{id}/approve            | member_id?, version                                              | Admin; không nhận nhầm hồ sơ đang liên kết                |
+| POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ     |
 | POST /memberships/{id}/revoke             | reason?, version                                                 | Admin; chặn self-revoke admin cuối                        |
 | GET /events                               | from, to, cursor                                                 | Occurrence theo range có giới hạn tối đa 1 năm            |
 | POST /events                              | title, calendar, recurrence, timezone, date_parts, lunar_policy? | Active member; validate lịch, không LLM                   |
@@ -44,7 +44,11 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 
 Routes global: `POST /api/v1/invitations/accept` nhận token và credential, tạo pending membership; không trả dữ liệu nhà trước duyệt. `POST/DELETE /api/v1/me/push-subscriptions` chỉ thiết bị của actor. Auth provider callback routes xác định khi chọn stack.
 
-## Ví dụ sự kiện ngày giỗ
+## Claim hồ sơ, thiết kế đợt onboarding
+
+Các route sau prefix family dự kiến: `POST /member-claims` (admin, membership active và Member chưa liên kết), `GET /member-claims/{id}/preview` (chỉ candidate được chỉ định, claim còn hạn), `POST /member-claims/{id}/confirm` (candidate xác nhận version/visibility, atomic link+consume), `POST /member-claims/{id}/decline` (candidate) và `POST /member-claims/{id}/revoke` (admin). Claim preview là quyền hẹp theo [privacy](10_PRIVACY_SECURITY.md), không dùng endpoint hồ sơ thông thường để mở self contact trước link. Tất cả vẫn là thiết kế, chưa triển khai.
+
+## Payload sự kiện ngày giỗ
 
 ```json
 {

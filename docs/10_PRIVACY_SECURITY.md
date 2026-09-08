@@ -21,6 +21,12 @@ Hồ sơ chưa có account: admin đóng vai người quản lý, chịu trách 
 
 ## Điểm thực thi bắt buộc
 
+### Quyền hẹp khi nhận hồ sơ, thiết kế đợt onboarding
+
+Để thực hiện bước xác nhận ownership/visibility trong ADM-08, một membership **active** được admin chỉ định bằng claim còn hạn có thể xem trước contact của đúng Member chưa liên kết đó qua endpoint claim-preview riêng. Quyền này không mở danh bạ/search/export/AI hoặc endpoint hồ sơ thông thường với contact self, không áp dụng cho pending/revoked, không suy ra chỉ từ role admin. Claim hết hạn/thu hồi/từ chối/consume hoặc Member đã liên kết làm quyền preview kết thúc. Người nhận xác nhận version và visibility trước khi link được tạo atomically. Xem [thiết kế chi tiết](superpowers/specs/2026-09-08-membership-profile.md). Đây là thiết kế chưa triển khai, không phải tuyên bố API đã bảo vệ luồng này.
+
+### Kiểm quyền trên mỗi đường truy cập
+
 - Session/token phải được xác minh; invitation token lưu hash, có expiry, dùng một lần, revoke được. Duyệt và consume link có transaction để tránh hai người nhận một hồ sơ.
 - Mọi object ID resolve trong family được quyền; API ngoài phạm vi dùng phản hồi không tiết lộ object tồn tại. Field bị cấm không xuất hiện trong payload, search snippet, AI hoặc export.
 - Realtime subscribe/publish xác thực membership. Khi revoke, ngắt subscription hoặc ngừng fanout ngay; endpoint fetch vẫn từ chối dù client còn cache.

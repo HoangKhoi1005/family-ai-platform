@@ -21,7 +21,7 @@ Hướng thử: Album gia đình Việt đương đại theo [UX](../../05_UX_UI
 - Admin không đọc self contact của người khác qua payload/tìm kiếm.
 - Invite hết hạn/đã dùng/thu hồi bị từ chối; hai request đồng thời chỉ consume một lần.
 - Claim và approval đồng thời không liên kết trùng; stale profile version trả conflict.
-- Email verification/reset dùng token hết hạn/dùng một lần theo thư viện; logout vô hiệu session.
+- Reset dùng token có hạn, consume một lần; email verification kiểm expiry và replay không cấp thêm quyền/session, ghi rõ semantics thư viện. Logout vô hiệu session.
 - E2E trình duyệt đăng nhập → mời → chờ → duyệt → nhận hồ sơ → chỉnh thông tin theo quyền.
 - Review độc lập spec/code và visual review desktop/mobile; báo rõ giới hạn thiết bị thật.
 

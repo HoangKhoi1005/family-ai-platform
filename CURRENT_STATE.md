@@ -29,6 +29,10 @@ Authentication/provider, runtime database role và policies theo membership, API
 
 Đợt đã được duyệt ngày 2026-09-08: [Vào nhà và nhận hồ sơ](docs/superpowers/specs/2026-09-08-onboarding.md), trên nhánh `feat/family-onboarding`, worktree `.worktrees/onboarding`. Đang khảo sát thư viện auth và bản mẫu UX; chưa triển khai auth. Chủ dự án yêu cầu duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt màn hình. Backend độc lập được phép tiếp tục. Subagents dùng GPT-5.6 Luna xhigh; supervisor điều phối và review.
 
+- Đã chọn baseline [Better Auth và biên quyền](docs/decisions/ADR-002-authentication.md); [plan auth](docs/superpowers/plans/2026-09-08-auth-foundation.md) và [thiết kế membership/profile](docs/superpowers/specs/2026-09-08-membership-profile.md) đã được viết, chưa triển khai backend.
+- Bản mẫu `/design-preview` và `/design-preview/profile` đang review; chưa được chủ dự án duyệt thị giác. Không nối dữ liệu thật hay đánh dấu các tính năng calendar/chat/moments đã có.
+- Worktree mới: npm ci thành công, npm test 15/15; web dev cổng3200 Ready và HTTP200 có nội dung tiếng Việt, đã dừng tiến trình smoke của agent. Kết quả này không khẳng định mọi lỗi dev trước đây cùng nguyên nhân.
+
 1. Lập inventory điện thoại/trình duyệt và cách đăng nhập thuận tiện cho 15 người; có thể bắt đầu thiết kế với giả định trong context.
 2. Prototype luồng vào nhà, Nhà mình, hồ sơ và gia phả trên điện thoại; lấy phản hồi từ ít nhất một người lớn tuổi.
 3. Stack monorepo đã chọn theo [ADR-001](docs/decisions/ADR-001-monorepo.md); tiếp theo chọn auth/provider và hosting.

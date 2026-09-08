@@ -25,3 +25,5 @@ Giữ origin/CSRF checks của Better Auth; endpoint nghiệp vụ có kiểm Or
 ## Hệ quả và giới hạn
 
 Thêm thư viện có lifecycle/schema cần theo dõi khi nâng phiên bản. Email/mật khẩu chưa được kiểm chứng với 15 người dùng thật. Hộp thư local chỉ phục vụ phát triển, không phải delivery service. Reset phải có test replay/expiry; xác minh email phải kiểm hành vi thực tế của phiên bản đã ghim, không tự tuyên bố mọi token thư viện là one-time hay hashed nếu chưa kiểm chứng.
+
+Khảo sát source tag v1.7.3 cho thấy email verification dùng JWT có hạn và replay idempotent, trong khi reset consume bản ghi atomically; session token lưu opaque trong DB. Triển khai sẽ tắt tự đăng nhập sau verification, hash identifier reset, kiểm chứng lại qua integration và giới hạn quyền auth tables. Signup gửi vào hộp thư local; sign-in không tự gửi lại, có thao tác resend rõ ràng. [Verification source](https://raw.githubusercontent.com/better-auth/better-auth/v1.7.3/packages/better-auth/src/api/routes/email-verification.ts), [reset source](https://raw.githubusercontent.com/better-auth/better-auth/v1.7.3/packages/better-auth/src/api/routes/password.ts).
