@@ -26,6 +26,7 @@ import {
 import { acceptInvitation, createInvitation, revokeInvitation } from './invitations.js';
 import { approveMembership, listMemberships, revokeMembership } from './memberships.js';
 import { confirmClaim, createClaim, declineClaim, previewClaim, revokeClaim } from './claims.js';
+import { getOwnOnboarding } from './onboarding.js';
 import {
   createMember,
   getManagedMember,
@@ -240,6 +241,24 @@ function replyError(reply: FastifyReply, request: FastifyRequest, error: unknown
 export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteOptions): void {
   const mutationLimiter = new BoundedRateLimiter(30, 60_000, 4096);
   const claimLimiter = new BoundedRateLimiter(30, 60_000, 4096);
+
+  app.get<{ Params: FamilyParams }>(
+    '/api/v1/families/:familyId/onboarding',
+    { schema: { params: familyParams } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            getOwnOnboarding(client, actor.userId, familyId),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
 
   app.post<{ Body: AcceptBody }>(
     '/api/v1/invitations/accept',

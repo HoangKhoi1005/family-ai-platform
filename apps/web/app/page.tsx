@@ -8,6 +8,9 @@ export default function Home() {
           nhà mình<span aria-hidden="true">✳</span>
         </Link>
         <span className="eyebrow">GẦN NHAU HƠN MỖI NGÀY</span>
+        <Link href="/app" className="button">
+          Vào nhà
+        </Link>
       </header>
       <div className="hero">
         <p className="eyebrow">MỘT GÓC NHỎ, DÀNH RIÊNG CHO GIA ĐÌNH</p>

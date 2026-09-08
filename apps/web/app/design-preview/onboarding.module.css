@@ -1,0 +1,468 @@
+.flowPage {
+  margin: 0 auto;
+  max-width: 920px;
+  padding: var(--spacing-px-xl) var(--spacing-px-lg) 64px;
+}
+
+.srOnly {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.flowHeader {
+  border-bottom: 1px solid var(--color-border-soft);
+  display: block;
+  padding: var(--spacing-px-lg) 0 var(--spacing-px-xl);
+}
+
+.eyebrow {
+  color: var(--color-accent);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 var(--spacing-px-sm);
+}
+
+.flowTitle,
+.directoryTitle,
+.stageTitle,
+.profileTitle {
+  color: var(--color-text-primary);
+  font-family: var(--typography-font-title);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.flowTitle {
+  font-size: clamp(36px, 7vw, 64px);
+}
+
+.flowIntro,
+.stageCopy,
+.directoryIntro,
+.profileCopy,
+.supportingText {
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  line-height: 1.55;
+  margin: var(--spacing-px-md) 0 0;
+  max-width: 40rem;
+}
+
+.flowHeader .flowIntro,
+.flowHeader .directoryIntro {
+  margin-bottom: 0;
+  max-width: 34rem;
+}
+
+.syntheticMark {
+  align-self: start;
+  border-left: 3px solid var(--color-accent);
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-left: var(--spacing-px-md);
+}
+
+.stepRail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-px-sm);
+  list-style: none;
+  margin: var(--spacing-px-lg) 0 0;
+  padding: 0;
+}
+
+.stepRail li {
+  border-bottom: 2px solid var(--color-border-soft);
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  padding: var(--spacing-px-sm) var(--spacing-px-xs);
+}
+
+.stepRail .activeStep {
+  border-bottom-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  font-weight: 700;
+}
+
+.flowLayout {
+  display: grid;
+  gap: var(--spacing-px-xl);
+  grid-template-columns: minmax(0, 1.25fr) minmax(220px, 0.75fr);
+  padding-top: var(--spacing-px-lg);
+}
+
+.stage,
+.scenarioPanel,
+.directoryResults,
+.profilePanel {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-px-card);
+  padding: clamp(var(--spacing-px-lg), 4vw, var(--spacing-px-xl));
+}
+
+.stage {
+  min-width: 0;
+}
+
+.stageTitle,
+.directoryTitle {
+  font-size: clamp(28px, 5vw, 46px);
+}
+
+.stageCopy {
+  font-size: 20px;
+}
+
+.stageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-px-sm);
+  margin-top: var(--spacing-px-xl);
+}
+
+.primaryButton,
+.quietButton,
+.scenarioButton,
+.visibilityButton {
+  align-items: center;
+  border-radius: var(--radius-px-button);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  justify-content: center;
+  min-block-size: var(--interaction-minimum-target-px);
+  padding: var(--spacing-px-sm) var(--spacing-px-md);
+  text-align: center;
+}
+
+.primaryButton {
+  background: var(--color-brand-primary);
+  border: 1px solid var(--color-brand-primary);
+  color: var(--color-on-brand);
+}
+
+.quietButton,
+.scenarioButton,
+.visibilityButton {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-soft);
+  color: var(--color-text-primary);
+}
+
+.quietButton:hover,
+.quietButton:focus-visible,
+.scenarioButton:hover,
+.scenarioButton:focus-visible,
+.visibilityButton:hover,
+.visibilityButton:focus-visible {
+  border-color: var(--color-accent);
+}
+
+.primaryButton:focus-visible,
+.quietButton:focus-visible,
+.scenarioButton:focus-visible,
+.visibilityButton:focus-visible,
+.searchInput:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.stageNote {
+  border-top: 1px solid var(--color-border-soft);
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+  margin-top: var(--spacing-px-xl);
+  padding-top: var(--spacing-px-md);
+}
+
+.accountForm {
+  margin-top: var(--spacing-px-xl);
+}
+
+.accountForm label,
+.searchLabel {
+  color: var(--color-text-primary);
+  display: block;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.accountForm input,
+.searchInput {
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-text-secondary);
+  border-radius: var(--radius-px-input);
+  color: var(--color-text-primary);
+  display: block;
+  font: inherit;
+  min-height: var(--interaction-minimum-target-px);
+  margin-top: var(--spacing-px-sm);
+  max-width: 100%;
+  padding: var(--spacing-px-sm) var(--spacing-px-md);
+  width: 100%;
+}
+
+.accountForm input:focus-visible,
+.searchInput:focus-visible {
+  border-color: var(--color-brand-primary);
+}
+
+.scenarioPanel {
+  align-self: start;
+}
+
+.scenarioPanel h2 {
+  font-size: 22px;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.scenarioPanel p,
+.scenarioPanel legend {
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.scenarioChoices {
+  border: 0;
+  display: grid;
+  gap: var(--spacing-px-sm);
+  margin: var(--spacing-px-md) 0 0;
+  padding: 0;
+}
+
+.scenarioButton {
+  justify-content: flex-start;
+  text-align: left;
+  width: 100%;
+}
+
+.scenarioButtonActive {
+  border-color: var(--color-brand-primary);
+  box-shadow: inset 3px 0 0 var(--color-brand-primary);
+}
+
+.scenarioAlert {
+  background: #fff3ee;
+  border: 1px solid var(--color-accent);
+  color: var(--color-text-primary);
+  font-size: 16px;
+  line-height: 1.5;
+  margin-top: var(--spacing-px-lg);
+  padding: var(--spacing-px-md);
+}
+
+.claimChoices {
+  display: grid;
+  gap: var(--spacing-px-sm);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: var(--spacing-px-xl);
+}
+
+.visibilityButtonActive {
+  background: var(--color-brand-secondary);
+  border-color: var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  font-weight: 700;
+}
+
+.directoryLayout {
+  display: grid;
+  gap: var(--spacing-px-xl);
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  padding-top: var(--spacing-px-lg);
+}
+
+.directorySearch {
+  border-bottom: 1px solid var(--color-border-soft);
+  padding-bottom: var(--spacing-px-lg);
+}
+
+.resultList {
+  list-style: none;
+  margin: var(--spacing-px-md) 0 0;
+  padding: 0;
+}
+
+.resultItem {
+  border-top: 1px solid var(--color-border-soft);
+  display: grid;
+  gap: var(--spacing-px-sm);
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: var(--spacing-px-md) 0;
+}
+
+.resultInitials {
+  align-items: center;
+  background: var(--color-brand-secondary);
+  border: 1px solid var(--color-brand-primary);
+  border-radius: 50%;
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-weight: 750;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+
+.resultCopy {
+  min-width: 0;
+}
+
+.resultLink {
+  color: var(--color-text-primary);
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 700;
+  min-block-size: var(--interaction-minimum-target-px);
+  align-items: center;
+  overflow-wrap: anywhere;
+}
+
+.resultMeta {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: 16px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.emptyResult,
+.profileCopy {
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.profileHeader {
+  align-items: start;
+  display: grid;
+  gap: var(--spacing-px-lg);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.profileInitials {
+  align-items: center;
+  background: var(--color-brand-secondary);
+  border: 1px solid var(--color-brand-primary);
+  border-radius: 50%;
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  font-size: 28px;
+  font-weight: 750;
+  height: 96px;
+  justify-content: center;
+  width: 96px;
+}
+
+.profileTitle {
+  font-size: clamp(30px, 6vw, 56px);
+}
+
+.profileFullName {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: clamp(19px, 3vw, 26px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-top: var(--spacing-px-sm);
+}
+
+.profileDetails {
+  border-top: 1px solid var(--color-border-soft);
+  display: grid;
+  gap: var(--spacing-px-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: var(--spacing-px-xl);
+  padding-top: var(--spacing-px-lg);
+}
+
+.profileDetails dt {
+  color: var(--color-text-secondary);
+  font-size: 16px;
+}
+
+.profileDetails dd {
+  color: var(--color-text-primary);
+  font-size: 20px;
+  font-weight: 700;
+  margin: var(--spacing-px-xs) 0 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .flowPage {
+    padding: var(--spacing-px-lg) var(--spacing-px-md) 48px;
+  }
+
+  .flowHeader,
+  .flowLayout,
+  .directoryLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .flowHeader {
+    padding-bottom: var(--spacing-px-lg);
+  }
+
+  .flowIntro,
+  .directoryIntro,
+  .stageCopy,
+  .supportingText {
+    font-size: 17px;
+  }
+
+  .stepRail {
+    gap: var(--spacing-px-xs);
+    margin-top: var(--spacing-px-md);
+  }
+
+  .stepRail li {
+    font-size: 14px;
+    padding-block: var(--spacing-px-xs);
+  }
+
+  .flowLayout,
+  .directoryLayout {
+    gap: var(--spacing-px-lg);
+  }
+
+  .stage,
+  .scenarioPanel,
+  .directoryResults,
+  .profilePanel {
+    padding: var(--spacing-px-lg);
+  }
+}
+
+@media (max-width: 440px) {
+  .flowTitle {
+    font-size: 38px;
+  }
+
+  .claimChoices,
+  .profileDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .profileHeader {
+    grid-template-columns: 1fr;
+  }
+}

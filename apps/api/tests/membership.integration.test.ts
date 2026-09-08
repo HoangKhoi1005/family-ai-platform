@@ -97,6 +97,83 @@ async function createVerifiedUser(label: string): Promise<{ id: string; cookie: 
 }
 
 describe('membership routes with real Better Auth sessions', () => {
+  it('discovers only the active actor own profile and claim, and denies pending/revoked access', async () => {
+    const actor = await createVerifiedUser('onboarding-discovery');
+    const membership = await ownerPool.query<{ id: string }>(
+      "INSERT INTO family_memberships(family_id,user_id,role,status) VALUES ($1,$2,'member','pending') RETURNING id",
+      [familyId, actor.id],
+    );
+    const url = `/api/v1/families/${familyId}/onboarding`;
+    expect((await app.inject({ method: 'GET', url })).statusCode).toBe(401);
+    expect(
+      (await app.inject({ method: 'GET', url, headers: { cookie: actor.cookie } })).statusCode,
+    ).toBe(404);
+    const headers = {
+      cookie: admin.cookie,
+      origin: config.webOrigin,
+      'content-type': 'application/json',
+    };
+    const approve = await app.inject({
+      method: 'POST',
+      url: `/api/v1/families/${familyId}/memberships/${membership.rows[0]!.id}/approve`,
+      headers,
+      payload: { version: 1 },
+    });
+    expect(approve.statusCode).toBe(200);
+    const member = await app.inject({
+      method: 'POST',
+      url: `/api/v1/families/${familyId}/members`,
+      headers,
+      payload: { display_name: 'Synthetic Discovery' },
+    });
+    expect(member.statusCode).toBe(201);
+    const claim = await app.inject({
+      method: 'POST',
+      url: `/api/v1/families/${familyId}/member-claims`,
+      headers,
+      payload: { membership_id: membership.rows[0]!.id, member_id: member.json().id },
+    });
+    expect(claim.statusCode).toBe(201);
+    const state = await app.inject({ method: 'GET', url, headers: { cookie: actor.cookie } });
+    expect(state.json()).toEqual({
+      member_id: null,
+      claims: [{ id: claim.json().id, version: 1 }],
+    });
+    const adminState = await app.inject({ method: 'GET', url, headers: { cookie: admin.cookie } });
+    expect(adminState.json().claims).not.toContainEqual({ id: claim.json().id, version: 1 });
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/families/${randomUUID()}/onboarding`,
+          headers: { cookie: actor.cookie },
+        })
+      ).statusCode,
+    ).toBe(404);
+    const confirmed = await app.inject({
+      method: 'POST',
+      url: `/api/v1/families/${familyId}/member-claims/${claim.json().id}/confirm`,
+      headers: { ...headers, cookie: actor.cookie },
+      payload: { version: 1, member_version: member.json().version, accept_ownership: true },
+    });
+    expect(confirmed.statusCode).toBe(200);
+    expect(
+      (await app.inject({ method: 'GET', url, headers: { cookie: actor.cookie } })).json(),
+    ).toEqual({ member_id: member.json().id, claims: [] });
+    expect(
+      (
+        await app.inject({
+          method: 'POST',
+          url: `/api/v1/families/${familyId}/memberships/${membership.rows[0]!.id}/revoke`,
+          headers,
+          payload: { version: approve.json().version },
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ method: 'GET', url, headers: { cookie: actor.cookie } })).statusCode,
+    ).toBe(404);
+  });
   beforeAll(async () => {
     await assertSafeApplicationRoles(authPool, runtimePool);
     await clearMembershipAuthRateLimitBuckets();

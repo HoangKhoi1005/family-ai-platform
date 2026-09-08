@@ -12,6 +12,7 @@ export function PreviewShell({ children }: { children: ReactNode }) {
         <div className={styles.shellNavInner}>
           <Link href="/design-preview">Nhà mình</Link>
           <Link href="/design-preview/profile">Hồ sơ</Link>
+          <Link href="/design-preview/join">Thử luồng vào nhà</Link>
         </div>
       </nav>
       {children}

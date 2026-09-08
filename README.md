@@ -2,7 +2,7 @@
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, ưu tiên web/PWA; app điện thoại và widget ảnh là bước sau. Repo có nền tảng monorepo chạy được: web giới thiệu tiếng Việt, API liveness, worker lifecycle và migration dữ liệu danh tính. Các tính năng gia đình và đăng nhập chưa triển khai.
+Thử nghiệm đầu tiên dành cho **15 người**, ưu tiên web/PWA; app điện thoại và widget ảnh là bước sau. Đã có luồng web đăng nhập, xác minh email, lời mời/duyệt, nhận hồ sơ và chỉnh hồ sơ nối API thật. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Cây gia phả hiện là bản minh họa, chưa có API quan hệ; chưa phải MVP đầy đủ.
 
 ## Chạy local
 

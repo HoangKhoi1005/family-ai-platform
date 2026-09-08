@@ -14,6 +14,7 @@
 
 .shellNavInner {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-px-xs);
   margin: 0 auto;
   max-width: 1200px;
@@ -27,6 +28,7 @@
   display: inline-flex;
   min-block-size: var(--interaction-minimum-target-px);
   min-inline-size: var(--interaction-minimum-target-px);
+  min-width: 0;
   overflow-wrap: anywhere;
   padding: var(--spacing-px-xs) var(--spacing-px-sm);
   text-decoration: none;
