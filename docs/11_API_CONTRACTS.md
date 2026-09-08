@@ -1,4 +1,4 @@
-﻿# API contract và trạng thái triển khai
+# API contract và trạng thái triển khai
 
 Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept và các routes invitation/membership/claim trong đợt onboarding (commit `4ab10bb`). Danh bạ/hồ sơ đang triển khai; các routes lịch, gia phả, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src/onboarding.ts`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
@@ -68,3 +68,13 @@ Quy tắc month_mode ở [notifications](12_NOTIFICATION_RULES.md). Trường ti
 Mutation tạo nội dung hỗ trợ idempotency; cùng key/body trả kết quả cũ, cùng key/body khác trả 409. Giữ bản ghi dedupe ít nhất 7 ngày cho client retry. Approval và edit có optimistic version, validation trong transaction.
 
 Envelope realtime: `event_id`, `family_id`, `type`, `entity_id`, `server_seq?`, `revision`, `occurred_at`; chỉ tới người được phép, không broadcast contact private. Loại ban đầu: message.created/deleted, moment.created/deleted, event.updated, membership.revoked. Client dedupe event_id, reconnect lấy lịch sử sau cursor, không giả định event tới đúng thứ tự. HTTP persistence là nguồn chuẩn.
+
+## Danh bạ/hồ sơ — bản triển khai đang review
+
+Task 3 bổ sung GET /members, GET /members/{id}, GET /members/{id}/management, POST /members và PATCH /members/{id} sau prefix family. DTO/JSON Schema nằm tại packages/contracts/src/profile.ts; chưa nghiệm thu bản này.
+
+- Danh sách trả members và next_cursor; q chỉ tìm display_name/familiar_name, limit mặc định 20 và tối đa 100. Liên hệ không có trong kết quả tìm kiếm.
+- Profile trả biography và contacts đã lọc quyền. Management dành cho admin active quản lý hồ sơ chưa liên kết; không mở quyền xem self contact của người đã liên kết.
+- Tạo hồ sơ yêu cầu display_name; sửa yêu cầu version. Các trường cho phép: display_name, familiar_name, hometown, biography, birth_date, birth_year, deceased, contacts. Quan hệ và account link không được sửa qua endpoint này.
+- contacts nếu có là thay thế toàn bộ danh sách, tối đa 10, gồm kind/value/visibility; visibility mặc định self. Bỏ contacts khỏi PATCH giữ nguyên danh sách; contacts rỗng xóa các liên hệ trong phạm vi hồ sơ được quyền sửa.
+- Thay đổi hồ sơ hoặc liên hệ tăng version và ghi audit cùng transaction. Version cũ trả 409. Ngày sinh giữ dạng YYYY-MM-DD; chỉ biết năm không sinh thêm ngày giả.

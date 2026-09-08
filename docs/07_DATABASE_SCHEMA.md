@@ -1,4 +1,4 @@
-﻿# Schema tham chiếu và phần đã triển khai
+# Schema tham chiếu và phần đã triển khai
 
 Đã chọn PostgreSQL theo [ADR-001](decisions/ADR-001-monorepo.md). [Migration 0001](../packages/database/migrations/0001_identity.sql) tạo nền tảng users, family_spaces, family_memberships, members, member_account_links và member_contacts. Migrations 0002–0005 bổ sung auth; 0006–0008 bổ sung invitations, member_claims, audit_entries, runtime policies theo actor/membership và helper metadata claim. Các bảng tính năng khác dưới đây vẫn là thiết kế. Runtime sử dụng RLS theo active membership; contact có quyền owner, quản trị hồ sơ chưa liên kết và claim preview được giới hạn theo ngữ cảnh server. Không dùng FAMILY_001 làm khóa hardcode. Thời điểm hệ thống lưu UTC; ngày lịch lưu kiểu date/field riêng. Bảng có nội dung chỉnh sửa dùng created_at, updated_at, version; audit lưu actor và thời điểm server.
 
@@ -44,3 +44,9 @@
 Thiết kế soft delete chỉ khi cần khôi phục/audit, không dùng làm lý do giữ PII vô thời hạn. Xóa nội dung kéo theo media, job, index/cache tương ứng theo [privacy](10_PRIVACY_SECURITY.md). Không cascade xóa toàn cây chỉ vì User bị xóa. Migration có checksum và transaction; không sửa migration đã áp dụng, tạo migration mới. Xem CURRENT_STATE về kết quả chạy local, không đồng nghĩa đã triển khai production.
 
 Household, Branch, Memory, Document và embedding được hoãn; chỉ tạo bảng khi feature được đưa vào phạm vi.
+
+## Tìm kiếm tên trong đợt danh bạ/hồ sơ
+
+Migration 0009_member_profile_unaccent.sql đã bổ sung extension unaccent trong schema public và quyền gọi hàm cho family_runtime. Chỉ dùng để đối chiếu tên khi tìm kiếm; không thay tên lưu trong members. Index members_family_name hiện có giữ thứ tự phân trang theo family_id, display_name, id. API danh bạ vẫn đang triển khai và chờ kiểm chứng.
+
+Tham chiếu: [PostgreSQL 17 unaccent](https://www.postgresql.org/docs/17/unaccent.html).

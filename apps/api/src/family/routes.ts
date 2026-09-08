@@ -1,5 +1,13 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Pool } from 'pg';
+import {
+  createMemberBodySchema,
+  memberListQuerySchema,
+  memberParamsSchema,
+  updateMemberBodySchema,
+  type CreateMemberInput,
+  type UpdateMemberInput,
+} from '@family/contracts';
 import { withActorTransaction } from '@family/database';
 import type { Auth } from '../auth/auth.js';
 import { toAuthHeaders } from '../auth/routes.js';
@@ -18,6 +26,15 @@ import {
 import { acceptInvitation, createInvitation, revokeInvitation } from './invitations.js';
 import { approveMembership, listMemberships, revokeMembership } from './memberships.js';
 import { confirmClaim, createClaim, declineClaim, previewClaim, revokeClaim } from './claims.js';
+import {
+  createMember,
+  getManagedMember,
+  getMemberProfile,
+  listMembers,
+  normalizeCreateMemberInput,
+  normalizeUpdateMemberInput,
+  updateMember,
+} from './members.js';
 
 interface FamilyParams {
   familyId: string;
@@ -68,6 +85,16 @@ interface ConfirmBody {
 
 interface OptionalVersionBody {
   version?: number;
+}
+
+interface MemberListQuery {
+  q?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+interface MemberParams extends FamilyParams {
+  memberId: string;
 }
 
 type JsonObject = Record<string, unknown>;
@@ -377,6 +404,150 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
             membershipId,
             version: request.body.version,
           }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams; Querystring: MemberListQuery }>(
+    '/api/v1/families/:familyId/members',
+    { schema: { params: familyParams, querystring: memberListQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        const result = await withActorTransaction(
+          options.runtimePool,
+          actor.userId,
+          async (client) => {
+            await requireFamily(client, actor.userId, familyId);
+            const query = request.query.q?.trim();
+            return listMembers(client, {
+              familyId,
+              ...(query ? { q: query } : {}),
+              ...(request.query.cursor ? { cursor: request.query.cursor } : {}),
+              limit: request.query.limit ?? 20,
+            });
+          },
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: MemberParams }>(
+    '/api/v1/families/:familyId/members/:memberId/management',
+    { schema: { params: memberParamsSchema } },
+    async (request, reply) => {
+      try {
+        const { familyId, memberId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(memberId, 'memberId');
+        const actor = await authenticatedActor(options.auth, request);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          getManagedMember(client, { familyId, memberId, actorId: actor.userId }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: MemberParams }>(
+    '/api/v1/families/:familyId/members/:memberId',
+    { schema: { params: memberParamsSchema } },
+    async (request, reply) => {
+      try {
+        const { familyId, memberId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(memberId, 'memberId');
+        const actor = await authenticatedActor(options.auth, request);
+        const result = await withActorTransaction(
+          options.runtimePool,
+          actor.userId,
+          async (client) => {
+            await requireFamily(client, actor.userId, familyId);
+            return getMemberProfile(client, { familyId, memberId });
+          },
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: FamilyParams; Body: CreateMemberInput }>(
+    '/api/v1/families/:familyId/members',
+    {
+      schema: { params: familyParams, body: createMemberBodySchema },
+      preValidation: rejectUnknownBodyKeys(
+        [
+          'display_name',
+          'familiar_name',
+          'hometown',
+          'biography',
+          'birth_date',
+          'birth_year',
+          'deceased',
+          'contacts',
+        ],
+        { key: 'contacts', allowedKeys: ['kind', 'value', 'visibility'] },
+      ),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'member.create');
+        const member = normalizeCreateMemberInput(request.body);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          createMember(client, { familyId, actorId: actor.userId, member }),
+        );
+        return reply.code(201).send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.patch<{ Params: MemberParams; Body: UpdateMemberInput }>(
+    '/api/v1/families/:familyId/members/:memberId',
+    {
+      schema: { params: memberParamsSchema, body: updateMemberBodySchema },
+      preValidation: rejectUnknownBodyKeys(
+        [
+          'version',
+          'display_name',
+          'familiar_name',
+          'hometown',
+          'biography',
+          'birth_date',
+          'birth_year',
+          'deceased',
+          'contacts',
+        ],
+        { key: 'contacts', allowedKeys: ['kind', 'value', 'visibility'] },
+      ),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, memberId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(memberId, 'memberId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'member.update');
+        const update = normalizeUpdateMemberInput(request.body);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          updateMember(client, { familyId, memberId, actorId: actor.userId, update }),
         );
         return reply.send(result);
       } catch (error) {

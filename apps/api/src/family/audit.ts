@@ -10,6 +10,8 @@ const ACTIONS = new Set([
   'claim.confirmed',
   'claim.declined',
   'claim.revoked',
+  'member.created',
+  'member.updated',
 ]);
 
 export type AuditAction =
@@ -21,7 +23,9 @@ export type AuditAction =
   | 'claim.created'
   | 'claim.confirmed'
   | 'claim.declined'
-  | 'claim.revoked';
+  | 'claim.revoked'
+  | 'member.created'
+  | 'member.updated';
 
 export async function writeAudit(
   client: PoolClient,
@@ -29,7 +33,7 @@ export async function writeAudit(
     familyId: string;
     actorId: string;
     action: AuditAction;
-    targetType: 'invitation' | 'membership' | 'claim';
+    targetType: 'invitation' | 'membership' | 'claim' | 'member';
     targetId: string;
     changeSummary: string;
     version?: number;
