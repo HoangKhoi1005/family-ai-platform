@@ -1,3 +1,7 @@
+## Quy trình hiện hành — 2026-09-09
+
+Theo phê duyệt mới: làm trực tiếp mặc định để giảm chi phí context. Chỉ dùng subagent khi công việc độc lập đủ lớn hoặc cần review bảo mật/migration; không tạo vòng review agent cho mọi task. Khi cần subagent vẫn dùng Luna xhigh. Quy tắc này thay thế mặc định SDD cho mọi feature nhiều bước ở phần lịch sử bên dưới.
+
 # Superpowers và cách làm việc bằng subagents
 
 ## Trạng thái cài đặt
