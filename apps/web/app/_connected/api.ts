@@ -6,22 +6,54 @@ export class RequestError extends Error {
     super(code);
   }
 }
-export async function request<T>(path: string, body?: unknown, method = 'POST'): Promise<T> {
-  const response = await fetch(path, {
-    method: body === undefined ? 'GET' : method,
-    credentials: 'same-origin',
-    cache: 'no-store',
-    ...(body === undefined
-      ? {}
-      : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
-  });
-  const data = await response.json().catch(() => null);
-  if (!response.ok)
-    throw new RequestError(response.status, data?.error?.code ?? data?.code ?? 'REQUEST_FAILED');
-  return data as T;
+interface RequestOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}
+export async function request<T>(
+  path: string,
+  body?: unknown,
+  method = 'POST',
+  options: RequestOptions = {},
+): Promise<T> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort(options.signal?.reason);
+  if (options.signal?.aborted) abortFromCaller();
+  else options.signal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, options.timeoutMs ?? 15000);
+  try {
+    const response = await fetch(path, {
+      method: body === undefined ? 'GET' : method,
+      credentials: 'same-origin',
+      cache: 'no-store',
+      signal: controller.signal,
+      ...(body === undefined
+        ? {}
+        : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok)
+      throw new RequestError(response.status, data?.error?.code ?? data?.code ?? 'REQUEST_FAILED');
+    return data as T;
+  } catch (error) {
+    if (error instanceof RequestError) throw error;
+    if (timedOut) throw new RequestError(0, 'REQUEST_TIMEOUT');
+    if (controller.signal.aborted) throw new RequestError(0, 'REQUEST_ABORTED');
+    throw new RequestError(0, 'NETWORK_ERROR');
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', abortFromCaller);
+  }
 }
 export function explain(error: unknown): string {
   if (!(error instanceof RequestError)) return 'Chưa kết nối được. Kiểm tra mạng và thử lại nhé.';
+  if (error.code === 'REQUEST_TIMEOUT') return 'Kết nối mất quá lâu. Kiểm tra mạng và thử lại nhé.';
+  if (error.code === 'NETWORK_ERROR') return 'Chưa kết nối được. Kiểm tra mạng và thử lại nhé.';
+  if (error.code === 'REQUEST_ABORTED') return 'Yêu cầu đã được dừng. Vui lòng thử lại.';
   if (error.code === 'EMAIL_NOT_VERIFIED')
     return 'Email chưa được xác minh. Mở thư xác minh hoặc gửi lại thư bên dưới.';
   if (error.status === 401)

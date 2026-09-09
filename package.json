@@ -19,7 +19,7 @@
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "turbo run build --filter=@family/contracts && vitest run",
+    "test": "turbo run build --filter=@family/api && vitest run",
     "test:db": "node --env-file=.env packages/database/scripts/test.mjs",
     "test:auth": "node --env-file-if-exists=.env ./node_modules/vitest/vitest.mjs run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",

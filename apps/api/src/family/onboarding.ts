@@ -1,7 +1,12 @@
 import type { PoolClient } from 'pg';
+import type { OnboardingStateResponse } from '@family/contracts';
 import { requireFamily } from './authorization.js';
 
-export async function getOwnOnboarding(client: PoolClient, actorId: string, familyId: string) {
+export async function getOwnOnboarding(
+  client: PoolClient,
+  actorId: string,
+  familyId: string,
+): Promise<OnboardingStateResponse> {
   await requireFamily(client, actorId, familyId);
   const links = await client.query<{ member_id: string }>(
     `SELECT l.member_id FROM member_account_links l

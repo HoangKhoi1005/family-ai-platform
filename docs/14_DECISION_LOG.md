@@ -28,4 +28,5 @@ Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISI
 
 - **PAD-016 / Confirmed:** triển khai email/mật khẩu qua thư viện xác thực được duy trì, xác minh email và khôi phục mật khẩu qua hộp thư local; OAuth/SMS sau. Admin đầu tiên qua CLI có kiểm soát. [Phạm vi](superpowers/specs/2026-09-08-onboarding.md).
 - **PAD-017 / Confirmed:** tránh AI slop/generic app là tiêu chí nghiệm thu; duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt. Hướng Album gia đình Việt đương đại là đề xuất đang thử, không phải thiết kế đã duyệt.
-- **PAD-018 / Confirmed:** supervisor điều phối subagents GPT-5.6 Luna xhigh; một implementer mỗi lúc, reviewer độc lập; commit/push nhánh feature sau kiểm chứng, không merge main.
+- **PAD-018 / Superseded:** supervisor điều phối subagents GPT-5.6 Luna xhigh; một implementer mỗi lúc, reviewer độc lập; commit/push nhánh feature sau kiểm chứng, không merge main. Mặc định điều phối mọi feature bằng subagent được thay bởi PAD-019 để giảm chi phí context.
+- **PAD-019 / Confirmed:** supervisor làm trực tiếp theo mặc định; chỉ dùng subagent cho phần độc lập hoặc review rủi ro cao có lợi ích rõ. Nếu dùng subagent, giữ lựa chọn Astra điều phối và Luna xhigh, một implementer tại một thời điểm.
