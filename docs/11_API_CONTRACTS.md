@@ -22,6 +22,8 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | GET /relationships                        | root_member_id, depth tối đa 4                                   | Cạnh đã duyệt và node được phép, không trả graph nhà khác |
 | POST /change-requests                     | type, target_id?, base_version?, payload                         | 201 pending; payload theo schema type                     |
 | POST /change-requests/{id}/decision       | decision approved/rejected, version                              | Admin; transaction validate + apply + audit; 409 đã xử lý |
+| GET /change-requests                      | status=pending                                                   | Admin; đề xuất đang chờ trong cùng nhà                    |
+| POST /change-requests/{id}/cancel         | version                                                          | Người gửi; chỉ pending và đúng optimistic version         |
 | POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                  |
 | POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ     |
 | POST /memberships/{id}/revoke             | version                                                          | Admin; chặn self-revoke admin cuối                        |
@@ -80,3 +82,9 @@ Task 3 bổ sung GET /members, GET /members/{id}, GET /members/{id}/management, 
 - Tạo hồ sơ yêu cầu display_name; sửa yêu cầu version. Các trường cho phép: display_name, familiar_name, hometown, biography, birth_date, birth_year, deceased, contacts. Quan hệ và account link không được sửa qua endpoint này.
 - contacts nếu có là thay thế toàn bộ danh sách, tối đa 10, gồm kind/value/visibility; visibility mặc định self. Bỏ contacts khỏi PATCH giữ nguyên danh sách; contacts rỗng xóa các liên hệ trong phạm vi hồ sơ được quyền sửa.
 - Thay đổi hồ sơ hoặc liên hệ tăng version và ghi audit cùng transaction. Version cũ trả 409. Ngày sinh giữ dạng YYYY-MM-DD; chỉ biết năm không sinh thêm ngày giả.
+
+## Quan hệ gia phả — backend trên nhánh tính năng
+
+Contract máy đọc nằm tại `packages/contracts/src/relationships.ts`. `GET /relationships` yêu cầu `root_member_id`, depth mặc định 2 và giới hạn 1–4; quá 100 node trả `GRAPH_TOO_LARGE`. Response chỉ có member summary và cạnh chưa bị loại bỏ, không có contact/biography và không chứa đề xuất pending.
+
+`POST /change-requests` nhận union create/update/remove. Update chỉ đổi subtype hoặc ngày partnership; đổi đầu cạnh/loại quan hệ dùng remove rồi create để audit rõ. Admin duyệt/từ chối qua `/decision`; người gửi hủy qua `/cancel`. Same-origin JSON, rate limit, version, cùng nhà, duplicate và cycle đều được kiểm phía server; approval kiểm lại trong transaction có khóa theo nhà. Các route này đã triển khai trong `feat/family-relationships`, chưa có trong `main`.

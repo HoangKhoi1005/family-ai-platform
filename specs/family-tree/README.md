@@ -25,3 +25,7 @@ MVP hiển thị đường nối và quan hệ gần khi đủ dữ liệu. Khô
 - **TREE-09** Given người không dùng được kéo/zoom, Then danh bạ và liên kết hồ sơ cung cấp lối truy cập tương đương.
 
 Mở rộng sau: thuật ngữ họ hàng vùng miền đầy đủ, GEDCOM, export sơ đồ in lớn. Chưa có thư viện graph/layout đã chọn.
+
+## Trạng thái triển khai 2026-09-10
+
+Backend C1–C4 đã có trên nhánh `feat/family-relationships`: migration 0010, graph read, create/update/remove request, cancel, admin list/approve/reject, audit và kiểm chu trình đồng thời. Tab Gia phả trong `/app` chưa nối contract này; thư viện graph và thao tác pan/pinch/drag vẫn thuộc gói D.

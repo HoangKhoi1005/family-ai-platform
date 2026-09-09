@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import { createDatabasePool } from '@family/database';
 import { buildApp } from '../src/app.js';
 import { createAuth } from '../src/auth/auth.js';
@@ -148,6 +149,25 @@ describe('relationship routes with real sessions and PostgreSQL', () => {
     });
 
     expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: `/api/v1/families/${familyId}/change-requests`,
+          headers: memberHeaders,
+        })
+      ).statusCode,
+    ).toBe(403);
+    const pending = await app.inject({
+      method: 'GET',
+      url: `/api/v1/families/${familyId}/change-requests`,
+      headers: adminHeaders,
+    });
+    expect(pending.statusCode).toBe(200);
+    expect(pending.json().change_requests).toEqual([
+      expect.objectContaining({ id: proposed.json().id, status: 'pending' }),
+    ]);
+
+    expect(
       (await app.inject({ method: 'GET', url: graphUrl, headers: memberHeaders })).json(),
     ).toMatchObject({
       relationships: [],
@@ -197,6 +217,21 @@ describe('relationship routes with real sessions and PostgreSQL', () => {
       'relationship.created',
       'relationship.change_approved',
     ]);
+  });
+
+  it('conceals the graph from guests and actors outside the requested family', async () => {
+    const graphPath = (requestedFamily: string) =>
+      `/api/v1/families/${requestedFamily}/relationships?root_member_id=${parentMemberId}&depth=2`;
+    expect((await app.inject({ method: 'GET', url: graphPath(familyId) })).statusCode).toBe(401);
+    expect(
+      (
+        await app.inject({
+          method: 'GET',
+          url: graphPath(randomUUID()),
+          headers: { cookie: member.cookie },
+        })
+      ).statusCode,
+    ).toBe(404);
   });
 
   it('applies an approved subtype update and approved removal with optimistic versions', async () => {

@@ -25,11 +25,13 @@
 ### Task 1: Machine-readable relationship contracts
 
 **Files:**
+
 - Create: `packages/contracts/src/relationships.ts`
 - Create: `packages/contracts/src/relationships.test.ts`
 - Modify: `packages/contracts/src/index.ts`
 
 **Interfaces:**
+
 - Produces: `RelationshipDto`, `RelationshipGraphResponse`, `RelationshipChangeRequestDto`, `CreateRelationshipChangeRequestInput`, `RelationshipDecisionInput`, `relationshipGraphQuerySchema`, `createRelationshipChangeRequestBodySchema`, `relationshipDecisionBodySchema`, `relationshipVersionBodySchema`.
 - Consumes: `MemberSummaryDto` from `packages/contracts/src/profile.ts`.
 
@@ -42,11 +44,13 @@
 ### Task 2: Tenant-isolated relationship schema
 
 **Files:**
+
 - Create: `packages/database/migrations/0010_relationships.sql`
 - Create: `packages/database/scripts/test-relationships.mjs`
 - Modify: `package.json`
 
 **Interfaces:**
+
 - Produces: `relationships` and `change_requests` tables, their RLS policies and narrow `family_runtime` grants.
 - Consumes: `public.actor_uuid()`, `public.actor_active_member(uuid)` and `public.actor_active_admin(uuid)` from migration `0006`.
 
@@ -60,11 +64,13 @@
 ### Task 3: Bounded approved-graph reader
 
 **Files:**
+
 - Create: `apps/api/src/family/relationships.ts`
 - Create: `apps/api/src/family/relationships.test.ts`
 - Modify: `apps/api/src/family/routes.ts`
 
 **Interfaces:**
+
 - Produces: `getRelationshipGraph(client, { familyId, rootMemberId, depth }): Promise<RelationshipGraphResponse>` and the GET `/relationships` route.
 - Consumes: Task 1 DTOs, Task 2 tables, existing `requireFamily`, `assertUuid`, `withActorTransaction` and family error mapping.
 
@@ -78,12 +84,14 @@
 ### Task 4: Relationship proposal and approval lifecycle
 
 **Files:**
+
 - Create: `apps/api/src/family/change-requests.ts`
 - Create: `apps/api/src/family/change-requests.test.ts`
 - Modify: `apps/api/src/family/audit.ts`
 - Modify: `apps/api/src/family/routes.ts`
 
 **Interfaces:**
+
 - Produces: `createRelationshipChangeRequest`, `listPendingRelationshipChangeRequests`, `decideRelationshipChangeRequest`, `cancelRelationshipChangeRequest` and four route handlers.
 - Consumes: Task 1 normalized unions, Task 2 schema, `lockFamily`, `requireFamily`, `writeAudit` and the graph-compatible DTO mapper from Task 3.
 
@@ -98,6 +106,7 @@
 ### Task 5: Real-database business rules and documentation
 
 **Files:**
+
 - Create: `apps/api/tests/relationships.integration.test.ts`
 - Modify: `vitest.integration.config.ts`
 - Modify: `docs/07_DATABASE_SCHEMA.md`
@@ -106,6 +115,7 @@
 - Modify: `CURRENT_STATE.md`
 
 **Interfaces:**
+
 - Produces: executable evidence for TREE-01–06 and updated Project Brain state.
 - Consumes: all previous tasks and the existing Better Auth/database integration fixture pattern.
 
@@ -115,4 +125,3 @@
 - [ ] **Step 4: Update the documentation.** Mark the exact relationship routes as implemented, record schema/RLS/cycle behavior and remaining connected-tree UI work, and leave graph interaction/pan/zoom in gói D.
 - [ ] **Step 5: Verify the repository.** Run `npm run check`, `npm run test:db`, `npm run test:auth` and `python scripts/validate_brain.py`; all must pass before completion is claimed.
 - [ ] **Step 6: Commit.** Commit as `test(api): verify family relationship isolation`.
-
