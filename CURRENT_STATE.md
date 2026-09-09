@@ -2,7 +2,7 @@
 
 - Cập nhật: 2026-09-09. Context version: **1.3.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
-- GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói B đang ở worktree `.worktrees/product-experience-foundation`, nhánh `feat/product-experience-foundation`, trong giai đoạn duyệt design spec.
+- GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói B đang ở worktree `.worktrees/product-experience-foundation`, nhánh `feat/product-experience-foundation`; design spec đã được duyệt và implementation plan design preview đang được thực hiện.
 - Backend đã có Better Auth, membership, lời mời/duyệt/thu hồi, claim hồ sơ, danh bạ và hồ sơ. Chưa có backend quan hệ gia phả, lịch âm, chat, moments, notifications hoặc AI.
 
 ## Gói A — ổn định onboarding

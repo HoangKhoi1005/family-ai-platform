@@ -1,6 +1,6 @@
 # Nền trải nghiệm sản phẩm — Thiết kế gói B
 
-**Trạng thái:** Chờ chủ dự án duyệt văn bản trước khi lập implementation plan
+**Trạng thái:** Chủ dự án đã duyệt ngày 2026-09-09; đang triển khai design preview
 
 **Ngày:** 2026-09-09
 
