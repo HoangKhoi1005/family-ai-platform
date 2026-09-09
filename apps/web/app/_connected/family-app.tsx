@@ -19,8 +19,13 @@ export function FamilyApp() {
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [revision, setRevision] = useState(0);
+  const [directoryRevision, setDirectoryRevision] = useState(0);
+  const [profileRevision, setProfileRevision] = useState(0);
   const sequence = useRef(0);
+  const familyIdRef = useRef('');
   const clearFamily = useCallback(() => {
+    familyIdRef.current = '';
+    setFamilyId('');
     setOnboarding(null);
     setMembers([]);
     setRevision((value) => value + 1);
@@ -28,36 +33,44 @@ export function FamilyApp() {
   const fail = useCallback(
     (error: unknown) => {
       setError(explain(error));
-      if (error instanceof RequestError && [401, 403].includes(error.status)) {
+      if (error instanceof RequestError && error.status === 401) {
         sequence.current++;
         clearFamily();
         setMe(null);
-        if (error.status === 401) window.location.replace('/login');
+        window.location.replace('/login');
+      } else if (error instanceof RequestError && error.status === 403) {
+        sequence.current++;
+        clearFamily();
       }
     },
     [clearFamily],
   );
   const refresh = useCallback(async () => {
     const run = ++sequence.current;
+    let next: Me | null = null;
     try {
-      const next = await request<Me>('/api/v1/me');
+      next = await request<Me>('/api/v1/me');
+      if (run !== sequence.current) return;
+      const previousFamilyId = familyIdRef.current;
       const active =
-        next.memberships.find((m) => m.status === 'active' && m.family_id === familyId) ??
+        next.memberships.find((m) => m.status === 'active' && m.family_id === previousFamilyId) ??
         next.memberships.find((m) => m.status === 'active');
+      setMe(next);
       if (!active?.family_id) {
         if (run === sequence.current) {
-          setMe(next);
           clearFamily();
           setError('');
         }
         return;
       }
+      if (previousFamilyId && previousFamilyId !== active.family_id) clearFamily();
       const base = '/api/v1/families/' + active.family_id;
       const [state, list] = await Promise.all([
         request<Onboarding>(base + '/onboarding'),
         request<{ members: Member[] }>(base + '/members?limit=100'),
       ]);
       if (run !== sequence.current) return;
+      familyIdRef.current = active.family_id;
       setFamilyId(active.family_id);
       setOnboarding(state);
       setMembers(list.members);
@@ -65,14 +78,20 @@ export function FamilyApp() {
       setError('');
     } catch (error) {
       if (run === sequence.current) {
-        clearFamily();
-        setMe(null);
-        fail(error);
+        if (error instanceof RequestError && error.status === 401) {
+          fail(error);
+        } else if (next && error instanceof RequestError && [403, 404].includes(error.status)) {
+          clearFamily();
+          setMe(next);
+          setError(explain(error));
+        } else {
+          setError(explain(error));
+        }
       }
     } finally {
       if (run === sequence.current) setLoading(false);
     }
-  }, [familyId, clearFamily, fail]);
+  }, [clearFamily, fail]);
   useEffect(() => {
     const requestSequence = sequence;
     captureInvite();
@@ -81,14 +100,24 @@ export function FamilyApp() {
     setInvite(pendingInvite());
     void refresh();
     const check = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState === 'visible') {
+        setDirectoryRevision((value) => value + 1);
+        void refresh();
+      }
+    };
+    const refocus = () => {
+      if (document.visibilityState === 'visible') {
+        setDirectoryRevision((value) => value + 1);
+        setProfileRevision((value) => value + 1);
+        void refresh();
+      }
     };
     const timer = setInterval(check, 15000);
-    window.addEventListener('focus', check);
+    window.addEventListener('focus', refocus);
     return () => {
       requestSequence.current++;
       clearInterval(timer);
-      window.removeEventListener('focus', check);
+      window.removeEventListener('focus', refocus);
     };
   }, [refresh]);
   async function logout() {
@@ -262,7 +291,7 @@ export function FamilyApp() {
                       )
                       .map((m) => (
                         <DirectoryEntry
-                          key={`${familyId}:${revision}:${m.id}`}
+                          key={`${familyId}:${revision}:${directoryRevision}:${m.id}`}
                           member={m}
                           base={base}
                           onError={fail}
@@ -286,9 +315,10 @@ export function FamilyApp() {
               )}
               {tab === 'profile' && (
                 <ProfilePanel
-                  key={`${familyId}:${revision}:${onboarding.member_id ?? onboarding.claims[0]?.id ?? 'none'}`}
+                  key={`${familyId}:${revision}:${onboarding.member_id ?? onboarding.claims[0]?.id ?? 'none'}:${onboarding.claims[0]?.version ?? 'linked'}`}
                   base={base}
                   onboarding={onboarding}
+                  revalidateRevision={profileRevision}
                   onRefresh={refresh}
                   onError={fail}
                 />

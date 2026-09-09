@@ -1,17 +1,19 @@
 'use client';
-import { useEffect, useState, type FormEvent } from 'react';
-import { request, explain } from './api';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { request, explain, RequestError } from './api';
 import type { Claim, Contact, Member, Onboarding } from './types';
 import s from './connected.module.css';
 
 export function ProfilePanel({
   base,
   onboarding,
+  revalidateRevision,
   onRefresh,
   onError,
 }: {
   base: string;
   onboarding: Onboarding;
+  revalidateRevision: number;
   onRefresh: () => Promise<void>;
   onError: (error: unknown) => void;
 }) {
@@ -23,21 +25,42 @@ export function ProfilePanel({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
+  const profileVersion = useRef<number | null>(null);
   const claimId = onboarding.claims[0]?.id;
   useEffect(() => {
     let alive = true;
+    const controller = new AbortController();
     async function load() {
-      setLoading(true);
+      if (claimId || profileVersion.current === null) setLoading(true);
       setError('');
+      if (claimId) {
+        setClaim(null);
+        setContacts([]);
+      }
       try {
         if (onboarding.member_id) {
-          const member = await request<Member>(base + '/members/' + onboarding.member_id);
+          const member = await request<Member>(
+            base + '/members/' + onboarding.member_id,
+            undefined,
+            'GET',
+            {
+              signal: controller.signal,
+            },
+          );
           if (alive) {
-            setProfile(member);
-            setContacts(member.contacts ?? []);
+            if (profileVersion.current === null || member.version > profileVersion.current) {
+              profileVersion.current = member.version;
+              setProfile(member);
+              setContacts(member.contacts ?? []);
+            }
           }
         } else if (claimId) {
-          const next = await request<Claim>(base + '/member-claims/' + claimId + '/preview');
+          const next = await request<Claim>(
+            base + '/member-claims/' + claimId + '/preview',
+            undefined,
+            'GET',
+            { signal: controller.signal },
+          );
           if (alive) {
             setClaim(next);
             setContacts(next.contacts);
@@ -55,8 +78,9 @@ export function ProfilePanel({
     void load();
     return () => {
       alive = false;
+      controller.abort();
     };
-  }, [base, onboarding.member_id, claimId, onError, retry]);
+  }, [base, onboarding.member_id, claimId, onError, retry, revalidateRevision]);
   async function confirm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!claim) return;
@@ -69,8 +93,14 @@ export function ProfilePanel({
         accept_ownership: true,
         contact_visibilities: contacts.map((c) => ({ id: c.id, visibility: c.visibility })),
       });
+      setClaim(null);
+      setContacts([]);
       await onRefresh();
     } catch (error) {
+      if (error instanceof RequestError && [404, 409].includes(error.status)) {
+        setClaim(null);
+        setContacts([]);
+      }
       setError(explain(error));
       onError(error);
     } finally {
@@ -97,6 +127,7 @@ export function ProfilePanel({
         },
         'PATCH',
       );
+      profileVersion.current = updated.version;
       setProfile(updated);
       setContacts(updated.contacts ?? []);
       setMessage('Đã lưu hồ sơ của bạn.');
@@ -181,6 +212,10 @@ export function ProfilePanel({
                     setClaim(null);
                     await onRefresh();
                   } catch (error) {
+                    if (error instanceof RequestError && [404, 409].includes(error.status)) {
+                      setClaim(null);
+                      setContacts([]);
+                    }
                     setError(explain(error));
                     onError(error);
                   } finally {

@@ -6,6 +6,16 @@ export interface MembershipSummary {
   role?: 'admin' | 'member';
 }
 
+export interface OnboardingClaimSummary {
+  id: string;
+  version: number;
+}
+
+export interface OnboardingStateResponse {
+  member_id: string | null;
+  claims: OnboardingClaimSummary[];
+}
+
 export interface InvitationCreateInput {
   intended_member_id?: string;
   expires_at?: string;

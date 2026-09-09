@@ -1,3 +1,5 @@
+import type { OnboardingStateResponse } from '@family/contracts';
+
 export interface Membership {
   id: string;
   status: 'active' | 'pending' | 'revoked';
@@ -24,10 +26,7 @@ export interface Member {
   version: number;
   contacts?: Contact[];
 }
-export interface Onboarding {
-  member_id: string | null;
-  claims: { id: string; version: number }[];
-}
+export type Onboarding = OnboardingStateResponse;
 export interface Claim {
   id: string;
   version: number;
