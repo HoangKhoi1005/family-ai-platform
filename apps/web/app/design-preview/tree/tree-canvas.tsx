@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import type { PreviewMember } from '../fixtures';
 import { PreviewIdentity } from '../preview-identity';
 import { treeGenerations } from './tree-model';
@@ -10,6 +13,8 @@ export function TreeCanvas({
   selected: PreviewMember;
   onSelect: (id: string) => void;
 }) {
+  const [zoom, setZoom] = useState(0.9);
+
   return (
     <section className={styles.canvasPanel} aria-labelledby="tree-canvas-heading">
       <header className={styles.canvasHeader}>
@@ -17,10 +22,29 @@ export function TreeCanvas({
           <p>SƠ ĐỒ QUAN HỆ · 03 THẾ HỆ</p>
           <h2 id="tree-canvas-heading">Quanh Gia Bảo</h2>
         </div>
-        <span>Chạm vào một người để xem hồ sơ</span>
+        <div className={styles.canvasControls} aria-label="Điều khiển sơ đồ">
+          <button
+            type="button"
+            onClick={() => setZoom((value) => Math.max(0.7, value - 0.1))}
+            aria-label="Thu nhỏ"
+          >
+            −
+          </button>
+          <span>{Math.round(zoom * 100)}%</span>
+          <button
+            type="button"
+            onClick={() => setZoom((value) => Math.min(1.2, value + 0.1))}
+            aria-label="Phóng to"
+          >
+            ＋
+          </button>
+          <button type="button" onClick={() => setZoom(0.9)}>
+            Đặt lại
+          </button>
+        </div>
       </header>
       <div className={styles.treeViewport} tabIndex={0} aria-label="Sơ đồ gia phả ba thế hệ">
-        <div className={styles.generationStack}>
+        <div className={styles.generationStack} style={{ transform: `scale(${zoom})` }}>
           {treeGenerations.map(({ generation, members }) => (
             <section
               className={styles.generation}

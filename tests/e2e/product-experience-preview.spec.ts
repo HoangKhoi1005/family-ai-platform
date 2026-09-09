@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 
 const previewRoutes = [
   '/design-preview',
-  '/design-preview/profile',
+  '/design-preview/moments',
   '/design-preview/tree',
-  '/design-preview/join',
-  '/design-preview/admin',
+  '/design-preview/chat',
+  '/design-preview/me',
 ];
 
 test('preview routes use synthetic data without family API requests', async ({ page }) => {
@@ -23,21 +23,31 @@ test('preview routes use synthetic data without family API requests', async ({ p
   expect(apiRequests).toEqual([]);
 });
 
-test('shared preview navigation reaches every review surface', async ({ page }) => {
+test('primary app navigation reaches five daily-use surfaces', async ({ page }) => {
   await page.goto('/design-preview');
 
   const destinations = [
-    ['Nhà mình', '/design-preview'],
+    ['Nhà', '/design-preview'],
+    ['Khoảnh khắc', '/design-preview/moments'],
     ['Gia phả', '/design-preview/tree'],
-    ['Hồ sơ', '/design-preview/profile'],
-    ['Vào nhà', '/design-preview/join'],
-    ['Quản trị', '/design-preview/admin'],
+    ['Trò chuyện', '/design-preview/chat'],
+    ['Tôi', '/design-preview/me'],
   ] as const;
 
-  const navigation = page.getByRole('navigation', { name: 'Bản mẫu' });
+  const navigation = page.getByRole('navigation', { name: 'Điều hướng chính' });
   for (const [name, href] of destinations) {
     await expect(navigation.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
   }
+  await expect(navigation.getByRole('link', { name: 'Quản trị', exact: true })).toHaveCount(0);
+});
+
+test('admin lives under Tôi instead of primary navigation', async ({ page }) => {
+  await page.goto('/design-preview/me');
+  await expect(page.getByRole('heading', { name: 'Gia Bảo' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Duyệt thành viên' })).toHaveAttribute(
+    'href',
+    '/design-preview/admin',
+  );
 });
 
 test('review surfaces fit the supported viewport matrix', async ({ page }) => {

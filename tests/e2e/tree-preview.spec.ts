@@ -16,7 +16,7 @@ test('selected relative is reflected in the URL and restored after reload', asyn
 
 test('directory fallback finds Vietnamese names without accents', async ({ page }) => {
   await page.goto('/design-preview/tree');
-  await page.getByRole('link', { name: 'Mở danh bạ' }).click();
+  await page.getByRole('link', { name: 'Tìm người' }).click();
   await expect(page).toHaveURL(/view=directory/);
 
   await page.getByRole('searchbox', { name: 'Tìm người thân' }).fill('ngoc lan');
@@ -31,10 +31,10 @@ test('mobile profile opens with focus and can return to the tree', async ({ page
   await page.goto('/design-preview/tree');
   await page.getByRole('button', { name: 'Xem hồ sơ Nguyễn Minh Đức' }).click();
 
-  const profile = page.getByRole('complementary', { name: 'Hồ sơ người thân' });
+  const profile = page.getByRole('dialog', { name: 'Hồ sơ người thân' });
   await expect(profile).toBeFocused();
-  await page.getByRole('button', { name: 'Đóng hồ sơ' }).click();
+  await page.getByRole('button', { name: 'Đóng hồ sơ', exact: true }).click();
 
   await expect(page).not.toHaveURL(/person=/);
-  await expect(page.getByRole('button', { name: 'Đóng hồ sơ' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Đóng hồ sơ', exact: true })).toBeHidden();
 });

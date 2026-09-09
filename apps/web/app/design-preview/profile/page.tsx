@@ -34,6 +34,15 @@ export default async function DesignPreviewProfile({
             <p>{previewMember.relationToViewer} của Gia Bảo · Nhánh ông Bình và bà Mai</p>
           </div>
           <nav className={styles.profileActions} aria-label="Thao tác hồ sơ">
+            <a href="tel:0900000002" aria-label="Gọi Dì Hương">
+              Gọi
+            </a>
+            <a href="sms:0900000002" aria-label="Nhắn Dì Hương">
+              Nhắn
+            </a>
+            <a href="mailto:di.huong@example.invalid" aria-label="Gửi email cho Dì Hương">
+              Email
+            </a>
             <Link href="/design-preview/tree?person=thanh-huong">Xem trong gia phả</Link>
             <Link href={editing ? '/design-preview/profile' : '/design-preview/profile?mode=edit'}>
               {editing ? 'Đóng chỉnh sửa' : 'Chỉnh sửa hồ sơ'}
@@ -81,7 +90,7 @@ export default async function DesignPreviewProfile({
                   <dd>
                     <a
                       href={`tel:${previewMember.phone?.replaceAll(' ', '')}`}
-                      aria-label={`Gọi ${previewMember.familiarName}`}
+                      aria-label={`Số điện thoại của ${previewMember.familiarName}`}
                     >
                       {previewMember.phone}
                     </a>
@@ -92,7 +101,7 @@ export default async function DesignPreviewProfile({
                   <dd>
                     <a
                       href={`mailto:${previewMember.email}`}
-                      aria-label={`Gửi email cho ${previewMember.familiarName}`}
+                      aria-label={`Địa chỉ email của ${previewMember.familiarName}`}
                     >
                       {previewMember.email}
                     </a>

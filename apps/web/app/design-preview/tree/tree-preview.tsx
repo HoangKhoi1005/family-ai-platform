@@ -20,10 +20,6 @@ export function TreePreview() {
     if (!profileOpen || !window.matchMedia('(max-width: 760px)').matches) return;
     const profile = document.getElementById('selected-member-profile');
     profile?.focus({ preventScroll: true });
-    profile?.scrollIntoView({
-      block: 'start',
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
   }, [profileOpen, selected.id]);
 
   function selectPerson(id: string) {
@@ -46,19 +42,13 @@ export function TreePreview() {
     <main id="main" className={styles.treePage}>
       <header id="tree-top" className={styles.treeMasthead} tabIndex={-1}>
         <div>
-          <p>NGƯỜI THÂN / GIA PHẢ</p>
-          <h1>Nhìn một nhánh, nhớ cả nhà.</h1>
+          <p>GIA PHẢ · 15 NGƯỜI</p>
+          <h1>Cây nhà mình</h1>
         </div>
         <div className={styles.treeIntro}>
-          <p>
-            Mỗi nút là một người. Chọn một khuôn mặt để thấy hồ sơ ngay bên cạnh mà không rời khỏi
-            mạch gia đình.
-          </p>
           <nav aria-label="Chế độ xem gia phả">
-            <Link href={`/design-preview/tree?person=${selected.id}`}>Xem sơ đồ</Link>
-            <Link href={`/design-preview/tree?view=directory&person=${selected.id}`}>
-              Mở danh bạ
-            </Link>
+            <Link href="/design-preview/tree?person=gia-bao">Về tôi</Link>
+            <Link href="/design-preview/tree?view=directory">Tìm người</Link>
           </nav>
         </div>
       </header>
@@ -68,6 +58,14 @@ export function TreePreview() {
         ) : (
           <TreeCanvas selected={selected} onSelect={selectPerson} />
         )}
+        {profileOpen ? (
+          <button
+            className={styles.sheetBackdrop}
+            type="button"
+            aria-label="Đóng hồ sơ người thân"
+            onClick={closeProfile}
+          />
+        ) : null}
         <MemberSheet
           member={selected}
           onSelect={selectPerson}

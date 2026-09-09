@@ -20,6 +20,8 @@ export function MemberSheet({
       id="selected-member-profile"
       className={`${styles.memberSheet} ${open ? styles.memberSheetOpen : ''}`}
       aria-label="Hồ sơ người thân"
+      role="dialog"
+      aria-modal={open ? 'true' : undefined}
       tabIndex={-1}
     >
       <div className={styles.sheetLabel}>
