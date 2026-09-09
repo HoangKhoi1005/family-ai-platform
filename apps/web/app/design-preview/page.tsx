@@ -1,95 +1,166 @@
 import Link from 'next/link';
-import { previewDirectory, previewGathering } from './fixtures';
-import styles from './preview.module.css';
+import { getPreviewMember, previewDirectory, previewGathering, previewMember } from './fixtures';
+import styles from './mobile.module.css';
+import { PreviewIdentity } from './preview-identity';
 import { PreviewShell } from './preview-shell';
 
-export default function DesignPreviewHome() {
+export default async function DesignPreviewHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string }>;
+}) {
+  const { state } = await searchParams;
+  const isEmpty = state === 'empty';
+  const viewer = getPreviewMember('gia-bao');
+  const minhAnh = getPreviewMember('minh-anh');
+
   return (
     <PreviewShell>
-      <div className={styles.page}>
-        <header className={styles.pageHeader}>
+      <main id="main" className={styles.homePage}>
+        <header className={styles.mobilePageHeader}>
           <div>
-            <p className={styles.kicker}>Không gian gia đình · Bản mẫu</p>
-            <h1 className={styles.homeTitle}>Chào cả nhà.</h1>
+            <p>THỨ TƯ, 09 THÁNG 9</p>
+            <h1>Nhà mình, hôm nay.</h1>
+            <span>Chào buổi tối, {viewer.familiarName}</span>
           </div>
-          <p className={styles.headerIntro}>
-            Một góc nhỏ để thấy việc cần nhớ, gặp người thân và giữ lại những câu chuyện của nhà.
-          </p>
+          <PreviewIdentity member={viewer} size="medium" />
         </header>
 
-        <main id="main" className={styles.main}>
-          <section className={styles.dateStrip} aria-labelledby="upcoming-heading">
-            <div className={styles.dateStripLabel}>
-              <p className={styles.kicker}>Điều sắp tới</p>
-              <h2 id="upcoming-heading">Lịch hẹn sắp tới</h2>
-            </div>
-            <div className={styles.dateStripEvent}>
-              <time dateTime={previewGathering.date}>{previewGathering.dateLabel}</time>
-              <div>
-                <h3>{previewGathering.title}</h3>
-                <p>{previewGathering.description}</p>
-              </div>
-              <span className={styles.syntheticLabel}>Dữ liệu minh họa</span>
-            </div>
+        {isEmpty ? (
+          <section className={styles.emptyState} aria-labelledby="empty-home-heading">
+            <span className={styles.emptyIllustration} aria-hidden="true">
+              NM
+            </span>
+            <h2 id="empty-home-heading">Nhà đang chờ khoảnh khắc đầu tiên.</h2>
+            <p>Mời người thân hoặc gửi một tấm ảnh để mọi người có lý do ghé về mỗi ngày.</p>
+            <Link className={styles.primaryButton} href="/design-preview/join">
+              Mời người thân
+            </Link>
           </section>
+        ) : (
+          <>
+            <Link className={styles.nextEvent} href="/design-preview/me?panel=notifications">
+              <time dateTime={previewGathering.date}>
+                <strong>{previewGathering.day}</strong>
+                <span>THÁNG 9</span>
+              </time>
+              <span className={styles.eventMain}>
+                <small>12 NGÀY NỮA</small>
+                <strong>{previewGathering.title}</strong>
+                <span>
+                  {previewGathering.time} · {previewGathering.location}
+                </span>
+              </span>
+              <span aria-hidden="true">›</span>
+            </Link>
 
-          <div className={styles.editorialGrid}>
-            <section className={styles.storySection} aria-labelledby="story-heading">
+            <section className={styles.homeSection} aria-labelledby="moments-heading">
               <div className={styles.sectionHeading}>
-                <p className={styles.kicker}>Chuyện nhà</p>
-                <h2 id="story-heading">Nồi canh chua của Dì Hương.</h2>
+                <div>
+                  <p>VỪA XẢY RA</p>
+                  <h2 id="moments-heading">Khoảnh khắc trong nhà</h2>
+                </div>
+                <Link href="/design-preview/moments">Xem tất cả</Link>
               </div>
-              <p className={styles.storyLead}>
-                Dì Hương ghi lại món cả nhà thường nấu vào chủ nhật.
-              </p>
-              <div
-                className={styles.imagePlaceholder}
-                role="img"
-                aria-label="Vị trí dành cho ảnh gia đình"
-              >
-                <span>Ảnh món ăn</span>
-                <small>Chưa có ảnh trong bản mẫu</small>
+              <div className={styles.momentQuickBar}>
+                <span>Có chuyện gì muốn gửi về nhà?</span>
+                <Link href="/design-preview/moments?compose=true">Gửi ảnh</Link>
               </div>
-              <p className={styles.caption}>
-                Bản mẫu giữ chỗ cho ảnh nồi canh chua được gia đình chia sẻ.
-              </p>
-            </section>
-
-            <section className={styles.directorySection} aria-labelledby="directory-heading">
-              <div className={styles.sectionHeading}>
-                <p className={styles.kicker}>Người trong nhà</p>
-                <h2 id="directory-heading">Danh bạ gia đình</h2>
-              </div>
-              <ul className={styles.directoryList}>
-                {previewDirectory.map((member) => (
-                  <li key={member.displayName}>
-                    <span className={styles.initials} aria-hidden="true">
-                      {member.familiarName
-                        .split(' ')
-                        .map((part) => part[0])
-                        .join('')
-                        .slice(0, 2)}
+              <div className={styles.momentRail}>
+                <Link
+                  className={`${styles.momentCard} ${styles.momentKitchen}`}
+                  href="/design-preview/profile"
+                  aria-label="Xem hồ sơ Dì Hương"
+                >
+                  <span
+                    className={styles.momentImage}
+                    aria-label="Minh họa nồi canh chua trên bàn"
+                    role="img"
+                  />
+                  <span className={styles.momentPerson}>
+                    <PreviewIdentity member={previewMember} size="small" />
+                    <span>
+                      <strong>{previewMember.familiarName}</strong>
+                      <small>hôm qua</small>
                     </span>
-                    <div className={styles.directoryCopy}>
-                      {member.familiarName === 'Dì Hương' ? (
-                        <Link className={styles.directoryLink} href="/design-preview/profile">
-                          Xem hồ sơ Dì Hương
-                        </Link>
-                      ) : (
-                        <span className={styles.directoryName}>{member.familiarName}</span>
-                      )}
-                      <span className={styles.directoryMeta}>{member.displayName}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <p className={styles.supportingText}>
-                Lịch nhà, Trò chuyện và Khoảnh khắc chưa thuộc bản mẫu này.
-              </p>
+                  </span>
+                  <span>Canh chua đã lên bếp, ai về trễ vẫn còn phần.</span>
+                </Link>
+                <article className={`${styles.momentCard} ${styles.momentRain}`}>
+                  <span
+                    className={styles.momentImage}
+                    aria-label="Minh họa trời mưa sau khung cửa"
+                    role="img"
+                  />
+                  <span className={styles.momentPerson}>
+                    <PreviewIdentity member={minhAnh} size="small" />
+                    <span>
+                      <strong>{minhAnh.familiarName}</strong>
+                      <small>2 giờ trước</small>
+                    </span>
+                  </span>
+                  <span>Đà Nẵng chiều nay mưa. Cả nhà nhớ mang áo nhé.</span>
+                </article>
+              </div>
             </section>
-          </div>
-        </main>
-      </div>
+
+            <section className={styles.homeSection} aria-labelledby="upcoming-heading">
+              <div className={styles.sectionHeading}>
+                <div>
+                  <p>SẮP TỚI</p>
+                  <h2 id="upcoming-heading">Để mình cùng nhớ</h2>
+                </div>
+              </div>
+              <div className={styles.reminderList}>
+                <div>
+                  <time dateTime="2026-09-14">
+                    <strong>14</strong>
+                    <span>TH 9</span>
+                  </time>
+                  <span>
+                    <strong>Sinh nhật Minh Anh</strong>
+                    <small>5 ngày nữa · Nhắc cả nhà lúc 8:00</small>
+                  </span>
+                </div>
+                <div>
+                  <time dateTime="2026-09-27">
+                    <strong>27</strong>
+                    <span>TH 9</span>
+                  </time>
+                  <span>
+                    <strong>Bữa cơm chủ nhật</strong>
+                    <small>Nhà bà Mai · Cần Thơ</small>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.familyShortcut}>
+              <div>
+                <span className={styles.familyFaces} aria-hidden="true">
+                  {previewDirectory.slice(0, 4).map((member) => (
+                    <PreviewIdentity key={member.id} member={member} size="small" />
+                  ))}
+                </span>
+                <p>
+                  <strong>15 người trong nhà</strong>
+                  <span>Tìm người thân và xem quan hệ</span>
+                </p>
+              </div>
+              <Link href="/design-preview/tree">
+                Mở gia phả <span aria-hidden="true">→</span>
+              </Link>
+            </section>
+          </>
+        )}
+
+        <footer className={styles.mobileFooter}>
+          <span>Riêng tư cho gia đình</span>
+          <Link href={isEmpty ? '/design-preview' : '/design-preview?state=empty'}>
+            {isEmpty ? 'Xem nhà có nội dung' : 'Xem trạng thái nhà mới'}
+          </Link>
+        </footer>
+      </main>
     </PreviewShell>
   );
 }

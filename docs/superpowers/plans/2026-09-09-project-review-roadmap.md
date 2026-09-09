@@ -14,7 +14,7 @@
 
 ## 1. Phạm vi bằng chứng
 
-- Rà soát ban đầu được thực hiện trên `3e411b7`. Onboarding sau đó đã merge vào `main` tại `c07a225`; gói A hiện nằm ở `.worktrees/onboarding-stability`, nhánh `feat/onboarding-stability`, chưa commit/push.
+- Rà soát ban đầu được thực hiện trên `3e411b7`. Onboarding nền merge tại `c07a225`; gói ổn định A sau đó merge qua PR #9 tại `9854d39` và GitHub CI của merge commit đạt.
 - Đã đọc context, decision log, domain, UX, privacy, MVP, spec cây; cấu hình CI/Playwright; code auth UI, app state, profile, admin, API helper, onboarding endpoint/authorization và contracts hồ sơ.
 - Kết quả kiểm chứng gần nhất trong phiên trước: check đạt, 38 unit, 12 integration, 6 E2E onboarding Chromium desktop/mobile, browser script toàn luồng qua API/DB/Mailpit thật đạt. Lần rà này không chạy lại toàn bộ tests, không xác minh remote CI, không phải pentest toàn repo.
 - Visual căn cứ ảnh ở phiên trước; chưa có visual review mới trên máy thật. Không quy đổi số test thành phần trăm hoàn thành sản phẩm.
@@ -66,11 +66,13 @@ Kết luận: nền kỹ thuật và onboarding đã tiến xa hơn bản protot
 - [x] A4. Kiểm lời mời hết hạn/đã dùng/thu hồi, xác minh mở tab khác, reset token thiếu/sai/đã dùng, validation field và conflict 409. Giữ cơ chế không tiết lộ email có tài khoản ở forgot-password.
 - [x] A5. Dùng shared DTO khi phù hợp, giữ riêng form state; thêm contract response onboarding và không thay lockfile ngoài nhu cầu đã xác minh.
 - [x] A6. Cho browser flow thật chạy trên CI với web/API khởi động và readiness check, DB riêng, tài khoản hư cấu, cleanup, log đã lọc. Xử lý race bằng chờ response/state cần thiết; không coi tăng timeout là giải pháp mặc định.
-- [x] A7. Đồng bộ Project Brain và giữ diff trên nhánh riêng. Không đưa `.env`/ảnh chứa token vào Git; chưa commit hoặc push vì chủ dự án chưa giao.
+- [x] A7. Đồng bộ Project Brain, chia ba commit và merge qua PR #9. Không đưa `.env`/ảnh chứa token vào Git; GitHub CI của merge commit đạt.
 
 **Nghiệm thu:** các ca regression trên đạt; npm run check, test:auth, test:e2e và browser thật đạt trên code cuối; CI trên đúng commit xanh sau push. Nếu chưa push, ghi rõ CI chưa xác minh.
 
 ## 5. Gói B — duyệt hệ thiết kế và luồng sử dụng
+
+Thiết kế chi tiết đang chờ duyệt tại [Nền trải nghiệm sản phẩm — gói B](../specs/2026-09-09-product-experience-foundation-design.md).
 
 **Phụ thuộc:** A cho luồng ổn định; nghiên cứu bố cục có thể bắt đầu sớm. **Files:** `design/tokens.json`, `packages/ui/src`, `apps/web/app/_connected`, `apps/web/app/design-preview/tree`, `docs/05_UX_UI_GUIDELINES.md`, spec home/profile/tree.
 

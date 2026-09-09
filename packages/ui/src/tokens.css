@@ -1,15 +1,19 @@
 /* Generated from design/tokens.json. Run npm run tokens:generate. */
 :root {
-  --color-background-primary: #FFF9F0;
-  --color-surface-primary: #FFFFFF;
-  --color-text-primary: #24352B;
-  --color-text-secondary: #58645C;
-  --color-brand-primary: #2F684D;
-  --color-brand-secondary: #E6EFE7;
-  --color-accent: #A6482B;
-  --color-border-soft: #D6DED5;
-  --color-danger: #A52A2A;
-  --color-on-brand: #FFFFFF;
+  --color-background-primary: #F5F0E7;
+  --color-surface-primary: #FFFCF6;
+  --color-surface-muted: #ECE6DA;
+  --color-text-primary: #253128;
+  --color-text-secondary: #667168;
+  --color-brand-primary: #315D47;
+  --color-brand-secondary: #DDE8DE;
+  --color-accent: #A24F35;
+  --color-border-soft: #D7D0C4;
+  --color-focus: #165DFF;
+  --color-success: #356B4B;
+  --color-warning: #8A5A13;
+  --color-danger: #A33A32;
+  --color-on-brand: #FFFCF6;
   --radius-px-card: 20px;
   --radius-px-button: 12px;
   --radius-px-input: 12px;
@@ -19,8 +23,8 @@
   --spacing-px-lg: 24px;
   --spacing-px-xl: 32px;
   --typography-font-body: system-ui, -apple-system, Segoe UI, sans-serif;
-  --typography-font-title: system-ui, -apple-system, Segoe UI, sans-serif;
-  --typography-font-person-name: system-ui, -apple-system, Segoe UI, sans-serif;
+  --typography-font-title: Times New Roman, Liberation Serif, serif;
+  --typography-font-person-name: Times New Roman, Liberation Serif, serif;
   --typography-body-size-px: 16px;
   --typography-large-body-size-px: 20px;
   --typography-title-size-px: 24px;

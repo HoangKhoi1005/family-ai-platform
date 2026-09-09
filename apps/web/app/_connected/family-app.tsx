@@ -5,6 +5,7 @@ import { captureInvite, clearInvite, pendingInvite, request, explain, RequestErr
 import type { Me, Onboarding, Member } from './types';
 import { ProfilePanel } from './profile-panel';
 import { AdminPanel } from './admin-panel';
+import { ConnectedAppShell, ConnectedIdentity, type ConnectedTab } from './connected-app-shell';
 import s from './connected.module.css';
 
 export function FamilyApp() {
@@ -12,7 +13,8 @@ export function FamilyApp() {
   const [familyId, setFamilyId] = useState('');
   const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [tab, setTab] = useState<'home' | 'profile' | 'directory' | 'admin'>('home');
+  const [tab, setTab] = useState<ConnectedTab>('home');
+  const [profileVisited, setProfileVisited] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [invite, setInvite] = useState('');
@@ -28,6 +30,8 @@ export function FamilyApp() {
     setFamilyId('');
     setOnboarding(null);
     setMembers([]);
+    setTab('home');
+    setProfileVisited(false);
     setRevision((value) => value + 1);
   }, []);
   const fail = useCallback(
@@ -152,6 +156,218 @@ export function FamilyApp() {
   const pending = me?.memberships.some((m) => m.status === 'pending');
   const own = members.find((member) => member.id === onboarding?.member_id);
   const base = '/api/v1/families/' + familyId;
+  const navigate = (destination: ConnectedTab) => {
+    if (destination === 'profile') setProfileVisited(true);
+    setTab(destination);
+    setError('');
+  };
+
+  if (!loading && me && active && onboarding) {
+    const viewerName = own?.familiar_name ?? own?.display_name ?? me.user.name;
+    return (
+      <main id="main" className={`${s.shell} ${s.productShell}`}>
+        <ConnectedAppShell
+          tab={tab}
+          houseName={active.name ?? 'Nhà mình'}
+          viewerName={viewerName}
+          onNavigate={navigate}
+        >
+          {error && (
+            <div role="alert" className={`${s.error} ${s.productError}`}>
+              {error}
+              <button onClick={() => void refresh()}>Thử lại</button>
+            </div>
+          )}
+          {invite && (
+            <section className={`${s.invitation} ${s.productInvitation}`}>
+              <p className={s.eyebrow}>BẠN CÓ LỜI MỜI</p>
+              <h2>Thêm một người, thêm chuyện nhà.</h2>
+              <p>
+                Nhận lời mời bằng tài khoản {me.user.email}. Quản trị viên sẽ xác nhận trước khi bạn
+                xem thông tin nhà.
+              </p>
+              <button className={s.primary} onClick={accept} disabled={busy}>
+                {busy ? 'Đang gửi…' : 'Nhận lời mời'}
+              </button>
+              <button
+                onClick={() => {
+                  clearInvite();
+                  setInvite('');
+                }}
+              >
+                Để sau
+              </button>
+            </section>
+          )}
+          {tab === 'home' && (
+            <section className={s.productPage}>
+              <header className={s.productHeader}>
+                <p className={s.eyebrow}>CHÀO {viewerName.toLocaleUpperCase('vi')}</p>
+                <h1>Nhà mình ở đây.</h1>
+                <p className={s.productLead}>
+                  Một nơi riêng để tìm người thân và chăm chút những thông tin cả nhà cùng gìn giữ.
+                </p>
+              </header>
+              <div className={s.memberSummary}>
+                <div>
+                  <span className={s.summaryNumber}>{members.length}</span>
+                  <span>{members.length} người trong nhà</span>
+                </div>
+                <button type="button" onClick={() => navigate('directory')}>
+                  Mở danh bạ <span aria-hidden="true">→</span>
+                </button>
+              </div>
+              {!onboarding.member_id && (
+                <section className={s.ownershipPrompt}>
+                  <p className={s.eyebrow}>HỒ SƠ CỦA BẠN</p>
+                  <h2>
+                    {onboarding.claims.length
+                      ? 'Một hồ sơ đang chờ bạn xác nhận.'
+                      : 'Mình là ai trong gia phả?'}
+                  </h2>
+                  <p>
+                    {onboarding.claims.length
+                      ? 'Kiểm tra thông tin và chọn ai được xem liên hệ trước khi nhận hồ sơ.'
+                      : 'Quản trị viên sẽ chọn đúng hồ sơ cho bạn. Bạn vẫn có thể xem danh bạ trong lúc chờ.'}
+                  </p>
+                  <button type="button" onClick={() => navigate('profile')}>
+                    Xem hồ sơ của tôi <span aria-hidden="true">→</span>
+                  </button>
+                </section>
+              )}
+              <section className={s.homeDirectory}>
+                <div>
+                  <p className={s.eyebrow}>NGƯỜI THÂN</p>
+                  <h2>Những gương mặt trong nhà.</h2>
+                </div>
+                <div className={s.identityRow} aria-label={`${members.length} người trong nhà`}>
+                  {members.slice(0, 5).map((member) => (
+                    <ConnectedIdentity key={member.id} name={member.display_name} />
+                  ))}
+                </div>
+                <button type="button" onClick={() => navigate('directory')}>
+                  Tìm một người thân
+                </button>
+              </section>
+            </section>
+          )}
+          {tab === 'moments' && (
+            <UnavailableDestination
+              eyebrow="KHOẢNH KHẮC"
+              title="Khoảnh khắc đang được chuẩn bị."
+              description="Ảnh và câu chuyện chỉ nên xuất hiện khi chúng thực sự thuộc về nhà bạn. Phần này sẽ được nối với API riêng tư ở gói tiếp theo."
+            />
+          )}
+          {tab === 'directory' && (
+            <section className={s.productPage}>
+              <header className={s.productHeader}>
+                <p className={s.eyebrow}>GIA PHẢ</p>
+                <h1>Người thân trong nhà.</h1>
+                <p className={s.productLead}>
+                  Danh bạ này lấy từ dữ liệu thật của nhà bạn. Quan hệ và các đường nối trên cây sẽ
+                  xuất hiện sau khi mô hình quan hệ được kết nối.
+                </p>
+              </header>
+              <label className={`${s.search} ${s.productSearch}`}>
+                <span className={s.visuallyHidden}>Tìm theo tên</span>
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Tìm tên người thân…"
+                />
+              </label>
+              <div className={`${s.memberList} ${s.productMemberList}`}>
+                {members
+                  .filter((member) =>
+                    fold(member.display_name + ' ' + (member.familiar_name ?? '')).includes(
+                      fold(query),
+                    ),
+                  )
+                  .map((member) => (
+                    <DirectoryEntry
+                      key={`${familyId}:${revision}:${directoryRevision}:${member.id}`}
+                      member={member}
+                      base={base}
+                      onError={fail}
+                    />
+                  ))}
+                {!members.length && <p>Nhà chưa có hồ sơ. Quản trị viên có thể thêm người thân.</p>}
+                {members.length > 0 &&
+                  !members.some((member) =>
+                    fold(member.display_name + ' ' + (member.familiar_name ?? '')).includes(
+                      fold(query),
+                    ),
+                  ) && <p>Chưa tìm thấy tên này.</p>}
+              </div>
+              {members.length === 100 && (
+                <p>
+                  Đang hiển thị 100 hồ sơ đầu tiên; phân trang cho nhà lớn chưa có trong đợt pilot.
+                </p>
+              )}
+            </section>
+          )}
+          {tab === 'chat' && (
+            <UnavailableDestination
+              eyebrow="TRÒ CHUYỆN"
+              title="Trò chuyện đang được chuẩn bị."
+              description="Tin nhắn cần realtime, trạng thái gửi lại và quyền riêng tư hoàn chỉnh. Chúng tôi chưa hiển thị hội thoại minh họa như thể đó là tin thật của gia đình."
+            />
+          )}
+          {(tab === 'profile' || profileVisited) && (
+            <section className={s.profileDestination} hidden={tab !== 'profile'}>
+              <div className={s.meOverview}>
+                <ConnectedIdentity name={viewerName} />
+                <div>
+                  <strong>{viewerName}</strong>
+                  <span>{me.user.email}</span>
+                </div>
+                <div className={s.meActions}>
+                  {active.role === 'admin' && (
+                    <button type="button" onClick={() => navigate('admin')}>
+                      Quản trị nhà
+                    </button>
+                  )}
+                  <button type="button" onClick={logout} disabled={busy}>
+                    {busy ? 'Đang đăng xuất…' : 'Đăng xuất'}
+                  </button>
+                </div>
+              </div>
+              <aside className={s.privacyNote}>
+                <strong>Quyền riêng tư của bạn</strong>
+                <p>
+                  Bạn quyết định liên hệ nào chỉ mình bạn xem và liên hệ nào được chia sẻ với cả
+                  nhà.
+                </p>
+              </aside>
+              <ProfilePanel
+                key={`${familyId}:${revision}:${onboarding.member_id ?? onboarding.claims[0]?.id ?? 'none'}:${onboarding.claims[0]?.version ?? 'linked'}`}
+                base={base}
+                onboarding={onboarding}
+                revalidateRevision={profileRevision}
+                onRefresh={refresh}
+                onError={fail}
+              />
+            </section>
+          )}
+          {tab === 'admin' && active.role === 'admin' && (
+            <section className={s.adminDestination}>
+              <button className={s.backButton} type="button" onClick={() => navigate('profile')}>
+                <span aria-hidden="true">←</span> Trở về Tôi
+              </button>
+              <AdminPanel
+                key={`${familyId}:${revision}`}
+                base={base}
+                members={members}
+                onRefresh={refresh}
+                onError={fail}
+              />
+            </section>
+          )}
+        </ConnectedAppShell>
+      </main>
+    );
+  }
+
   return (
     <main id="main" className={s.shell}>
       <header className={s.brand}>
@@ -217,126 +433,33 @@ export function FamilyApp() {
               </p>
               <button onClick={() => void refresh()}>Kiểm tra trạng thái</button>
             </section>
-          ) : (
-            <>
-              <nav className={s.tabs} aria-label="Điều hướng nhà">
-                {(['home', 'directory', 'profile'] as const).map((key) => (
-                  <button
-                    key={key}
-                    aria-current={tab === key ? 'page' : undefined}
-                    onClick={() => {
-                      setTab(key);
-                      setError('');
-                    }}
-                  >
-                    {{ home: 'Nhà mình', directory: 'Người thân', profile: 'Hồ sơ của tôi' }[key]}
-                  </button>
-                ))}
-                {active.role === 'admin' && (
-                  <button
-                    aria-current={tab === 'admin' ? 'page' : undefined}
-                    onClick={() => setTab('admin')}
-                  >
-                    Quản trị nhà
-                  </button>
-                )}
-              </nav>
-              {tab === 'home' && (
-                <section className={s.content}>
-                  <p className={s.eyebrow}>CHÀO {own?.familiar_name ?? me.user.name}</p>
-                  <h1>Nhà mình ở đây.</h1>
-                  <p>Bắt đầu bằng việc tìm người thân và hoàn thiện hồ sơ của bạn.</p>
-                  {!onboarding.member_id && (
-                    <div className={s.invitation}>
-                      <h2>
-                        {onboarding.claims.length
-                          ? 'Một hồ sơ đang chờ bạn xác nhận.'
-                          : 'Mình là ai trong gia phả?'}
-                      </h2>
-                      <p>
-                        {onboarding.claims.length
-                          ? 'Kiểm tra thông tin và chọn ai được xem liên hệ trước khi nhận hồ sơ.'
-                          : 'Quản trị viên sẽ chọn đúng hồ sơ cho bạn. Bạn vẫn có thể xem danh bạ trong lúc chờ.'}
-                      </p>
-                      <button onClick={() => setTab('profile')}>Xem hồ sơ của tôi →</button>
-                    </div>
-                  )}
-                  <div className={s.homeRows}>
-                    <button onClick={() => setTab('directory')}>
-                      <strong>Gặp người thân</strong>
-                      <span>Tìm tên, xem hồ sơ và liên hệ được chia sẻ ↗</span>
-                    </button>
-                    <Link href="/design-preview/tree">
-                      <strong>Khám phá cây gia phả</strong>
-                      <span>Bản minh họa riêng · 15 người hư cấu, chưa phải cây của nhà bạn ↗</span>
-                    </Link>
-                  </div>
-                </section>
-              )}
-              {tab === 'directory' && (
-                <section className={s.content}>
-                  <h1>Những người trong nhà.</h1>
-                  <label className={s.search}>
-                    Tìm theo tên
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Tên người thân…"
-                    />
-                  </label>
-                  <div className={s.memberList}>
-                    {members
-                      .filter((m) =>
-                        fold(m.display_name + ' ' + (m.familiar_name ?? '')).includes(fold(query)),
-                      )
-                      .map((m) => (
-                        <DirectoryEntry
-                          key={`${familyId}:${revision}:${directoryRevision}:${m.id}`}
-                          member={m}
-                          base={base}
-                          onError={fail}
-                        />
-                      ))}
-                    {!members.length && (
-                      <p>Nhà chưa có hồ sơ. Quản trị viên có thể thêm người thân.</p>
-                    )}
-                    {members.length > 0 &&
-                      !members.some((m) =>
-                        fold(m.display_name + ' ' + (m.familiar_name ?? '')).includes(fold(query)),
-                      ) && <p>Chưa tìm thấy tên này.</p>}
-                  </div>
-                  {members.length === 100 && (
-                    <p>
-                      Đang hiển thị 100 hồ sơ đầu tiên; phân trang cho nhà lớn chưa có trong đợt
-                      pilot.
-                    </p>
-                  )}
-                </section>
-              )}
-              {tab === 'profile' && (
-                <ProfilePanel
-                  key={`${familyId}:${revision}:${onboarding.member_id ?? onboarding.claims[0]?.id ?? 'none'}:${onboarding.claims[0]?.version ?? 'linked'}`}
-                  base={base}
-                  onboarding={onboarding}
-                  revalidateRevision={profileRevision}
-                  onRefresh={refresh}
-                  onError={fail}
-                />
-              )}
-              {tab === 'admin' && active.role === 'admin' && (
-                <AdminPanel
-                  key={`${familyId}:${revision}`}
-                  base={base}
-                  members={members}
-                  onRefresh={refresh}
-                  onError={fail}
-                />
-              )}
-            </>
-          )}
+          ) : null}
         </>
       )}
     </main>
+  );
+}
+
+function UnavailableDestination({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <section className={`${s.productPage} ${s.unavailablePage}`}>
+      <div className={s.unavailableMark} aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <p className={s.eyebrow}>{eyebrow}</p>
+      <h1>{title}</h1>
+      <p className={s.productLead}>{description}</p>
+    </section>
   );
 }
 function fold(value: string) {
@@ -377,8 +500,14 @@ function DirectoryEntry({
           }
         }}
       >
-        <strong>{member.display_name}</strong>
-        <span>{busy ? 'Đang tải…' : (member.familiar_name ?? 'Xem hồ sơ')} ↗</span>
+        <ConnectedIdentity name={member.display_name} />
+        <span className={s.memberName}>
+          <strong>{member.display_name}</strong>
+          <small>{member.familiar_name ?? member.hometown ?? 'Xem hồ sơ'}</small>
+        </span>
+        <span className={s.memberDisclosure}>
+          {busy ? 'Đang tải…' : profile ? 'Thu gọn' : 'Xem'} →
+        </span>
       </button>
       {profile && (
         <div>

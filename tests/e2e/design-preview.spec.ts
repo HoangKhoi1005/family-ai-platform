@@ -13,6 +13,20 @@ test('preview links reach the profile without layout overflow', async ({ page })
   expect(errors).toEqual([]);
 });
 
+test('profile exposes only the contact actions supplied by its fixture', async ({ page }) => {
+  await page.goto('/design-preview/profile');
+
+  await expect(page.getByRole('link', { name: 'Gọi Dì Hương' })).toHaveAttribute(
+    'href',
+    'tel:0900000002',
+  );
+  await expect(page.getByRole('link', { name: 'Gửi email cho Dì Hương' })).toHaveAttribute(
+    'href',
+    'mailto:di.huong@example.invalid',
+  );
+  await expect(page.getByRole('link', { name: /Facebook/ })).toHaveCount(0);
+});
+
 test('preview pages remain usable when browser text is enlarged to 200 percent', async ({
   page,
 }) => {
@@ -23,7 +37,7 @@ test('preview pages remain usable when browser text is enlarged to 200 percent',
     await page.setViewportSize({ width: 320, height: 720 });
     await page.goto(route);
     if (route === '/design-preview') {
-      await expect(page.getByRole('heading', { name: 'Chào cả nhà.' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Nhà mình, hôm nay.' })).toBeVisible();
     } else {
       await expect(page.getByRole('heading', { name: 'Nguyễn Thị Thanh Hương' })).toBeVisible();
     }

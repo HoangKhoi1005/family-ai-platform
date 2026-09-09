@@ -104,6 +104,7 @@ try {
   // A successful sign-in is the public proof that email verification completed.
   // Avoid coupling this browser flow to Better Auth's internal column timing.
   await login(admin, emails[0]);
+  await admin.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await admin.getByRole('button', { name: 'Quản trị nhà', exact: true }).click();
   await admin.getByRole('button', { name: 'Tạo link lời mời', exact: true }).click();
   console.log('Stage: invite');
@@ -144,9 +145,9 @@ try {
   await member.getByRole('status').filter({ hasText: 'Đã lưu hồ sơ' }).waitFor();
   await member.screenshot({ path: evidence + '/flow-profile-mobile.png', fullPage: true });
   await member.getByRole('button', { name: 'Nhà mình', exact: true }).click();
-  await member.getByRole('link', { name: /Khám phá cây gia phả/ }).click();
-  await member.waitForURL('**/design-preview/tree');
-  await member.goto(origin + '/app');
+  await member.getByRole('button', { name: 'Người thân', exact: true }).click();
+  await member.getByRole('heading', { name: 'Người thân trong nhà.' }).waitFor();
+  await member.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await member.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await member.waitForURL('**/login');
   await member.getByRole('link', { name: 'Quên mật khẩu?' }).click();
@@ -175,7 +176,7 @@ try {
   await member.reload();
   await member.getByText('Quyền vào nhà đã được thu hồi.', { exact: false }).waitFor();
   console.log(
-    'PASS browser real API: register, verify, invitation, pending, admin approval, claim, profile save, tree demo, logout, password reset, revocation',
+    'PASS browser real API: register, verify, invitation, pending, admin approval, claim, profile save, directory, logout, password reset, revocation',
   );
 } catch (error) {
   await admin.screenshot({ path: evidence + '/flow-failure-admin.png', fullPage: true });
