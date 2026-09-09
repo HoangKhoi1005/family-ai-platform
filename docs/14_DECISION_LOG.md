@@ -9,7 +9,7 @@ Trạng thái theo [INDEX](INDEX.md). Ngày khởi tạo: 2026-09-08. Confirmed 
 | PAD-003 | Baseline   | PWA/web trước, native/widget sau                                                   | Kiểm iPhone thật; mở lại nếu widget là nhu cầu ngay           |
 | PAD-004 | Baseline   | User khác Member; Membership theo nhà                                              | Quan hệ không nằm trong users                                 |
 | PAD-005 | Baseline   | Isolation nhiều nhà từ đầu, không UI multi-family trong pilot                      | FK/policy/test hai nhà, không microservices                   |
-| PAD-006 | Baseline   | Bốn tab: Nhà mình, Gia phả, Lịch nhà, Trò chuyện                                   | Ảnh ở Nhà mình, profile ở avatar; đổi sau usability test      |
+| PAD-006 | Superseded | Bốn tab: Nhà mình, Gia phả, Lịch nhà, Trò chuyện                                   | Được thay bởi PAD-020                                         |
 | PAD-007 | Baseline   | Pilot chat nhóm chung và moments cả nhà                                            | Chat riêng/circle cần spec quyền riêng                        |
 | PAD-008 | Baseline   | Gia phả từ dữ liệu đã duyệt, lịch từ calendar service                              | LLM không tự xác định sự thật                                 |
 | PAD-009 | Baseline   | AI structured tools trước; RAG khi có tài liệu; không chat mặc định/fine-tune PII  | Cần nguồn, quyền, eval và consent trước mở rộng               |
@@ -30,3 +30,7 @@ Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISI
 - **PAD-017 / Confirmed:** tránh AI slop/generic app là tiêu chí nghiệm thu; duyệt trực quan bản mẫu Nhà mình/hồ sơ trước khi triển khai hàng loạt. Hướng Album gia đình Việt đương đại là đề xuất đang thử, không phải thiết kế đã duyệt.
 - **PAD-018 / Superseded:** supervisor điều phối subagents GPT-5.6 Luna xhigh; một implementer mỗi lúc, reviewer độc lập; commit/push nhánh feature sau kiểm chứng, không merge main. Mặc định điều phối mọi feature bằng subagent được thay bởi PAD-019 để giảm chi phí context.
 - **PAD-019 / Confirmed:** supervisor làm trực tiếp theo mặc định; chỉ dùng subagent cho phần độc lập hoặc review rủi ro cao có lợi ích rõ. Nếu dùng subagent, giữ lựa chọn Astra điều phối và Luna xhigh, một implementer tại một thời điểm.
+
+## Mobile-primary — 2026-09-09
+
+- **PAD-020 / Confirmed:** điện thoại là trải nghiệm ứng dụng chính; pilot vẫn phát hành bằng web/PWA để 15 người cài hoặc mở nhanh. Năm đích chính là **Nhà · Khoảnh khắc · Gia phả · Trò chuyện · Tôi**; Quản trị nằm dưới Tôi. Desktop mở rộng từ cùng kiến trúc thông tin, không quyết định ngược lại bố cục mobile. [Thiết kế](superpowers/specs/2026-09-09-mobile-primary-experience-design.md).

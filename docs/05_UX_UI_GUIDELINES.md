@@ -2,9 +2,9 @@
 
 ## Cấu trúc
 
-Baseline: **Nhà mình · Gia phả · Lịch nhà · Trò chuyện**. Khoảnh khắc nằm trên Nhà mình; avatar mở hồ sơ/cài đặt. AI giai đoạn 2 là ô “Hỏi chuyện nhà…” có thể truy cập từ Nhà mình; tránh nút nổi che thao tác.
+Mobile-primary: **Nhà · Khoảnh khắc · Gia phả · Trò chuyện · Tôi**. Trên điện thoại dùng tab bar cố định ở đáy với safe-area; trên desktop dùng cùng năm đích trong rail. Avatar mở Tôi; Quản trị nằm dưới Tôi và chỉ hiện theo quyền. AI giai đoạn 2 là ô “Hỏi chuyện nhà…” có thể truy cập từ Nhà; tránh nút nổi che thao tác.
 
-Nhà mình ưu tiên: một lời chào ngắn → sự kiện thật sự cần chú ý → ảnh mới → hành động gửi ảnh. Không bắt người dùng đi qua thống kê. Khi có nhiều nội dung, giới hạn phần đầu, dùng “Xem thêm”. Không tự thay tên tab giữa các màn hình.
+Nhà ưu tiên: một lời chào ngắn → sự kiện thật sự cần chú ý → ảnh mới và hành động gửi ảnh → lời nhắc gần. Không bắt người dùng đi qua thống kê. Khi có nhiều nội dung, giới hạn phần đầu, dùng “Xem thêm”. Không tự thay tên tab giữa các màn hình. Desktop mở rộng bố cục này thay vì thiết kế một trang web rồi thu nhỏ.
 
 ## Cá tính và tokens
 
@@ -23,7 +23,7 @@ Yêu cầu trực tiếp của chủ dự án ngày 2026-09-08: không AI slop, 
 - Không suy đoán vai vế từ tên. Ví dụ “Bác Hai” chỉ là tên thường gọi do fixture/người dùng khai báo.
 - Tính năng chưa triển khai không tạo nút chết trên giao diện sản phẩm. Bản mẫu độc lập phải giải thích rõ phần nào chỉ để duyệt thiết kế.
 
-Gate thiết kế: trình bản mẫu Nhà mình, cây + hồ sơ, profile editor, onboarding và quản trị trên desktop/mobile cho chủ dự án trước khi chuyển vào `/app`. Việc duyệt bản mẫu không đồng nghĩa đã kiểm chứng với người lớn tuổi hoặc thiết bị thật.
+Gate thiết kế: trình bản mẫu Nhà, Khoảnh khắc, cây + hồ sơ, Trò chuyện, Tôi, profile editor, onboarding và quản trị ở 390×844 trước; sau đó kiểm desktop. Chủ dự án duyệt trực quan trước khi chuyển vào `/app`. Việc duyệt bản mẫu không đồng nghĩa đã kiểm chứng với người lớn tuổi hoặc thiết bị thật.
 
 Checklist visual review: trọng tâm rõ; nội dung tiếng Việt tự nhiên; tên dài không cắt; thiếu ảnh vẫn nhận diện được; nút bấm đủ lớn; bàn phím/focus rõ; zoom 200% còn dùng được; không tràn ngang; lỗi/rỗng/chờ duyệt được thiết kế; tương phản đạt mục tiêu; không dùng màu làm dấu hiệu duy nhất.
 

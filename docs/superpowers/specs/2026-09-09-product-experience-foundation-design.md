@@ -1,6 +1,8 @@
 # Nền trải nghiệm sản phẩm — Thiết kế gói B
 
-**Trạng thái:** Chủ dự án đã duyệt ngày 2026-09-09; đang triển khai design preview
+**Trạng thái:** Đã triển khai làm bản khám phá; bố cục web-first được thay bởi thiết kế mobile-primary ngày 2026-09-09
+
+**Thay thế bởi:** [Trải nghiệm mobile-primary](2026-09-09-mobile-primary-experience-design.md)
 
 **Ngày:** 2026-09-09
 

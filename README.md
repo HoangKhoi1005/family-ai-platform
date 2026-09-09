@@ -1,8 +1,8 @@
-# Family AI — Monorepo · Context v1.3.0
+# Family AI — Monorepo · Context v1.4.0
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, ưu tiên web/PWA; app điện thoại và widget ảnh là bước sau. Đã có luồng web đăng nhập, xác minh email, lời mời/duyệt, nhận hồ sơ và chỉnh hồ sơ nối API thật. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Cây gia phả hiện là bản minh họa, chưa có API quan hệ; chưa phải MVP đầy đủ.
+Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng web đăng nhập, xác minh email, lời mời/duyệt, nhận hồ sơ và chỉnh hồ sơ nối API thật. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Cây gia phả và shell mobile-primary hiện là bản minh họa, chưa có API quan hệ; chưa phải MVP đầy đủ.
 
 ## Chạy local
 
