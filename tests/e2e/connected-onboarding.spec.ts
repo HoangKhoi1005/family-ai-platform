@@ -523,6 +523,7 @@ test('removes family data when membership is revoked during a profile edit', asy
   await page.goto('/app');
   await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await page.getByLabel('Họ và tên').fill('Dữ liệu không được giữ lại');
+  await page.getByRole('button', { name: 'Nhà mình', exact: true }).click();
   revoked = true;
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
@@ -595,6 +596,7 @@ test('ignores an older refresh response after logout', async ({ page }) => {
 
   await page.goto('/app');
   await expect(page.getByRole('heading', { name: 'Nhà mình ở đây.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await refreshStarted;
   await page.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
