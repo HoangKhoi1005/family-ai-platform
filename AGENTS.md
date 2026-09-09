@@ -37,7 +37,7 @@ Không nạp toàn bộ tài liệu vào mọi task. Dùng [mục lục](docs/IN
 - Khi chọn stack, bổ sung lệnh build/lint/test thực sự vào README; không bịa lệnh hoặc kết quả.
 - Migration có phiên bản; server validation, authorization và constraints đi cùng tính năng dữ liệu.
 - Test dựa trên rủi ro và business rules, đặc biệt truy cập chéo nhà, thu hồi quyền, lịch âm, cây quan hệ và retry realtime. Không thêm test chỉ để lặp lại code.
-- Đã được chủ dự án cho phép dùng subagents cho feature nhiều bước theo [quy trình Superpowers](docs/SUPERPOWERS.md). Task nhỏ làm trực tiếp. Với SDD: một implementer tại một thời điểm rồi reviewer; chỉ chạy song song điều tra/review độc lập. Coordinator giữ contracts/migrations/lockfile và tích hợp. Worker không tự tạo agent con. Mọi agent đọc cùng baseline và phạm vi file được giao.
+- Chủ dự án cho phép dùng subagents khi việc độc lập hoặc review rủi ro cao thật sự hưởng lợi theo [quy trình Superpowers](docs/SUPERPOWERS.md). Mặc định làm trực tiếp để tiết kiệm context; task nhỏ luôn làm trực tiếp. Khi dùng SDD: một implementer tại một thời điểm rồi reviewer; chỉ chạy song song điều tra/review độc lập. Coordinator giữ contracts/migrations/lockfile và tích hợp. Worker không tự tạo agent con. Mọi agent đọc cùng baseline và phạm vi file được giao.
 
 ## Chất lượng UX/UI bắt buộc
 
@@ -46,7 +46,7 @@ Không nạp toàn bộ tài liệu vào mọi task. Dùng [mục lục](docs/IN
 - Không tự thêm gradient tím xanh, glassmorphism, emoji trang trí, số liệu giả, nút AI nổi hoặc hiệu ứng không phục vụ thao tác.
 - Bản mẫu Nhà mình và hồ sơ phải được chủ dự án duyệt trực quan trước khi triển khai hàng loạt màn hình nghiệp vụ. Phần backend độc lập tiếp tục trong phạm vi đã duyệt.
 - Review giao diện chạy thực tế ở desktop/mobile, tên tiếng Việt dài, thiếu ảnh, trạng thái lỗi/rỗng, chữ lớn và bàn phím. Build/test đạt không thay thế visual review.
-- Điều phối theo lựa chọn của chủ dự án: supervisor Astra, subagents GPT-5.6 Luna với reasoning xhigh; không tự đổi model để tăng chi phí. Một implementer tại một thời điểm, reviewer độc lập.
+- Khi chủ dự án yêu cầu dùng subagent: supervisor Astra, subagents GPT-5.6 Luna với reasoning xhigh; không tự đổi model để tăng chi phí. Một implementer tại một thời điểm, reviewer độc lập.
 
 ## Bàn giao task
 

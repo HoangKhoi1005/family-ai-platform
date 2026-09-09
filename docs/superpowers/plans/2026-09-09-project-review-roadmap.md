@@ -1,6 +1,6 @@
 # Đánh giá hiện trạng và kế hoạch đến pilot 15 người
 
-**Trạng thái:** đề xuất để chủ dự án duyệt; chưa bắt đầu các task dưới đây.
+**Trạng thái:** chủ dự án đã duyệt; gói A hoàn thành implementation và kiểm chứng local ngày 2026-09-09. Các gói sau chưa bắt đầu.
 
 **Goal:** chuyển từ luồng onboarding local sang ứng dụng gia đình dùng được, có thiết kế được chấp nhận và dữ liệu gia phả thật.
 
@@ -14,7 +14,7 @@
 
 ## 1. Phạm vi bằng chứng
 
-- Rà local main và worktree onboarding, cả hai HEAD `3e411b7`; code mới chưa commit nằm tại `.worktrees/onboarding`, nhánh `feat/onboarding-ui-preview`. Main sạch nhưng CURRENT_STATE trên main còn mô tả một đợt cũ.
+- Rà soát ban đầu được thực hiện trên `3e411b7`. Onboarding sau đó đã merge vào `main` tại `c07a225`; gói A hiện nằm ở `.worktrees/onboarding-stability`, nhánh `feat/onboarding-stability`, chưa commit/push.
 - Đã đọc context, decision log, domain, UX, privacy, MVP, spec cây; cấu hình CI/Playwright; code auth UI, app state, profile, admin, API helper, onboarding endpoint/authorization và contracts hồ sơ.
 - Kết quả kiểm chứng gần nhất trong phiên trước: check đạt, 38 unit, 12 integration, 6 E2E onboarding Chromium desktop/mobile, browser script toàn luồng qua API/DB/Mailpit thật đạt. Lần rà này không chạy lại toàn bộ tests, không xác minh remote CI, không phải pentest toàn repo.
 - Visual căn cứ ảnh ở phiên trước; chưa có visual review mới trên máy thật. Không quy đổi số test thành phần trăm hoàn thành sản phẩm.
@@ -60,13 +60,13 @@ Kết luận: nền kỹ thuật và onboarding đã tiến xa hơn bản protot
 
 **Files chính:** `apps/web/app/_connected/{family-app,profile-panel,auth-screen,api,types}.tsx` hoặc `.ts` tương ứng; `packages/contracts/src/onboarding.ts`; `tests/e2e/connected-onboarding.spec.ts`; `scripts/verify-connected-onboarding.mjs`; `.github/workflows/ci.yml`; CURRENT_STATE và docs context/UX/privacy/decision log.
 
-- [ ] A1. Tạo test tái hiện draft đang nhập → refresh trả network error → form phục hồi không mất draft; revoke/logout → không còn dữ liệu nhà; response cũ không ghi đè state sau logout.
-- [ ] A2. Kiểm hồ sơ mở: contact đổi family→self; claim hết hạn, đổi version, thu hồi khi request đang chờ; UI không tiếp tục gửi xác nhận từ trạng thái đã vô hiệu.
-- [ ] A3. Bổ sung request cancellation/giới hạn chờ và phân loại lỗi; tách trạng thái kết nối khỏi session. Revalidate dữ liệu đang mở khi focus, thay quyền và retry, không chỉ tải lại danh sách.
-- [ ] A4. Kiểm lời mời hết hạn/đã dùng/thu hồi, xác minh mở tab khác, reset token thiếu/sai/đã dùng, validation field và conflict 409. Giữ cơ chế không tiết lộ email có tài khoản ở forgot-password.
-- [ ] A5. Dùng shared DTO khi phù hợp, giữ riêng form state; thêm contract response onboarding và không thay lockfile ngoài nhu cầu đã xác minh.
-- [ ] A6. Cho browser flow thật chạy trên CI với web/API khởi động và readiness check, DB riêng, tài khoản hư cấu, cleanup, log đã lọc. Xử lý race bằng chờ response/state cần thiết; không coi tăng timeout là giải pháp mặc định.
-- [ ] A7. Đồng bộ Project Brain. Chuẩn bị ba nhóm diff: API/contract/tests; web/onboarding; preview/docs. Kiểm từng commit build được và không đưa .env/ảnh chứa token vào Git. Chỉ tạo/push commit khi chủ dự án giao.
+- [x] A1. Tạo test tái hiện draft đang nhập → refresh trả network error → form phục hồi không mất draft; revoke/logout → không còn dữ liệu nhà; response cũ không ghi đè state sau logout.
+- [x] A2. Kiểm hồ sơ mở: contact đổi family→self; claim hết hạn, đổi version, thu hồi khi request đang chờ; UI không tiếp tục gửi xác nhận từ trạng thái đã vô hiệu.
+- [x] A3. Bổ sung request cancellation/giới hạn chờ và phân loại lỗi; tách trạng thái kết nối khỏi session. Revalidate dữ liệu đang mở khi focus, thay quyền và retry, không chỉ tải lại danh sách.
+- [x] A4. Kiểm lời mời hết hạn/đã dùng/thu hồi, xác minh mở tab khác, reset token thiếu/sai/đã dùng, validation field và conflict 409. Giữ cơ chế không tiết lộ email có tài khoản ở forgot-password.
+- [x] A5. Dùng shared DTO khi phù hợp, giữ riêng form state; thêm contract response onboarding và không thay lockfile ngoài nhu cầu đã xác minh.
+- [x] A6. Cho browser flow thật chạy trên CI với web/API khởi động và readiness check, DB riêng, tài khoản hư cấu, cleanup, log đã lọc. Xử lý race bằng chờ response/state cần thiết; không coi tăng timeout là giải pháp mặc định.
+- [x] A7. Đồng bộ Project Brain và giữ diff trên nhánh riêng. Không đưa `.env`/ảnh chứa token vào Git; chưa commit hoặc push vì chủ dự án chưa giao.
 
 **Nghiệm thu:** các ca regression trên đạt; npm run check, test:auth, test:e2e và browser thật đạt trên code cuối; CI trên đúng commit xanh sau push. Nếu chưa push, ghi rõ CI chưa xác minh.
 

@@ -1,4 +1,4 @@
-# Family AI — Monorepo · Context v1.2.0
+# Family AI — Monorepo · Context v1.3.0
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
