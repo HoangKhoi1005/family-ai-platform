@@ -97,75 +97,90 @@ export interface RelationshipDecisionInput {
 const uuid = { type: 'string', format: 'uuid' } as const;
 const isoDate = { type: ['string', 'null'], pattern: '^\\d{4}-\\d{2}-\\d{2}$' } as const;
 
-const parentChildPayloadSchema = {
+const createRelationshipPayloadSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['from_member_id', 'to_member_id', 'type', 'subtype'],
   properties: {
     from_member_id: uuid,
     to_member_id: uuid,
-    type: { type: 'string', const: 'parent_child' },
-    subtype: { type: 'string', enum: ['biological', 'adoptive', 'unspecified'] },
+    type: { type: 'string', enum: ['parent_child', 'partnership'] },
+    subtype: {
+      type: 'string',
+      enum: ['biological', 'adoptive', 'unspecified', 'married', 'partner'],
+    },
+    start_date: isoDate,
+    end_date: isoDate,
   },
+  allOf: [
+    {
+      if: { properties: { type: { const: 'parent_child' } } },
+      then: {
+        properties: {
+          subtype: { enum: ['biological', 'adoptive', 'unspecified'] },
+          start_date: false,
+          end_date: false,
+        },
+      },
+    },
+    {
+      if: { properties: { type: { const: 'partnership' } } },
+      then: { properties: { subtype: { enum: ['married', 'partner'] } } },
+    },
+  ],
 } as const;
 
-const partnershipPayloadSchema = {
+const updatePayloadSchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['from_member_id', 'to_member_id', 'type', 'subtype'],
+  minProperties: 1,
   properties: {
-    from_member_id: uuid,
-    to_member_id: uuid,
-    type: { type: 'string', const: 'partnership' },
-    subtype: { type: 'string', enum: ['married', 'partner'] },
+    subtype: {
+      type: 'string',
+      enum: ['biological', 'adoptive', 'unspecified', 'married', 'partner'],
+    },
     start_date: isoDate,
     end_date: isoDate,
   },
 } as const;
 
-const createRequestSchema = {
+export const createRelationshipChangeRequestBodySchema = {
   type: 'object',
   additionalProperties: false,
-  required: ['type', 'payload'],
+  required: ['type'],
   properties: {
-    type: { type: 'string', const: 'relationship_create' },
-    payload: { oneOf: [parentChildPayloadSchema, partnershipPayloadSchema] },
-  },
-} as const;
-
-const updateRequestSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['type', 'target_id', 'base_version', 'payload'],
-  properties: {
-    type: { type: 'string', const: 'relationship_update' },
+    type: {
+      type: 'string',
+      enum: ['relationship_create', 'relationship_update', 'relationship_remove'],
+    },
     target_id: uuid,
     base_version: { type: 'integer', minimum: 1 },
-    payload: {
-      type: 'object',
-      additionalProperties: false,
-      minProperties: 1,
-      properties: {
-        subtype: {
-          type: 'string',
-          enum: ['biological', 'adoptive', 'unspecified', 'married', 'partner'],
+    payload: { type: 'object' },
+  },
+  allOf: [
+    {
+      if: { properties: { type: { const: 'relationship_create' } } },
+      then: {
+        required: ['payload'],
+        properties: {
+          target_id: false,
+          base_version: false,
+          payload: createRelationshipPayloadSchema,
         },
-        start_date: isoDate,
-        end_date: isoDate,
       },
     },
-  },
-} as const;
-
-const removeRequestSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['type', 'target_id', 'base_version'],
-  properties: {
-    type: { type: 'string', const: 'relationship_remove' },
-    target_id: uuid,
-    base_version: { type: 'integer', minimum: 1 },
-  },
+    {
+      if: { properties: { type: { const: 'relationship_update' } } },
+      then: {
+        required: ['target_id', 'base_version', 'payload'],
+        properties: { payload: updatePayloadSchema },
+      },
+    },
+    {
+      if: { properties: { type: { const: 'relationship_remove' } } },
+      then: { required: ['target_id', 'base_version'], properties: { payload: false } },
+    },
+  ],
 } as const;
 
 export const relationshipGraphQuerySchema = {
@@ -176,10 +191,6 @@ export const relationshipGraphQuerySchema = {
     root_member_id: uuid,
     depth: { type: 'integer', minimum: 1, maximum: 4, default: 2 },
   },
-} as const;
-
-export const createRelationshipChangeRequestBodySchema = {
-  oneOf: [createRequestSchema, updateRequestSchema, removeRequestSchema],
 } as const;
 
 export const relationshipDecisionBodySchema = {

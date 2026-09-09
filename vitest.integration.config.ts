@@ -6,6 +6,7 @@ export default defineConfig({
       'apps/api/tests/auth.integration.test.ts',
       'apps/api/tests/membership.integration.test.ts',
       'apps/api/tests/member-profile.integration.test.ts',
+      'apps/api/tests/relationships.integration.test.ts',
     ],
     environment: 'node',
     // Auth and membership fixtures share Better Auth's loopback database

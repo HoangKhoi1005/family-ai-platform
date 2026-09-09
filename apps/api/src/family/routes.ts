@@ -1,12 +1,19 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Pool } from 'pg';
 import {
+  createRelationshipChangeRequestBodySchema,
   createMemberBodySchema,
   memberListQuerySchema,
   memberParamsSchema,
+  relationshipChangeRequestListQuerySchema,
+  relationshipChangeRequestParamsSchema,
+  relationshipDecisionBodySchema,
   relationshipGraphQuerySchema,
+  relationshipVersionBodySchema,
   updateMemberBodySchema,
+  type CreateRelationshipChangeRequestInput,
   type CreateMemberInput,
+  type RelationshipDecisionInput,
   type UpdateMemberInput,
 } from '@family/contracts';
 import { withActorTransaction } from '@family/database';
@@ -29,6 +36,12 @@ import { approveMembership, listMemberships, revokeMembership } from './membersh
 import { confirmClaim, createClaim, declineClaim, previewClaim, revokeClaim } from './claims.js';
 import { getOwnOnboarding } from './onboarding.js';
 import { getRelationshipGraph } from './relationships.js';
+import {
+  cancelRelationshipChangeRequest,
+  createRelationshipChangeRequest,
+  decideRelationshipChangeRequest,
+  listPendingRelationshipChangeRequests,
+} from './change-requests.js';
 import {
   createMember,
   getManagedMember,
@@ -101,6 +114,14 @@ interface RelationshipGraphQuery {
   depth?: number;
 }
 
+interface ChangeRequestParams extends FamilyParams {
+  requestId: string;
+}
+
+interface ChangeRequestListQuery {
+  status?: 'pending';
+}
+
 interface MemberParams extends FamilyParams {
   memberId: string;
 }
@@ -137,6 +158,35 @@ function rejectUnknownBodyKeys(
       }
     }
   };
+}
+
+async function rejectRelationshipRequestUnknownKeys(request: FastifyRequest): Promise<void> {
+  const body = request.body;
+  if (!isJsonObject(body) || typeof body.type !== 'string') return;
+  const topLevel =
+    body.type === 'relationship_create'
+      ? ['type', 'payload']
+      : [
+          'type',
+          'target_id',
+          'base_version',
+          ...(body.type === 'relationship_update' ? ['payload'] : []),
+        ];
+  if (Object.keys(body).some((key) => !topLevel.includes(key))) {
+    throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+  }
+  if (body.type === 'relationship_remove') return;
+  const payload = body.payload;
+  if (!isJsonObject(payload)) return;
+  const payloadKeys =
+    body.type === 'relationship_update'
+      ? ['subtype', 'start_date', 'end_date']
+      : payload.type === 'parent_child'
+        ? ['from_member_id', 'to_member_id', 'type', 'subtype']
+        : ['from_member_id', 'to_member_id', 'type', 'subtype', 'start_date', 'end_date'];
+  if (Object.keys(payload).some((key) => !payloadKeys.includes(key))) {
+    throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+  }
 }
 
 const uuid = { type: 'string', format: 'uuid' } as const;
@@ -485,6 +535,113 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
               depth: request.query.depth ?? 2,
             });
           },
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: FamilyParams; Body: CreateRelationshipChangeRequestInput }>(
+    '/api/v1/families/:familyId/change-requests',
+    {
+      schema: { params: familyParams, body: createRelationshipChangeRequestBodySchema },
+      preValidation: rejectRelationshipRequestUnknownKeys,
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'relationship.request.create');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          createRelationshipChangeRequest(client, {
+            familyId,
+            actorId: actor.userId,
+            request: request.body,
+          }),
+        );
+        return reply.code(201).send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams; Querystring: ChangeRequestListQuery }>(
+    '/api/v1/families/:familyId/change-requests',
+    { schema: { params: familyParams, querystring: relationshipChangeRequestListQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          listPendingRelationshipChangeRequests(client, { familyId, actorId: actor.userId }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: ChangeRequestParams; Body: RelationshipDecisionInput }>(
+    '/api/v1/families/:familyId/change-requests/:requestId/decision',
+    {
+      schema: {
+        params: relationshipChangeRequestParamsSchema,
+        body: relationshipDecisionBodySchema,
+      },
+      preValidation: rejectUnknownBodyKeys(['decision', 'version', 'note']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, requestId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(requestId, 'requestId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'relationship.request.decision');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          decideRelationshipChangeRequest(client, {
+            familyId,
+            actorId: actor.userId,
+            requestId,
+            decision: request.body,
+          }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: ChangeRequestParams; Body: VersionBody }>(
+    '/api/v1/families/:familyId/change-requests/:requestId/cancel',
+    {
+      schema: {
+        params: relationshipChangeRequestParamsSchema,
+        body: relationshipVersionBodySchema,
+      },
+      preValidation: rejectUnknownBodyKeys(['version']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, requestId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(requestId, 'requestId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'relationship.request.cancel');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          cancelRelationshipChangeRequest(client, {
+            familyId,
+            actorId: actor.userId,
+            requestId,
+            version: request.body.version,
+          }),
         );
         return reply.send(result);
       } catch (error) {
