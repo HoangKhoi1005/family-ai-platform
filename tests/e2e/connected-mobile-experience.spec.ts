@@ -38,9 +38,62 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
             hometown: 'Đà Nẵng',
             version: 1,
           },
+          {
+            id: 'member-3',
+            display_name: 'Trần Thảo Chi',
+            familiar_name: 'Thảo Chi',
+            hometown: 'Huế',
+            version: 1,
+          },
         ],
       },
     }),
+  );
+  await page.route(
+    '**/api/v1/families/family-1/relationships?root_member_id=member-1&depth=2',
+    (route) =>
+      route.fulfill({
+        json: {
+          root_member_id: 'member-1',
+          depth: 2,
+          nodes: [
+            {
+              id: 'member-1',
+              display_name: 'Nguyễn Gia Bảo',
+              familiar_name: 'Gia Bảo',
+              hometown: 'Cần Thơ',
+              birth_date: null,
+              birth_year: 1996,
+              deceased: false,
+              version: 1,
+              distance: 0,
+            },
+            {
+              id: 'member-2',
+              display_name: 'Nguyễn Minh Anh',
+              familiar_name: 'Minh Anh',
+              hometown: 'Đà Nẵng',
+              birth_date: null,
+              birth_year: 1970,
+              deceased: false,
+              version: 1,
+              distance: 1,
+            },
+          ],
+          relationships: [
+            {
+              id: 'relationship-1',
+              from_member_id: 'member-2',
+              to_member_id: 'member-1',
+              type: 'parent_child',
+              subtype: 'biological',
+              start_date: null,
+              end_date: null,
+              version: 1,
+            },
+          ],
+        },
+      }),
   );
   await page.route('**/api/v1/families/family-1/members/member-1', (route) =>
     route.fulfill({
@@ -50,6 +103,22 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
         familiar_name: 'Gia Bảo',
         hometown: 'Cần Thơ',
         biography: 'Thích lưu lại chuyện nhà.',
+        contacts: [],
+        version: 1,
+      },
+    }),
+  );
+  await page.route('**/api/v1/families/family-1/members/member-2', (route) =>
+    route.fulfill({
+      json: {
+        id: 'member-2',
+        display_name: 'Nguyễn Minh Anh',
+        familiar_name: 'Minh Anh',
+        hometown: 'Đà Nẵng',
+        birth_date: null,
+        birth_year: 1970,
+        deceased: false,
+        biography: 'Người luôn nhắc cả nhà gọi điện cho nhau.',
         contacts: [],
         version: 1,
       },
@@ -72,7 +141,7 @@ test('active member gets the five-destination mobile shell without preview data'
     await expect(navigation.getByText(label, { exact: true })).toBeVisible();
   }
   await expect(page.getByRole('heading', { name: 'Nhà mình ở đây.' })).toBeVisible();
-  await expect(page.getByText('2 người trong nhà')).toBeVisible();
+  await expect(page.getByText('3 người trong nhà')).toBeVisible();
 
   await navigation.getByRole('button', { name: 'Khoảnh khắc' }).click();
   await expect(
@@ -81,14 +150,66 @@ test('active member gets the five-destination mobile shell without preview data'
   await navigation.getByRole('button', { name: 'Trò chuyện' }).click();
   await expect(page.getByRole('heading', { name: 'Trò chuyện đang được chuẩn bị.' })).toBeVisible();
   await navigation.getByRole('button', { name: 'Người thân', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Người thân trong nhà.' })).toBeVisible();
-  await expect(page.getByText('Nguyễn Minh Anh')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Gia phả nhà mình.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' })).toBeVisible();
 
   await navigation.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Hồ sơ của tôi.' })).toBeVisible();
   await expect(page.getByText('Quyền riêng tư của bạn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đăng xuất', exact: true })).toBeVisible();
   await expect(page.getByText('Bữa cơm chủ nhật')).toHaveCount(0);
+});
+
+test('member explores the approved tree and submits a reviewed relationship proposal', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let submitted: unknown;
+  await page.route('**/api/v1/families/family-1/change-requests', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    submitted = route.request().postDataJSON();
+    await route.fulfill({
+      status: 201,
+      json: {
+        id: 'request-1',
+        status: 'pending',
+        version: 1,
+      },
+    });
+  });
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Gia phả nhà mình.' })).toBeVisible();
+  await expect(page.getByText('Quanh Gia Bảo')).toBeVisible();
+  await expect(page.getByText('Cha / mẹ', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' }).click();
+  await expect(page.getByText('Người luôn nhắc cả nhà gọi điện cho nhau.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Bổ sung quan hệ cho Nguyễn Minh Anh' }).click();
+  await page.getByLabel('Người này là').selectOption('child');
+  await page.getByLabel('Chọn người thân').selectOption('member-3');
+  await page.getByLabel('Loại quan hệ').selectOption('adoptive');
+  await page.getByRole('button', { name: 'Gửi đề xuất' }).click();
+
+  await expect(page.getByRole('status')).toContainText('Đã gửi đề xuất');
+  expect(submitted).toEqual({
+    type: 'relationship_create',
+    payload: {
+      from_member_id: 'member-2',
+      to_member_id: 'member-3',
+      type: 'parent_child',
+      subtype: 'adoptive',
+    },
+  });
+
+  await page.getByRole('button', { name: 'Danh bạ' }).click();
+  await expect(page.getByPlaceholder('Tìm tên người thân…')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
 });
 
 test('active admin reaches administration through Tôi instead of primary navigation', async ({
