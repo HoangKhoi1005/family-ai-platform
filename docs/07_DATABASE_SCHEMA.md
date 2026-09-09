@@ -10,10 +10,10 @@
 | members                  | id, family_id, display_name, birth_date, birth_year, deceased, version                                              | unique(family_id,id); ngày/năm nullable và nhất quán                            |
 | member_account_links     | family_id, membership_id, member_id                                                                                 | unique theo membership và member; cả hai FK cùng nhà                            |
 | member_contacts          | id, family_id, member_id, kind, value, visibility                                                                   | visibility chỉ family hoặc self; quyền quản lý hồ sơ chưa liên kết xem bên dưới |
-| relationships            | id, family_id, from_member_id, to_member_id, type, subtype, start_date, end_date                                    | hai composite FK đến members; check khác nhau; chống trùng cạnh                 |
+| relationships            | id, family_id, from_member_id, to_member_id, type, subtype, start_date, end_date, removed_at, version               | hai composite FK đến members; chuẩn hóa partnership; chống trùng cạnh           |
 | kinship_overrides        | family_id, viewer_member_id, target_member_id, label                                                                | unique cặp trong nhà                                                            |
 | invitations              | id, family_id, token_hash, expires_at, used_at, revoked_at                                                          | không lưu token thô; single-use baseline                                        |
-| change_requests          | id, family_id, actor_membership_id, target_id, type, proposed_payload, base_version, status, reviewer_id            | payload kiểm schema; target luôn resolve trong family                           |
+| change_requests          | id, family_id, actor_membership_id, target_id, type, proposed_payload, base_version, status, reviewer_id, version   | payload kiểm schema; target cùng nhà; quyết định có audit                       |
 | events                   | id, family_id, title, member_id, calendar_type, date_parts, recurrence, timezone, lunar_policy, version, creator_id | date_parts có schema theo loại; không JSON tùy ý không kiểm tra                 |
 | event_occurrences        | id, family_id, event_id, local_date, starts_at, event_revision, status                                              | unique(event_id,local_date,event_revision); FK cùng nhà                         |
 | event_rsvps              | family_id, occurrence_id, membership_id, response                                                                   | unique occurrence + người, response yes/no/maybe                                |
@@ -44,6 +44,12 @@
 Thiết kế soft delete chỉ khi cần khôi phục/audit, không dùng làm lý do giữ PII vô thời hạn. Xóa nội dung kéo theo media, job, index/cache tương ứng theo [privacy](10_PRIVACY_SECURITY.md). Không cascade xóa toàn cây chỉ vì User bị xóa. Migration có checksum và transaction; không sửa migration đã áp dụng, tạo migration mới. Xem CURRENT_STATE về kết quả chạy local, không đồng nghĩa đã triển khai production.
 
 Household, Branch, Memory, Document và embedding được hoãn; chỉ tạo bảng khi feature được đưa vào phạm vi.
+
+## Quan hệ và đề xuất thay đổi
+
+Migration `0010_relationships.sql` đã triển khai `relationships` và `change_requests` trong nhánh `feat/family-relationships`. Parent-child có hướng từ cha/mẹ đến con và subtype biological/adoptive/unspecified. Partnership chuẩn hóa hai UUID, có subtype married/partner, giữ các giai đoạn đã kết thúc và chỉ cho một giai đoạn đang hiệu lực của cùng cặp.
+
+RLS cho active member đọc quan hệ cùng nhà. Ghi quan hệ chỉ mở trong route context `relationship_decision` cho admin; thành viên không thể đi vòng qua endpoint hồ sơ. Change request lưu pending riêng, người gửi chỉ đọc/hủy đề xuất của mình, admin đọc và quyết định. Approval dùng family advisory lock trước khi kiểm chu trình và apply.
 
 ## Tìm kiếm tên trong đợt danh bạ/hồ sơ
 

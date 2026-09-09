@@ -136,7 +136,7 @@ export async function lockFamily(client: PoolClient, familyId: string): Promise<
 
 export async function setRouteContext(
   client: PoolClient,
-  values: { purpose?: string; claimId?: string; memberId?: string },
+  values: { purpose?: string; claimId?: string; memberId?: string; requestId?: string },
 ): Promise<void> {
   if (values.purpose !== undefined) {
     await client.query("SELECT set_config('app.purpose', $1, true)", [values.purpose]);
@@ -146,6 +146,9 @@ export async function setRouteContext(
   }
   if (values.memberId !== undefined) {
     await client.query("SELECT set_config('app.member_id', $1, true)", [values.memberId]);
+  }
+  if (values.requestId !== undefined) {
+    await client.query("SELECT set_config('app.request_id', $1, true)", [values.requestId]);
   }
 }
 

@@ -2,8 +2,8 @@
 
 - Cập nhật: 2026-09-10. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
-- GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm đang ở worktree `.worktrees/product-experience-foundation`, nhánh `feat/product-experience-foundation`; mobile-primary đã được nối vào `/app` cho membership active và chưa commit.
-- Backend đã có Better Auth, membership, lời mời/duyệt/thu hồi, claim hồ sơ, danh bạ và hồ sơ. Chưa có backend quan hệ gia phả, lịch âm, chat, moments, notifications hoặc AI.
+- GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary đã được commit và đẩy lên `origin/feat/product-experience-foundation` tại `881e1e6`.
+- Backend quan hệ đang ở nhánh kế tiếp `feat/family-relationships`: migration `0010`, graph đọc có giới hạn và vòng đời đề xuất/duyệt đã được triển khai, chưa merge. Lịch âm, chat, moments, notifications và AI chưa có backend.
 
 ## Gói A — ổn định onboarding
 
@@ -41,10 +41,18 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Membership active trong `/app` đã dùng app bar, tab bar mobile có safe-area và desktop rail. Home chỉ hiển thị tên nhà, danh tính và số thành viên từ API thật; Gia phả hiện là danh bạ thật có nhãn rõ rằng các cạnh quan hệ chưa kết nối; Moments và Chat là trạng thái chưa sẵn sàng trung thực, không gửi API giả hoặc trộn fixture. Guest, invitation, pending và revoked vẫn dùng luồng truy cập đã ổn định.
 - Đây vẫn chưa phải UI cuối. Ba bề mặt connected Home, Gia phả/danh bạ và Tôi đã được kiểm trực quan ở Pixel 7; cần tiếp tục thử với thành viên gia đình thật trước khi mở rộng các tính năng giữ chân.
 
+## Backend quan hệ gia đình — đang ở nhánh tính năng
+
+- Migration `0010_relationships.sql` tạo `relationships` và `change_requests` với composite foreign key cùng nhà, RLS, optimistic version, cạnh partnership có lịch sử và dấu loại bỏ riêng với ngày kết thúc.
+- `GET /relationships` đọc graph đã duyệt quanh một root, depth 1–4 và tối đa 100 node. DTO node chỉ có member summary, không có biography hoặc contact.
+- Thành viên active có thể tạo và hủy đề xuất của mình. Admin active có thể xem pending, duyệt hoặc từ chối; create/update/remove được apply cùng audit trong transaction.
+- Approval khóa advisory theo `family_id`, kiểm lại duplicate, version và chu trình. Integration test hai approval đối nghịch đồng thời chứng minh chỉ một cạnh được lưu.
+- `/app` chưa gọi graph API này; tab Gia phả vẫn dùng danh bạ server làm fallback. Nối cây thật và luồng đề xuất trên mobile là lát cắt kế tiếp.
+
 ## Kiểm chứng mới nhất
 
-- `npm run check`: đạt ngày 2026-09-10; boundaries, tokens, lint, Prettier, typecheck, **40/40 unit tests**, brain validation 57 Markdown files và build 8 workspace đều đạt.
-- Integration với PostgreSQL/Mailpit local: **12/12 tests đạt**. `.env` ignored đã được bổ sung cấu hình local còn thiếu, migrations 0002–0009 đã áp dụng và hai role giới hạn đã được provision.
+- `npm run check`: đạt ngày 2026-09-10 trên nhánh quan hệ; boundaries, tokens, lint, Prettier, typecheck, **53/53 unit tests**, brain validation 59 Markdown files và build 8 workspace đều đạt.
+- Integration với PostgreSQL/Mailpit local: **17/17 tests đạt**. Migration `0010_relationships.sql`, database constraint/RLS test và tenant test đều đạt; hai role giới hạn vẫn được provision đúng.
 - `npm run test:e2e`: **107 đạt, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Ngoài preview, test connected xác nhận năm đích, dữ liệu nhà thật, admin chỉ ở Tôi, Moments/Chat không giả dữ liệu, bản nháp hồ sơ qua đổi tab, viewport 320/390/768/1280, logout khi refresh cũ còn chờ và desktop rail không gây tràn ngang.
 - Chín bề mặt mobile ở Pixel 7 đã được chụp và kiểm bằng mắt: sáu preview trước đó cùng connected Home, Gia phả/danh bạ và Tôi. App bar, tab bar, tên tiếng Việt dài, hierarchy, form hồ sơ và các trạng thái chưa kết nối đều đã được rà soát; biểu tượng tìm kiếm và overflow desktop được sửa sau lượt kiểm này.
 - `verify-connected-onboarding.mjs`: đạt lại sau thay đổi shell qua web/API/PostgreSQL/Mailpit thật trên cổng kiểm thử riêng 3220/4020 với hai tài khoản hư cấu. Đã kiểm đăng ký, xác minh, lời mời, pending, duyệt, claim, lưu hồ sơ, danh bạ Gia phả, logout, reset password và revoke; script cleanup dữ liệu của lần chạy.
@@ -53,11 +61,11 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 ## Tiếp theo
 
 1. Chủ dự án thử `/app` trên điện thoại với dữ liệu pilot, đặc biệt Home, danh bạ Gia phả, cập nhật hồ sơ và Quản trị dưới Tôi; ghi nhận ngôn ngữ hoặc nhịp thao tác còn gượng.
-2. Triển khai `Relationship`/`ChangeRequest`, audit và graph API bằng migration mới sau `0009`, rồi thay danh bạ trong Gia phả bằng cây dữ liệu server đã kiểm quyền.
-3. Spike thư viện graph cho pan, pinch/wheel zoom, kéo khung nhìn, “Về tôi”, thu/mở nhánh và luồng đề nghị thêm người từ cây.
+2. Nối graph API thật vào tab Gia phả, giữ danh bạ làm lối tương đương; thêm form đề xuất và danh sách duyệt mobile dựa trên contract đã có.
+3. Sau khi luồng graph thật ổn định, spike thư viện graph cho pan, pinch/wheel zoom, kéo khung nhìn, “Về tôi” và thu/mở nhánh.
 4. Sau khi cây thật ổn định, chọn vertical slice giữ chân đầu tiên giữa Moments và Ngày quan trọng/nhắc ngày; Chat realtime chỉ bắt đầu khi có contract retry, delivery và privacy rõ.
 5. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local, chưa deploy, chưa có quan hệ gia phả thật, thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request. Chỉ bổ sung migration mới sau 0009.
+Chưa phải MVP production: email hiện qua Mailpit local, chưa deploy; backend quan hệ mới ở nhánh tính năng và cây thật chưa nối vào app. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request. Migration tiếp theo phải được thêm sau `0010`.

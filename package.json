@@ -37,6 +37,7 @@
     "db:provision-auth": "node --env-file=.env packages/database/scripts/provision-auth.mjs",
     "test:auth-schema": "node --env-file=.env packages/database/scripts/test-auth-schema.mjs",
     "test:tenant": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-tenant.mjs",
+    "test:relationships": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-relationships.mjs",
     "db:bootstrap-family": "node --env-file=.env packages/database/scripts/bootstrap-family.mjs"
   },
   "devDependencies": {
