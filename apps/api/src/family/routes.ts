@@ -4,6 +4,7 @@ import {
   createMemberBodySchema,
   memberListQuerySchema,
   memberParamsSchema,
+  relationshipGraphQuerySchema,
   updateMemberBodySchema,
   type CreateMemberInput,
   type UpdateMemberInput,
@@ -27,6 +28,7 @@ import { acceptInvitation, createInvitation, revokeInvitation } from './invitati
 import { approveMembership, listMemberships, revokeMembership } from './memberships.js';
 import { confirmClaim, createClaim, declineClaim, previewClaim, revokeClaim } from './claims.js';
 import { getOwnOnboarding } from './onboarding.js';
+import { getRelationshipGraph } from './relationships.js';
 import {
   createMember,
   getManagedMember,
@@ -92,6 +94,11 @@ interface MemberListQuery {
   q?: string;
   cursor?: string;
   limit?: number;
+}
+
+interface RelationshipGraphQuery {
+  root_member_id: string;
+  depth?: number;
 }
 
 interface MemberParams extends FamilyParams {
@@ -449,6 +456,33 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
               ...(query ? { q: query } : {}),
               ...(request.query.cursor ? { cursor: request.query.cursor } : {}),
               limit: request.query.limit ?? 20,
+            });
+          },
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams; Querystring: RelationshipGraphQuery }>(
+    '/api/v1/families/:familyId/relationships',
+    { schema: { params: familyParams, querystring: relationshipGraphQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        assertUuid(request.query.root_member_id, 'root_member_id');
+        const actor = await authenticatedActor(options.auth, request);
+        const result = await withActorTransaction(
+          options.runtimePool,
+          actor.userId,
+          async (client) => {
+            await requireFamily(client, actor.userId, familyId);
+            return getRelationshipGraph(client, {
+              familyId,
+              rootMemberId: request.query.root_member_id,
+              depth: request.query.depth ?? 2,
             });
           },
         );
