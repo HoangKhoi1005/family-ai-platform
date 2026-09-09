@@ -62,12 +62,11 @@ export default async function DesignPreviewHome({
                 </div>
                 <Link href="/design-preview/moments">Xem tất cả</Link>
               </div>
+              <div className={styles.momentQuickBar}>
+                <span>Có chuyện gì muốn gửi về nhà?</span>
+                <Link href="/design-preview/moments?compose=true">Gửi ảnh</Link>
+              </div>
               <div className={styles.momentRail}>
-                <Link className={styles.quickMoment} href="/design-preview/moments?compose=true">
-                  <span aria-hidden="true">＋</span>
-                  <strong>Gửi ảnh</strong>
-                  <small>cho cả nhà</small>
-                </Link>
                 <Link
                   className={`${styles.momentCard} ${styles.momentKitchen}`}
                   href="/design-preview/profile"

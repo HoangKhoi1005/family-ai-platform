@@ -4,7 +4,13 @@ import { normalizeVietnamese, previewMembers } from '../fixtures';
 import { PreviewIdentity } from '../preview-identity';
 import styles from './tree.module.css';
 
-export function TreeDirectory({ selectedId }: { selectedId: string }) {
+export function TreeDirectory({
+  selectedId,
+  onOpenProfile,
+}: {
+  selectedId: string;
+  onOpenProfile: (opener: HTMLAnchorElement) => void;
+}) {
   const [query, setQuery] = useState('');
   const results = useMemo(() => {
     const normalized = normalizeVietnamese(query.trim());
@@ -38,7 +44,10 @@ export function TreeDirectory({ selectedId }: { selectedId: string }) {
             <span>{String(index + 1).padStart(2, '0')}</span>
             <PreviewIdentity member={member} size="small" />
             <div>
-              <Link href={`?view=directory&person=${member.id}#selected-member-profile`}>
+              <Link
+                href={`?view=directory&person=${member.id}#selected-member-profile`}
+                onClick={(event) => onOpenProfile(event.currentTarget)}
+              >
                 {member.displayName}
               </Link>
               <small>

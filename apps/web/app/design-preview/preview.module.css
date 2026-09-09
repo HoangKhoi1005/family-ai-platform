@@ -949,10 +949,10 @@
     width: 78px;
   }
   .profilePortraitWrap > span:last-child {
-    font-size: 8px;
+    font-size: 10px;
   }
   .profileIdentity .kicker {
-    font-size: 9px;
+    font-size: 11px;
     margin-bottom: 5px;
   }
   .profileIdentity h1 {
@@ -964,7 +964,7 @@
     font-size: 34px;
   }
   .profileIdentity > p:last-child {
-    font-size: 11px;
+    font-size: 13px;
     line-height: 1.4;
     margin-top: 8px;
   }
@@ -977,7 +977,7 @@
   }
   .profileActions a {
     border: 0;
-    font-size: 11px;
+    font-size: 13px;
     justify-content: center;
     min-height: 44px;
     text-align: center;

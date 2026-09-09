@@ -1,3 +1,4 @@
+import type { RefObject } from 'react';
 import type { PreviewMember } from '../fixtures';
 import { PreviewIdentity } from '../preview-identity';
 import { getConnections } from './tree-model';
@@ -8,20 +9,25 @@ export function MemberSheet({
   onSelect,
   open,
   onClose,
+  sheetRef,
+  modal,
 }: {
   member: PreviewMember;
   onSelect: (id: string) => void;
   open: boolean;
   onClose: () => void;
+  sheetRef: RefObject<HTMLElement | null>;
+  modal: boolean;
 }) {
   const connections = getConnections(member.id);
   return (
     <aside
+      ref={sheetRef}
       id="selected-member-profile"
       className={`${styles.memberSheet} ${open ? styles.memberSheetOpen : ''}`}
       aria-label="Hồ sơ người thân"
-      role="dialog"
-      aria-modal={open ? 'true' : undefined}
+      role={modal ? 'dialog' : 'complementary'}
+      aria-modal={modal && open ? 'true' : undefined}
       tabIndex={-1}
     >
       <div className={styles.sheetLabel}>

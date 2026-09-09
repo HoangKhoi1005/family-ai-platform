@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePreviewDialog } from '../use-preview-dialog';
 import { TreeCanvas } from './tree-canvas';
 import { TreeDirectory } from './tree-directory';
 import { getTreePerson } from './tree-model';
@@ -15,46 +16,82 @@ export function TreePreview() {
   const selected = getTreePerson(searchParams.get('person'));
   const profileOpen = searchParams.has('person');
   const directoryView = searchParams.get('view') === 'directory';
+  const sheetRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<HTMLElement>(null);
+  const treeTopRef = useRef<HTMLElement>(null);
+  const [mobileSheet, setMobileSheet] = useState(false);
 
   useEffect(() => {
-    if (!profileOpen || !window.matchMedia('(max-width: 760px)').matches) return;
-    const profile = document.getElementById('selected-member-profile');
-    profile?.focus({ preventScroll: true });
-  }, [profileOpen, selected.id]);
+    const query = window.matchMedia('(max-width: 760px)');
+    const update = () => setMobileSheet(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
-  function selectPerson(id: string) {
+  useEffect(() => {
+    returnFocusRef.current ??= treeTopRef.current;
+  }, []);
+
+  useEffect(() => {
+    if (!profileOpen || !mobileSheet) return;
+    window.requestAnimationFrame(() => {
+      const sheet = sheetRef.current;
+      if (sheet && !sheet.contains(document.activeElement)) sheet.focus({ preventScroll: true });
+    });
+  }, [mobileSheet, profileOpen, selected.id]);
+
+  function selectPerson(id: string, opener?: HTMLButtonElement) {
+    if (opener) returnFocusRef.current = opener;
     const next = new URLSearchParams(searchParams.toString());
     next.set('person', id);
     router.replace(`/design-preview/tree?${next.toString()}`, { scroll: false });
   }
 
-  function closeProfile() {
+  const closeProfile = useCallback(() => {
     const next = new URLSearchParams(searchParams.toString());
     next.delete('person');
     router.replace(`/design-preview/tree${next.size ? `?${next.toString()}` : ''}`, {
       scroll: false,
     });
-    document.getElementById('tree-top')?.focus({ preventScroll: true });
-    document.getElementById('tree-top')?.scrollIntoView({ block: 'start' });
-  }
+  }, [router, searchParams]);
+
+  usePreviewDialog({
+    open: profileOpen && mobileSheet,
+    dialogRef: sheetRef,
+    returnFocusRef,
+    onClose: closeProfile,
+  });
 
   return (
     <main id="main" className={styles.treePage}>
-      <header id="tree-top" className={styles.treeMasthead} tabIndex={-1}>
+      <header ref={treeTopRef} id="tree-top" className={styles.treeMasthead} tabIndex={-1}>
         <div>
           <p>GIA PHẢ · 15 NGƯỜI</p>
           <h1>Cây nhà mình</h1>
         </div>
         <div className={styles.treeIntro}>
           <nav aria-label="Chế độ xem gia phả">
-            <Link href="/design-preview/tree?person=gia-bao">Về tôi</Link>
+            <Link
+              href="/design-preview/tree?person=gia-bao"
+              onClick={(event) => {
+                returnFocusRef.current = event.currentTarget;
+              }}
+            >
+              Về tôi
+            </Link>
             <Link href="/design-preview/tree?view=directory">Tìm người</Link>
           </nav>
         </div>
       </header>
       <div className={styles.treeWorkspace}>
         {directoryView ? (
-          <TreeDirectory selectedId={selected.id} />
+          <TreeDirectory
+            selectedId={selected.id}
+            onOpenProfile={(opener) => {
+              returnFocusRef.current = opener;
+            }}
+          />
         ) : (
           <TreeCanvas selected={selected} onSelect={selectPerson} />
         )}
@@ -71,6 +108,8 @@ export function TreePreview() {
           onSelect={selectPerson}
           open={profileOpen}
           onClose={closeProfile}
+          sheetRef={sheetRef}
+          modal={mobileSheet}
         />
       </div>
     </main>

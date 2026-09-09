@@ -1,9 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import type { PreviewMember } from '../fixtures';
+import { previewRelationships, type PreviewMember } from '../fixtures';
 import { PreviewIdentity } from '../preview-identity';
-import { treeGenerations } from './tree-model';
+import {
+  getRelationshipPath,
+  getTreeNodePosition,
+  treeCanvasSize,
+  treeGenerations,
+} from './tree-model';
 import styles from './tree.module.css';
 
 export function TreeCanvas({
@@ -11,7 +16,7 @@ export function TreeCanvas({
   onSelect,
 }: {
   selected: PreviewMember;
-  onSelect: (id: string) => void;
+  onSelect: (id: string, opener?: HTMLButtonElement) => void;
 }) {
   const [zoom, setZoom] = useState(0.9);
 
@@ -44,25 +49,57 @@ export function TreeCanvas({
         </div>
       </header>
       <div className={styles.treeViewport} tabIndex={0} aria-label="Sơ đồ gia phả ba thế hệ">
-        <div className={styles.generationStack} style={{ transform: `scale(${zoom})` }}>
+        <div
+          className={styles.generationStack}
+          style={{
+            height: treeCanvasSize.height,
+            transform: `scale(${zoom})`,
+            width: treeCanvasSize.width,
+          }}
+        >
+          <svg
+            className={styles.relationshipLayer}
+            viewBox={`0 0 ${treeCanvasSize.width} ${treeCanvasSize.height}`}
+            aria-hidden="true"
+          >
+            {previewRelationships.map((relationship) => (
+              <path
+                key={`${relationship.kind}-${relationship.from}-${relationship.to}`}
+                className={
+                  relationship.kind === 'adoptive-parent'
+                    ? styles.relationshipAdoptive
+                    : styles.relationshipConfirmed
+                }
+                d={getRelationshipPath(relationship.from, relationship.to, relationship.kind)}
+                data-relationship-kind={relationship.kind}
+                data-from={relationship.from}
+                data-to={relationship.to}
+              />
+            ))}
+          </svg>
           {treeGenerations.map(({ generation, members }) => (
             <section
-              className={styles.generation}
+              className={styles.treeGenerationLayer}
               key={generation}
               aria-label={`Thế hệ ${generation}`}
             >
-              <span className={styles.generationLabel}>
+              <span
+                className={styles.generationLabel}
+                style={{ top: getTreeNodePosition(members[0]!.id).y }}
+              >
                 THẾ HỆ {String(generation).padStart(2, '0')}
               </span>
-              <div className={styles.generationPeople}>
-                {members.map((member) => (
+              {members.map((member) => {
+                const position = getTreeNodePosition(member.id);
+                return (
                   <button
                     key={member.id}
                     className={`${styles.personNode} ${selected.id === member.id ? styles.personNodeSelected : ''}`}
+                    style={{ left: position.x, top: position.y }}
                     type="button"
                     aria-label={`Xem hồ sơ ${member.displayName}`}
                     aria-pressed={selected.id === member.id}
-                    onClick={() => onSelect(member.id)}
+                    onClick={(event) => onSelect(member.id, event.currentTarget)}
                   >
                     <PreviewIdentity member={member} size="small" />
                     <span className={styles.nodeCopy}>
@@ -76,8 +113,8 @@ export function TreeCanvas({
                       <span className={styles.adoptiveMark}>Con nuôi</span>
                     ) : null}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </section>
           ))}
         </div>

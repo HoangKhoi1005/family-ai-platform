@@ -21,7 +21,7 @@ export default async function DesignPreviewMe({
             <h1>Gia Bảo</h1>
             <span>{viewer.displayName} · Thành viên</span>
           </div>
-          <Link href="/design-preview/profile?mode=edit">Chỉnh sửa</Link>
+          <Link href="/design-preview/profile?person=gia-bao&mode=edit">Chỉnh sửa</Link>
         </header>
         {panel === 'notifications' ? (
           <section className={styles.notificationPanel}>
@@ -36,9 +36,25 @@ export default async function DesignPreviewMe({
               <span>12 ngày nữa · Cần Thơ</span>
             </div>
           </section>
+        ) : panel === 'privacy' ? (
+          <section className={styles.notificationPanel} aria-labelledby="privacy-heading">
+            <p>QUYỀN RIÊNG TƯ</p>
+            <h2 id="privacy-heading">Ai được xem thông tin của bạn?</h2>
+            <div>
+              <strong>Số điện thoại</strong>
+              <span>Chỉ người trong nhà đã được duyệt</span>
+            </div>
+            <div>
+              <strong>Email và nơi đang sống</strong>
+              <span>Cùng phạm vi người xem ở trên</span>
+            </div>
+            <Link href="/design-preview/profile?person=gia-bao&mode=edit">
+              Kiểm tra hồ sơ của tôi
+            </Link>
+          </section>
         ) : null}
         <nav className={styles.settingsList} aria-label="Cài đặt tài khoản">
-          <Link href="/design-preview/profile">
+          <Link href="/design-preview/profile?person=gia-bao">
             <span>
               <strong>Hồ sơ cá nhân</strong>
               <small>Thông tin và cách cả nhà gọi bạn</small>

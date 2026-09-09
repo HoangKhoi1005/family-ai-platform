@@ -343,6 +343,24 @@
   padding: 2px 2px 10px;
   scroll-snap-type: x mandatory;
 }
+.momentQuickBar {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-soft);
+  border-top: 1px solid var(--color-border-soft);
+  display: flex;
+  font-size: 13px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  min-height: 52px;
+}
+.momentQuickBar a {
+  align-items: center;
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  font-weight: 750;
+  min-height: 44px;
+  text-decoration: none;
+}
 .quickMoment,
 .momentCard {
   min-height: 276px;
@@ -698,16 +716,22 @@
 }
 .feedMoment footer {
   display: flex;
+  flex-direction: row;
   gap: 18px;
 }
-.feedMoment footer button {
+.feedMoment footer button,
+.feedMoment footer a {
   background: transparent;
   border: 0;
   border-bottom: 1px solid var(--color-border-soft);
+  color: var(--color-text-primary);
+  display: inline-flex;
+  align-items: center;
   font-size: 12px;
   font-weight: 750;
   min-height: 44px;
   padding: 0;
+  text-decoration: none;
 }
 .sheetBackdrop {
   align-items: end;
@@ -795,6 +819,28 @@
   resize: vertical;
   width: 100%;
 }
+.recipientChoices {
+  border: 1px solid var(--color-border-soft);
+  margin: 16px 0 0;
+  padding: 12px;
+}
+.recipientChoices legend {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 4px;
+}
+.recipientChoices label {
+  align-items: center;
+  color: var(--color-text-primary);
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.recipientChoices input {
+  height: 20px;
+  width: 20px;
+}
 .sheetPrimary {
   background: var(--color-brand-primary);
   border: 0;
@@ -804,6 +850,10 @@
   margin-top: 20px;
   min-height: 50px;
   width: 100%;
+}
+.sheetPrimary:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 .threadList {
   border-top: 1px solid var(--color-text-primary);
@@ -884,8 +934,10 @@
 .conversationHeader > span {
   display: grid;
 }
-.conversationHeader strong {
+.conversationHeader strong,
+.conversationHeader h1 {
   font-size: 15px;
+  margin: 0;
 }
 .conversationHeader small {
   color: var(--color-text-secondary);
@@ -1203,6 +1255,73 @@
   .meIdentity > a {
     grid-column: 3;
     grid-row: 1;
+  }
+}
+
+@media (max-width: 899px) {
+  .previewNotice,
+  .houseIdentity small,
+  .navigationItems a,
+  .mobilePageHeader p,
+  .sectionHeading p,
+  .surfaceHeader p,
+  .meIdentity p,
+  .notificationPanel > p,
+  .adminEntry > p {
+    font-size: 11px;
+  }
+
+  .nextEvent time span,
+  .eventMain small,
+  .momentPerson small,
+  .reminderList time span,
+  .reminderList small,
+  .feedMoment > header small,
+  .threadList small,
+  .threadList time,
+  .conversationHeader small,
+  .messageStream > time,
+  .messageStream article strong,
+  .messageStream article small,
+  .notificationPanel span,
+  .adminEntry small,
+  .previewFootnote {
+    font-size: 12px;
+  }
+
+  .eventMain > span,
+  .quickMoment small,
+  .familyShortcut p span,
+  .mobileFooter,
+  .composerSheet > header small {
+    font-size: 12px;
+  }
+
+  .sectionHeading a,
+  .momentQuickBar,
+  .momentPerson strong,
+  .reminderList > div > span strong,
+  .familyShortcut > a,
+  .feedMoment footer button,
+  .feedMoment footer a,
+  .composerSheet label,
+  .privacyStrip,
+  .messageComposer button,
+  .meIdentity > a,
+  .notificationPanel strong,
+  .settingsList small,
+  .adminEntry a {
+    font-size: 13px;
+  }
+
+  .momentCard > span:last-child,
+  .surfaceLead,
+  .feedMoment > p,
+  .localStatus,
+  .threadList strong,
+  .messageStream article p,
+  .settingsList strong {
+    font-size: 15px;
   }
 }
 
