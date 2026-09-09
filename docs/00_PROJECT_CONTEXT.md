@@ -23,7 +23,7 @@ Gia đình khác nhau không thấy dữ liệu của nhau. Trong cùng nhà, qu
 
 ## Phạm vi và trạng thái
 
-Nguồn phạm vi phát hành: [MVP](04_MVP_SCOPE.md). Nguồn tiến độ: [CURRENT_STATE](../CURRENT_STATE.md). Đã có monorepo nền tảng theo [ADR-001](decisions/ADR-001-monorepo.md): npm/Turbo, TypeScript, Next.js, Fastify, PostgreSQL. Đợt onboarding email/mật khẩu, lời mời, duyệt membership và nhận hồ sơ đã được tích hợp; gói ổn định mất mạng, claim hết hạn và thu hồi quyền đang ở nhánh kiểm chứng. Auth dùng Better Auth theo [ADR-002](decisions/ADR-002-authentication.md). Hosting, storage và LLM provider chưa chọn; chưa có dữ liệu gia đình thật.
+Nguồn phạm vi phát hành: [MVP](04_MVP_SCOPE.md). Nguồn tiến độ: [CURRENT_STATE](../CURRENT_STATE.md). Đã có monorepo nền tảng theo [ADR-001](decisions/ADR-001-monorepo.md): npm/Turbo, TypeScript, Next.js, Fastify, PostgreSQL. Onboarding email/mật khẩu, lời mời, duyệt membership, nhận hồ sơ và gói ổn định mất mạng/claim/revoke đã được merge vào `main` tại `9854d39`; CI của merge commit đạt. Gói tiếp theo chốt nền trải nghiệm sản phẩm trước khi triển khai dữ liệu quan hệ thật. Auth dùng Better Auth theo [ADR-002](decisions/ADR-002-authentication.md). Hosting, storage và LLM provider chưa chọn; chưa có dữ liệu gia đình thật.
 
 ## Các giả định cần xác minh
 

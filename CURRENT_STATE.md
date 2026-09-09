@@ -1,8 +1,8 @@
 # Trạng thái dự án
 
 - Cập nhật: 2026-09-09. Context version: **1.3.0**.
-- Pilot 15 người. Onboarding nền đã được merge vào `main` tại `c07a225`.
-- Gói A đang ở worktree `.worktrees/onboarding-stability`, nhánh `feat/onboarding-stability`; implementation đã kiểm chứng local nhưng chưa commit, push hoặc chạy trên GitHub CI.
+- Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
+- GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói B đang ở worktree `.worktrees/product-experience-foundation`, nhánh `feat/product-experience-foundation`, trong giai đoạn duyệt design spec.
 - Backend đã có Better Auth, membership, lời mời/duyệt/thu hồi, claim hồ sơ, danh bạ và hồ sơ. Chưa có backend quan hệ gia phả, lịch âm, chat, moments, notifications hoặc AI.
 
 ## Gói A — ổn định onboarding
@@ -41,14 +41,15 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Integration với PostgreSQL/Mailpit local: **12/12 tests đạt**. `.env` ignored đã được bổ sung cấu hình local còn thiếu, migrations 0002–0009 đã áp dụng và hai role giới hạn đã được provision.
 - `npm run test:e2e`: **50/50 tests đạt** trên Chromium desktop và Pixel 7 emulation, gồm 32 ca connected onboarding trên hai viewport.
 - `verify-connected-onboarding.mjs`: đạt qua web/API/PostgreSQL/Mailpit thật trên cổng kiểm thử riêng 3220/4020 với hai tài khoản hư cấu. Đã kiểm đăng ký, xác minh, lời mời, pending, duyệt, claim, lưu hồ sơ, cây minh họa, logout, reset password và revoke; script cleanup dữ liệu của lần chạy.
-- Workflow CI đã có gate browser thật nhưng chưa có run remote cho diff hiện tại vì nhánh chưa được push.
+- Workflow CI có gate browser thật; run của merge commit `9854d39` đạt trên GitHub trong khoảng 2 phút.
 
 ## Tiếp theo
 
-1. Review diff gói A; khi chủ dự án giao thì chia commit, push nhánh và theo dõi GitHub CI.
-2. Bắt đầu gói B: chốt một hệ thiết kế và duyệt trực quan ba màn Nhà mình, hồ sơ và cây trên desktop/mobile trước khi mở rộng UI.
-3. Sau khi hướng thiết kế được chấp nhận, triển khai Relationship/ChangeRequest và API cây thật, rồi thay fixture trong cây.
-4. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
+1. Chủ dự án review [design spec gói B](docs/superpowers/specs/2026-09-09-product-experience-foundation-design.md).
+2. Sau khi spec được duyệt, viết implementation plan và nâng cấp design preview cho Nhà mình, cây + hồ sơ, profile editor, admin và auth trên desktop/mobile.
+3. Sau khi bản chạy được được duyệt trực quan, chuyển shell/route đã duyệt vào `/app`; giữ toàn bộ onboarding regression xanh.
+4. Tiếp theo triển khai Relationship/ChangeRequest và API cây thật, rồi thay fixture trong cây.
+5. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
 
 ## Giới hạn
 
