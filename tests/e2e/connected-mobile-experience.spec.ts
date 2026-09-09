@@ -127,6 +127,9 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
   await page.route('**/api/v1/families/family-1/memberships', (route) =>
     route.fulfill({ json: { memberships: [] } }),
   );
+  await page.route('**/api/v1/families/family-1/change-requests?status=pending', (route) =>
+    route.fulfill({ json: { change_requests: [] } }),
+  );
 }
 
 test('active member gets the five-destination mobile shell without preview data', async ({
@@ -227,6 +230,68 @@ test('active admin reaches administration through Tôi instead of primary naviga
   await page.getByRole('button', { name: 'Quản trị nhà', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Đón người thân vào nhà.' })).toBeVisible();
   await expect(navigation.getByText('Tôi', { exact: true })).toBeVisible();
+});
+
+test('admin reviews a pending family relationship with resolved member names', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page, 'admin');
+  let pending = true;
+  let decision: unknown;
+  await page.route('**/api/v1/families/family-1/change-requests?status=pending', (route) =>
+    route.fulfill({
+      json: {
+        change_requests: pending
+          ? [
+              {
+                id: 'request-relationship-1',
+                type: 'relationship_create',
+                target_id: null,
+                base_version: null,
+                payload: {
+                  from_member_id: 'member-1',
+                  to_member_id: 'member-3',
+                  type: 'parent_child',
+                  subtype: 'adoptive',
+                },
+                status: 'pending',
+                requested_by: 'user-2',
+                reviewer_id: null,
+                decision_note: null,
+                decided_at: null,
+                version: 4,
+                created_at: '2026-09-10T00:00:00.000Z',
+                updated_at: '2026-09-10T00:00:00.000Z',
+              },
+            ]
+          : [],
+      },
+    }),
+  );
+  await page.route(
+    '**/api/v1/families/family-1/change-requests/request-relationship-1/decision',
+    async (route) => {
+      decision = route.request().postDataJSON();
+      pending = false;
+      await route.fulfill({
+        json: { id: 'request-relationship-1', status: 'approved', version: 5 },
+      });
+    },
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
+  await page.getByRole('button', { name: 'Quản trị nhà', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Duyệt thay đổi gia phả.' })).toBeVisible();
+  await expect(
+    page.getByText('Nguyễn Gia Bảo là cha / mẹ của Trần Thảo Chi', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Quan hệ cha / mẹ nuôi')).toBeVisible();
+  await page.getByRole('button', { name: 'Duyệt quan hệ' }).click();
+
+  await expect(page.getByRole('status')).toContainText('Đã duyệt quan hệ');
+  expect(decision).toEqual({ decision: 'approved', version: 4 });
+  await expect(page.getByText('Chưa có đề xuất quan hệ nào đang chờ.')).toBeVisible();
 });
 
 test('profile draft survives switching to another destination and back', async ({ page }) => {

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { request, explain } from './api';
 import type { AdminMembership, Member } from './types';
+import { RelationshipAdmin } from './relationship-admin';
 import s from './connected.module.css';
 
 export function AdminPanel({
@@ -256,6 +257,7 @@ export function AdminPanel({
           đã có.
         </p>
       </section>
+      <RelationshipAdmin base={base} members={members} onRefresh={onRefresh} />
     </section>
   );
 }
