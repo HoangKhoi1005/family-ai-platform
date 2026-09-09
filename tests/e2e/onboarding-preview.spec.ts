@@ -5,7 +5,7 @@ test('walks through the fixture-only invite flow into the directory', async ({ p
   page.on('pageerror', (error) => errors.push(error.message));
 
   await page.goto('/design-preview');
-  await page.getByRole('link', { name: 'Thử luồng vào nhà' }).click();
+  await page.getByRole('link', { name: 'Vào nhà', exact: true }).click();
   await expect(page).toHaveURL(/\/design-preview\/join$/);
   await expect(page.getByRole('complementary', { name: 'Thông tin bản mẫu' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Bạn được mời vào Nhà mình' })).toBeVisible();

@@ -1,95 +1,142 @@
 import Link from 'next/link';
-import { previewDirectory, previewGathering } from './fixtures';
+import { previewDirectory, previewGathering, previewMember } from './fixtures';
+import { PreviewIdentity } from './preview-identity';
 import styles from './preview.module.css';
 import { PreviewShell } from './preview-shell';
 
-export default function DesignPreviewHome() {
+export default async function DesignPreviewHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string }>;
+}) {
+  const { state } = await searchParams;
+  const isEmpty = state === 'empty';
+
   return (
     <PreviewShell>
-      <div className={styles.page}>
-        <header className={styles.pageHeader}>
-          <div>
-            <p className={styles.kicker}>Không gian gia đình · Bản mẫu</p>
-            <h1 className={styles.homeTitle}>Chào cả nhà.</h1>
+      <main id="main" className={styles.homePage}>
+        <header className={styles.homeHeader}>
+          <div className={styles.issueMark}>
+            <span>NHÀ ÔNG BÌNH &amp; BÀ MAI</span>
+            <span>THỨ TƯ · 09.09.2026</span>
           </div>
-          <p className={styles.headerIntro}>
-            Một góc nhỏ để thấy việc cần nhớ, gặp người thân và giữ lại những câu chuyện của nhà.
-          </p>
+          <div className={styles.homeHeading}>
+            <div>
+              <p className={styles.kicker}>Chuyện mới trong nhà</p>
+              <h1>Nhà mình, hôm nay.</h1>
+            </div>
+            <p>
+              Một trang mở ra để biết ai đang nhớ nhà, điều gì sắp đến và câu chuyện nào nên được
+              giữ lại.
+            </p>
+          </div>
         </header>
 
-        <main id="main" className={styles.main}>
-          <section className={styles.dateStrip} aria-labelledby="upcoming-heading">
-            <div className={styles.dateStripLabel}>
-              <p className={styles.kicker}>Điều sắp tới</p>
-              <h2 id="upcoming-heading">Lịch hẹn sắp tới</h2>
-            </div>
-            <div className={styles.dateStripEvent}>
-              <time dateTime={previewGathering.date}>{previewGathering.dateLabel}</time>
-              <div>
-                <h3>{previewGathering.title}</h3>
-                <p>{previewGathering.description}</p>
-              </div>
-              <span className={styles.syntheticLabel}>Dữ liệu minh họa</span>
+        {isEmpty ? (
+          <section className={styles.emptyHome} aria-labelledby="empty-home-heading">
+            <span className={styles.emptyNumber}>01</span>
+            <div>
+              <p className={styles.kicker}>Ngày đầu tiên</p>
+              <h2 id="empty-home-heading">Nhà mình đang chờ câu chuyện đầu tiên.</h2>
+              <p>
+                Mời người thân, thêm một ngày quan trọng hoặc bắt đầu từ cây gia phả. Mỗi việc đều
+                giúp căn nhà số này trở nên quen thuộc hơn.
+              </p>
+              <Link className={styles.textLink} href="/design-preview/join">
+                Xem luồng mời người thân <span aria-hidden="true">→</span>
+              </Link>
             </div>
           </section>
-
-          <div className={styles.editorialGrid}>
-            <section className={styles.storySection} aria-labelledby="story-heading">
-              <div className={styles.sectionHeading}>
-                <p className={styles.kicker}>Chuyện nhà</p>
-                <h2 id="story-heading">Nồi canh chua của Dì Hương.</h2>
+        ) : (
+          <>
+            <section className={styles.eventLedger} aria-labelledby="next-event-heading">
+              <time dateTime={previewGathering.date} className={styles.eventDate}>
+                <strong>{previewGathering.day}</strong>
+                <span>{previewGathering.month}</span>
+              </time>
+              <div className={styles.eventCopy}>
+                <p className={styles.kicker}>Cả nhà sắp gặp</p>
+                <h2 id="next-event-heading">{previewGathering.title}</h2>
+                <p>
+                  {previewGathering.time} · {previewGathering.location}
+                </p>
               </div>
-              <p className={styles.storyLead}>
-                Dì Hương ghi lại món cả nhà thường nấu vào chủ nhật.
-              </p>
-              <div
-                className={styles.imagePlaceholder}
-                role="img"
-                aria-label="Vị trí dành cho ảnh gia đình"
-              >
-                <span>Ảnh món ăn</span>
-                <small>Chưa có ảnh trong bản mẫu</small>
+              <div className={styles.eventNote}>
+                <span>12 ngày nữa</span>
+                <p>{previewGathering.description}</p>
               </div>
-              <p className={styles.caption}>
-                Bản mẫu giữ chỗ cho ảnh nồi canh chua được gia đình chia sẻ.
-              </p>
             </section>
 
-            <section className={styles.directorySection} aria-labelledby="directory-heading">
-              <div className={styles.sectionHeading}>
-                <p className={styles.kicker}>Người trong nhà</p>
-                <h2 id="directory-heading">Danh bạ gia đình</h2>
+            <section className={styles.storyFeature} aria-labelledby="story-heading">
+              <div
+                className={styles.storyArtwork}
+                role="img"
+                aria-label="Minh họa nồi canh chua trên bàn ăn gia đình"
+              >
+                <span className={styles.artWindow} />
+                <span className={styles.artTable} />
+                <span className={styles.artBowl} />
+                <span className={styles.artLeafOne} />
+                <span className={styles.artLeafTwo} />
+                <small>ẢNH GIA ĐÌNH · CHƯA CÓ</small>
               </div>
-              <ul className={styles.directoryList}>
-                {previewDirectory.map((member) => (
-                  <li key={member.displayName}>
-                    <span className={styles.initials} aria-hidden="true">
-                      {member.familiarName
-                        .split(' ')
-                        .map((part) => part[0])
-                        .join('')
-                        .slice(0, 2)}
-                    </span>
-                    <div className={styles.directoryCopy}>
-                      {member.familiarName === 'Dì Hương' ? (
-                        <Link className={styles.directoryLink} href="/design-preview/profile">
-                          Xem hồ sơ Dì Hương
-                        </Link>
+              <article className={styles.storyCopy}>
+                <span className={styles.storyNumber}>01 / CHUYỆN NHÀ</span>
+                <h2 id="story-heading">Nồi canh chua mà ai đi xa cũng nhớ.</h2>
+                <p className={styles.storyLead}>
+                  Dì Hương vừa ghi lại công thức chủ nhật: me vừa tay, rau om cắt sau cùng và luôn
+                  chừa một phần cho người về trễ.
+                </p>
+                <div className={styles.storyByline}>
+                  <PreviewIdentity member={previewMember} size="small" />
+                  <div>
+                    <strong>{previewMember.familiarName}</strong>
+                    <span>ghi lại · hôm qua</span>
+                  </div>
+                </div>
+                <Link className={styles.textLink} href="/design-preview/profile">
+                  Xem hồ sơ Dì Hương <span aria-hidden="true">→</span>
+                </Link>
+              </article>
+            </section>
+
+            <section className={styles.peopleSection} aria-labelledby="people-heading">
+              <div className={styles.sectionIntro}>
+                <div>
+                  <p className={styles.kicker}>Người trong nhà</p>
+                  <h2 id="people-heading">Gần nhau qua từng khuôn mặt.</h2>
+                </div>
+                <Link className={styles.textLink} href="/design-preview/tree?view=directory">
+                  Mở danh bạ <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+              <ol className={styles.peopleList}>
+                {previewDirectory.slice(0, 5).map((member, index) => (
+                  <li key={member.id}>
+                    <span className={styles.peopleIndex}>{String(index + 1).padStart(2, '0')}</span>
+                    <PreviewIdentity member={member} />
+                    <div>
+                      {member.id === 'thanh-huong' ? (
+                        <Link href="/design-preview/profile">{member.familiarName}</Link>
                       ) : (
-                        <span className={styles.directoryName}>{member.familiarName}</span>
+                        <strong>{member.familiarName}</strong>
                       )}
-                      <span className={styles.directoryMeta}>{member.displayName}</span>
+                      <span>{member.relationToViewer}</span>
                     </div>
                   </li>
                 ))}
-              </ul>
-              <p className={styles.supportingText}>
-                Lịch nhà, Trò chuyện và Khoảnh khắc chưa thuộc bản mẫu này.
-              </p>
+              </ol>
             </section>
-          </div>
-        </main>
-      </div>
+          </>
+        )}
+
+        <footer className={styles.homeFooter}>
+          <span>Không quảng cáo · Không người lạ · Dữ liệu thuộc về gia đình</span>
+          <Link href={isEmpty ? '/design-preview' : '/design-preview?state=empty'}>
+            {isEmpty ? 'Xem trạng thái có nội dung' : 'Xem trạng thái nhà mới'}
+          </Link>
+        </footer>
+      </main>
     </PreviewShell>
   );
 }

@@ -1,0 +1,294 @@
+.adminPage {
+  margin: auto;
+  max-width: 1120px;
+  overflow: clip;
+  padding: 48px 24px 72px;
+}
+.adminPage button {
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  min-height: 44px;
+}
+.adminPage button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+.adminHeader {
+  align-items: end;
+  border-bottom: 1px solid var(--color-text-primary);
+  display: grid;
+  gap: clamp(32px, 8vw, 120px);
+  grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr);
+  padding-bottom: 42px;
+}
+.adminHeader > div > p,
+.candidate p,
+.emptyQueue div > p {
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  margin: 0 0 12px;
+}
+.adminHeader h1 {
+  font-family: var(--typography-font-title);
+  font-size: clamp(48px, 7vw, 82px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  margin: 0;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+.adminHeader > p {
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 1.65;
+  margin: 0;
+}
+.stateNav {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-soft);
+  display: flex;
+  gap: 4px;
+  padding: 14px 0;
+}
+.stateNav span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-right: auto;
+  text-transform: uppercase;
+}
+.stateNav button {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  padding: 0 12px;
+}
+.stateNav button[aria-pressed='true'] {
+  border-bottom-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 750;
+}
+.reviewSheet {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  padding: 54px 0;
+}
+.reviewNumber {
+  border-right: 1px solid var(--color-border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reviewNumber span {
+  color: var(--color-accent);
+  font-family: var(--typography-font-title);
+  font-size: 48px;
+  font-style: italic;
+}
+.reviewNumber small {
+  color: var(--color-text-secondary);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  writing-mode: vertical-rl;
+}
+.candidate {
+  align-items: center;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  padding: 0 42px;
+}
+.candidate > :first-child {
+  height: 168px;
+  width: 132px;
+}
+.candidate h2 {
+  font-family: var(--typography-font-person-name);
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: 0 0 14px;
+  overflow-wrap: anywhere;
+}
+.candidate div > span {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.evidence {
+  border-left: 1px solid var(--color-text-primary);
+  padding-left: 30px;
+}
+.evidence h3 {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+}
+.evidence dl {
+  margin: 0;
+}
+.evidence dl div {
+  border-top: 1px solid var(--color-border-soft);
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 100px minmax(0, 1fr);
+  padding: 13px 0;
+}
+.evidence dt {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+.evidence dd {
+  font-size: 14px;
+  font-weight: 650;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.conflictNote {
+  background: #f6e6dd;
+  border-left: 3px solid var(--color-danger);
+  font-size: 13px;
+  line-height: 1.55;
+  padding: 13px;
+}
+.reviewActions {
+  align-items: center;
+  border-top: 1px solid var(--color-text-primary);
+  display: flex;
+  gap: 14px;
+  grid-column: 2 / -1;
+  margin: 42px 0 0 42px;
+  padding-top: 18px;
+}
+.reviewActions p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0 auto 0 0;
+}
+.reviewActions button {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 750;
+  padding: 0 12px;
+}
+.reviewActions button:first-of-type {
+  background: var(--color-brand-primary);
+  border: 0;
+  color: var(--color-on-brand);
+  padding: 0 20px;
+}
+.emptyQueue {
+  border-bottom: 1px solid var(--color-text-primary);
+  display: grid;
+  gap: 40px;
+  grid-template-columns: 80px minmax(0, 640px);
+  padding: 72px 0;
+}
+.emptyQueue > span {
+  color: var(--color-accent);
+  font-family: var(--typography-font-title);
+  font-size: 48px;
+  font-style: italic;
+}
+.emptyQueue h2 {
+  font-family: var(--typography-font-title);
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+.emptyQueue div > p:last-child {
+  color: var(--color-text-secondary);
+  font-size: 17px;
+  line-height: 1.65;
+}
+.adminFooter {
+  border-top: 1px solid var(--color-text-primary);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  padding: 16px 0;
+}
+@media (max-width: 760px) {
+  .adminPage {
+    padding: 34px 16px 52px;
+  }
+  .adminHeader {
+    align-items: start;
+    gap: 24px;
+    grid-template-columns: 1fr;
+    padding-bottom: 30px;
+  }
+  .adminHeader h1 {
+    font-size: clamp(44px, 14vw, 60px);
+  }
+  .stateNav {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .stateNav span {
+    flex: 0 0 100%;
+  }
+  .reviewSheet {
+    grid-template-columns: 50px minmax(0, 1fr);
+    padding: 38px 0;
+  }
+  .candidate {
+    gap: 18px;
+    grid-template-columns: 90px minmax(0, 1fr);
+    padding: 0 0 28px 20px;
+  }
+  .candidate > :first-child {
+    height: 114px;
+    width: 90px;
+  }
+  .candidate h2 {
+    font-size: 32px;
+  }
+  .evidence {
+    border-left: 0;
+    border-top: 1px solid var(--color-text-primary);
+    grid-column: 2;
+    padding: 26px 0 0 20px;
+  }
+  .reviewActions {
+    align-items: stretch;
+    flex-direction: column;
+    grid-column: 1 / -1;
+    margin: 28px 0 0;
+  }
+  .reviewActions p {
+    margin: 0;
+  }
+  .reviewActions button {
+    width: 100%;
+  }
+}
+@media (max-width: 380px) {
+  .adminPage {
+    padding-inline: 12px;
+  }
+  .candidate {
+    align-items: start;
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .candidate > :first-child {
+    height: 84px;
+    width: 64px;
+  }
+  .evidence dl div {
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+}
