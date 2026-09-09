@@ -10,6 +10,12 @@ for (const value of [origin, database])
   if (!['localhost', '127.0.0.1', '::1'].includes(new URL(value).hostname))
     throw Error('Loopback only');
 const pool = new pg.Pool({ connectionString: database });
+const authRateLimitPaths = [
+  '/sign-up/email',
+  '/sign-in/email',
+  '/request-password-reset',
+  '/reset-password',
+];
 const family = randomUUID();
 const stamp = Date.now();
 const emails = [`flow-admin-${stamp}@example.test`, `flow-member-${stamp}@example.test`];
@@ -24,21 +30,37 @@ for (const page of [admin, member]) {
 }
 const evidence = '.superpowers/ui-preview-evidence';
 await mkdir(evidence, { recursive: true });
+async function clearFlowAuthRateLimits() {
+  await pool.query(
+    `DELETE FROM auth_rate_limits
+      WHERE split_part(key, '|', 2) = ANY($1::text[])`,
+    [authRateLimitPaths],
+  );
+}
 async function mailLink(email, path) {
   const endpoint = `http://127.0.0.1:${process.env.MAILPIT_PORT ?? 8035}`;
+  let lastError;
   for (let attempt = 0; attempt < 40; attempt++) {
-    const list = await (await fetch(endpoint + '/api/v1/messages?limit=100')).json();
-    for (const item of list.messages ?? []) {
-      if (!JSON.stringify(item.To).includes(email)) continue;
-      const detail = await (await fetch(endpoint + '/api/v1/message/' + item.ID)).json();
-      const text = detail.Text ?? '';
-      const links = text.match(/https?:\/\/[^\s<>"']+/g) ?? [];
-      const link = links.find((value) => value.includes(path));
-      if (link && new URL(link).origin === origin) return link.replaceAll('&amp;', '&');
+    try {
+      const response = await fetch(endpoint + '/api/v1/messages?limit=100');
+      if (!response.ok) throw Error(`Mailpit list failed with ${response.status}`);
+      const list = await response.json();
+      for (const item of list.messages ?? []) {
+        if (!JSON.stringify(item.To).includes(email)) continue;
+        const detailResponse = await fetch(endpoint + '/api/v1/message/' + item.ID);
+        if (!detailResponse.ok) continue;
+        const detail = await detailResponse.json();
+        const text = detail.Text ?? '';
+        const links = text.match(/https?:\/\/[^\s<>"']+/g) ?? [];
+        const link = links.find((value) => value.includes(path));
+        if (link && new URL(link).origin === origin) return link.replaceAll('&amp;', '&');
+      }
+    } catch (error) {
+      lastError = error;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw Error('Expected local email link was not delivered');
+  throw new Error('Expected local email link was not delivered', { cause: lastError });
 }
 async function register(page, email, name) {
   console.log('Stage: register', name);
@@ -65,11 +87,12 @@ async function login(page, email, pass = password) {
   await page.waitForURL('**/app');
 }
 try {
+  // Integration tests run immediately before this flow in CI and use the same
+  // loopback IP. Reset only the four auth endpoint buckets exercised here.
+  await clearFlowAuthRateLimits();
   await register(admin, emails[0], 'Quản trị minh họa');
-  const user = await pool.query('SELECT id FROM users WHERE email=$1 AND email_verified=true', [
-    emails[0],
-  ]);
-  if (!user.rows[0]) throw Error('Email not verified');
+  const user = await pool.query('SELECT id FROM users WHERE email=$1', [emails[0]]);
+  if (!user.rows[0]) throw Error('Registered user was not persisted');
   await pool.query('INSERT INTO family_spaces(id,name) VALUES($1,$2)', [
     family,
     'Nhà kiểm thử trình duyệt',
@@ -78,6 +101,8 @@ try {
     "INSERT INTO family_memberships(family_id,user_id,role,status) VALUES($1,$2,'admin','active')",
     [family, user.rows[0].id],
   );
+  // A successful sign-in is the public proof that email verification completed.
+  // Avoid coupling this browser flow to Better Auth's internal column timing.
   await login(admin, emails[0]);
   await admin.getByRole('button', { name: 'Quản trị nhà', exact: true }).click();
   await admin.getByRole('button', { name: 'Tạo link lời mời', exact: true }).click();
@@ -125,6 +150,7 @@ try {
   await member.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await member.waitForURL('**/login');
   await member.getByRole('link', { name: 'Quên mật khẩu?' }).click();
+  await member.waitForURL('**/forgot-password');
   await member.getByLabel('Email', { exact: true }).fill(emails[1]);
   await member.getByRole('button', { name: 'Gửi liên kết đặt lại' }).click();
   await member.getByRole('status').waitFor();
@@ -134,6 +160,7 @@ try {
   await member.getByRole('button', { name: 'Lưu mật khẩu mới' }).click();
   await member.getByRole('status').filter({ hasText: 'Đã đặt lại mật khẩu' }).waitFor();
   await member.getByRole('link', { name: 'Về đăng nhập' }).click();
+  await member.waitForURL('**/login');
   await login(member, emails[1], newPassword);
   await member.getByRole('heading', { name: 'Nhà mình ở đây.' }).waitFor();
   const memberships = await pool.query(
@@ -169,5 +196,6 @@ try {
     await pool.query(`DELETE FROM ${table} WHERE family_id=$1`, [family]);
   await pool.query('DELETE FROM family_spaces WHERE id=$1', [family]);
   await pool.query('DELETE FROM users WHERE email = ANY($1::text[])', [emails]);
+  await clearFlowAuthRateLimits();
   await pool.end();
 }

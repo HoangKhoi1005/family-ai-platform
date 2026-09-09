@@ -78,9 +78,48 @@ jobs:
       - run: npm run test:auth
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Verify connected onboarding in a real browser
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          node --env-file=.env apps/api/dist/server.js > api-onboarding.log 2>&1 &
+          api_pid=$!
+          node node_modules/next/dist/bin/next start apps/web --hostname 127.0.0.1 --port 3200 > web-onboarding.log 2>&1 &
+          web_pid=$!
+
+          cleanup() {
+            kill "$web_pid" "$api_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for attempt in {1..40}; do
+            if ! kill -0 "$api_pid" 2>/dev/null || ! kill -0 "$web_pid" 2>/dev/null; then
+              echo "A connected onboarding service exited before readiness."
+              tail -n 100 api-onboarding.log web-onboarding.log
+              exit 1
+            fi
+            if curl --fail --silent http://127.0.0.1:4010/health/live > /dev/null \
+              && curl --fail --silent http://127.0.0.1:3200/login > /dev/null \
+              && curl --fail --silent 'http://127.0.0.1:8025/api/v1/messages?limit=1' > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 0.5
+          done
+
+          if [ "$ready" -ne 1 ]; then
+            echo "Connected onboarding services did not become ready."
+            tail -n 100 api-onboarding.log web-onboarding.log
+            exit 1
+          fi
+
+          node --env-file=.env scripts/verify-connected-onboarding.mjs
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-failure
-          path: test-results/
+          path: |
+            test-results/
+            .superpowers/ui-preview-evidence/flow-failure-*.png
           retention-days: 7
