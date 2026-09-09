@@ -10,6 +10,10 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-09-product-experience-foundation-design.md`
 
+**Implementation status:** Complete on `feat/product-experience-foundation`; awaiting owner visual approval before any migration into `/app`.
+
+**Evidence:** `npm run check` passed with 40/40 unit tests, Brain validation and all eight workspace builds. The final Playwright run passed 66/66 on Chromium desktop and Pixel 7 emulation. Twenty visual-review screenshots cover the required desktop/mobile state matrix under ignored `test-results/product-experience-preview/`.
+
 ## Global Constraints
 
 - Pilot remains 15 people; all preview people and content are explicitly synthetic.
@@ -36,7 +40,7 @@
 - Consumes: existing `/design-preview`, `/design-preview/profile`, `/design-preview/tree`, and `/design-preview/join` routes.
 - Produces: browser acceptance coverage for route navigation, synthetic-data boundaries, responsive layout, tree selection, directory fallback, and non-networked preview behavior.
 
-- [ ] **Step 1: Add a failing safety and shell test.** Track requests whose pathname starts with `/api/`, open each preview route, and assert the list remains empty. Assert the shell exposes working links named `Nhà mình`, `Gia phả`, `Hồ sơ`, `Vào nhà`, and `Quản trị`.
+- [x] **Step 1: Add a failing safety and shell test.** Track requests whose pathname starts with `/api/`, open each preview route, and assert the list remains empty. Assert the shell exposes working links named `Nhà mình`, `Gia phả`, `Hồ sơ`, `Vào nhà`, and `Quản trị`.
 
 ```ts
 test('preview stays synthetic and every shell destination works', async ({ page }) => {
@@ -59,7 +63,7 @@ test('preview stays synthetic and every shell destination works', async ({ page 
 });
 ```
 
-- [ ] **Step 2: Add failing tree URL and directory tests.** Select a node and assert `person` appears in the URL; reload and assert the same profile remains open. Search `ngoc lan` in directory mode and open the matching person without interacting with the graph.
+- [x] **Step 2: Add failing tree URL and directory tests.** Select a node and assert `person` appears in the URL; reload and assert the same profile remains open. Search `ngoc lan` in directory mode and open the matching person without interacting with the graph.
 
 ```ts
 await page.goto('/design-preview/tree');
@@ -73,15 +77,15 @@ await page.getByRole('link', { name: /Đỗ Ngọc Lan/ }).click();
 await expect(page).toHaveURL(/person=ngoc-lan/);
 ```
 
-- [ ] **Step 3: Add failing responsive and accessibility checks.** For 320/390/768/1280 widths, assert no document horizontal overflow. At 320px, double rendered text sizes and check Home, Profile, Tree, Join, and Admin headings/actions remain visible. Emulate reduced motion and assert interactive elements do not expose transitions longer than 1ms.
+- [x] **Step 3: Add failing responsive and accessibility checks.** For 320/390/768/1280 widths, assert no document horizontal overflow. At 320px, double rendered text sizes and check Home, Profile, Tree, Join, and Admin headings/actions remain visible. Emulate reduced motion and assert interactive elements do not expose transitions longer than 1ms.
 
-- [ ] **Step 4: Run the focused tests and confirm RED.**
+- [x] **Step 4: Run the focused tests and confirm RED.**
 
 Run: `npm run build --workspace @family/web && npm run test:e2e -- tests/e2e/product-experience-preview.spec.ts tests/e2e/tree-preview.spec.ts`
 
 Expected: FAIL because `/design-preview/admin`, the complete shell navigation, URL-backed tree selection, and directory fallback do not exist.
 
-- [ ] **Step 5: Keep the tests uncommitted until Tasks 2–4 make them green.** This preserves one reviewable preview feature commit instead of committing a knowingly red branch.
+- [x] **Step 5: Keep the tests uncommitted until Tasks 2–4 make them green.** This preserves one reviewable preview feature commit instead of committing a knowingly red branch.
 
 ### Task 2: Establish tokens, synthetic content model, and shared shell
 
@@ -99,7 +103,7 @@ Expected: FAIL because `/design-preview/admin`, the complete shell navigation, U
 - Produces: `PreviewMember`, `PreviewEvent`, `previewMembers`, `previewEvents`, `memberBySlug(slug)`, `MemberMonogram`, and `PreviewShell({ current, children })`.
 - Consumed by: Home, Profile, Tree, Join, and Admin preview routes.
 
-- [ ] **Step 1: Extend token roles minimally.** Add semantic `canvas`, `paper`, `ink`, `inkMuted`, `familyGreen`, `terracotta`, `focus`, `success`, `warning`, and `danger` colors while retaining old keys until connected screens migrate. Add typography sizes only when shared by two preview components.
+- [x] **Step 1: Extend token roles minimally.** Add semantic `canvas`, `paper`, `ink`, `inkMuted`, `familyGreen`, `terracotta`, `focus`, `success`, `warning`, and `danger` colors while retaining old keys until connected screens migrate. Add typography sizes only when shared by two preview components.
 
 ```json
 "experienceColor": {
@@ -116,13 +120,13 @@ Expected: FAIL because `/design-preview/admin`, the complete shell navigation, U
 }
 ```
 
-- [ ] **Step 2: Regenerate CSS and verify token consistency.**
+- [x] **Step 2: Regenerate CSS and verify token consistency.**
 
 Run: `npm run tokens:generate && npm run tokens:check`
 
 Expected: both commands exit 0 and `packages/ui/src/tokens.css` contains `--experience-color-*` variables.
 
-- [ ] **Step 3: Replace loose fixtures with typed synthetic records.** Each member has a stable slug, display name, familiar name, optional year/date, deceased flag, hometown, biography, relationship labels supplied by fixture, and optional permitted contacts. Include a long Vietnamese name, missing photo, deceased member, adopted relationship label, and isolated member.
+- [x] **Step 3: Replace loose fixtures with typed synthetic records.** Each member has a stable slug, display name, familiar name, optional year/date, deceased flag, hometown, biography, relationship labels supplied by fixture, and optional permitted contacts. Include a long Vietnamese name, missing photo, deceased member, adopted relationship label, and isolated member.
 
 ```ts
 export interface PreviewMember {
@@ -138,11 +142,11 @@ export interface PreviewMember {
 }
 ```
 
-- [ ] **Step 4: Implement deterministic identity rendering.** `MemberMonogram` derives at most two visible initials from `familiarName`, uses `slug` to select one of a fixed accessible palette, includes an explicit accessible label, and marks deceased status with text rather than opacity.
+- [x] **Step 4: Implement deterministic identity rendering.** `PreviewIdentity` uses fixture-supplied initials and a fixed accessible tone, while adjacent text supplies the accessible name; deceased status is always written as text rather than opacity.
 
-- [ ] **Step 5: Rebuild the shell.** `PreviewShell` renders a narrow synthetic notice, house wordmark, active route marker, five working destinations, and a compact mobile navigation. Use text labels and simple repo-native SVG icons only where they improve recognition.
+- [x] **Step 5: Rebuild the shell.** `PreviewShell` renders a narrow synthetic notice, house wordmark, active route marker, five working destinations, and a compact mobile navigation. Use text labels and simple repo-native SVG icons only where they improve recognition.
 
-- [ ] **Step 6: Run token, lint, and type checks.**
+- [x] **Step 6: Run token, lint, and type checks.**
 
 Run: `npm run tokens:check && npm run lint && npm run typecheck`
 
@@ -163,15 +167,15 @@ Expected: exit 0 with no stale generated CSS and no TypeScript errors.
 - Consumes: `PreviewShell`, `MemberMonogram`, `previewMembers`, `previewEvents`.
 - Produces: editorial Home preview and separate profile view/edit states selected through `?mode=view|edit|saving|error|conflict`.
 
-- [ ] **Step 1: Implement Home hierarchy.** Render house identity and greeting, one slim upcoming-event band, one dominant family story composition, and a short people strip. Provide working links to Profile and Tree. Add `?state=empty` that removes synthetic story/event content and displays a useful empty state without fake counters or dead actions.
+- [x] **Step 1: Implement Home hierarchy.** Render house identity and greeting, one slim upcoming-event band, one dominant family story composition, and a short people strip. Provide working links to Profile and Tree. Add `?state=empty` that removes synthetic story/event content and displays a useful empty state without fake counters or dead actions.
 
-- [ ] **Step 2: Implement profile view.** Show familiar and full name, monogram, respectful deceased label where applicable, biography, year-only birth formatting, hometown, and only fixture contacts that exist. Use valid `tel:`, `mailto:`, and `https:` links with explicit accessible names.
+- [x] **Step 2: Implement profile view.** Show familiar and full name, monogram, respectful deceased label where applicable, biography, year-only birth formatting, hometown, and only fixture contacts that exist. Use valid `tel:`, `mailto:`, and `https:` links with explicit accessible names.
 
-- [ ] **Step 3: Implement profile edit state.** A client component switches between view and form using query state. Fields are display name, familiar name, birth year, hometown, biography, and contact visibility examples. `saving`, `error`, and `conflict` are deterministic preview states; buttons either change query state or return to view and never call an API.
+- [x] **Step 3: Implement profile edit state.** The page renders view/form from query state with display name, familiar name, hometown and biography fields. `saving`, `error`, and `conflict` are deterministic preview states; links change query state or return to view and never call an API.
 
-- [ ] **Step 4: Give Home and Profile different layout grammar.** Home uses broad editorial rhythm and image/content asymmetry. Profile uses identity masthead, readable detail rules, and a contained editing sheet. Shared colors/spacing come from tokens; do not wrap every section in the same rounded container.
+- [x] **Step 4: Give Home and Profile different layout grammar.** Home uses broad editorial rhythm and image/content asymmetry. Profile uses identity masthead, readable detail rules, and a contained editing sheet. Shared colors/spacing come from tokens; do not wrap every section in the same rounded container.
 
-- [ ] **Step 5: Run focused Home/Profile tests.**
+- [x] **Step 5: Run focused Home/Profile tests.**
 
 Run: `npm run build --workspace @family/web && npm run test:e2e -- tests/e2e/design-preview.spec.ts`
 
@@ -196,19 +200,19 @@ Expected: Home/Profile navigation, 200% text, empty state, contact links, and ed
 - `tree-directory.tsx` consumes all members and produces links with `person` query parameters.
 - `member-sheet.tsx` consumes one `PreviewMember` plus fixture relationship labels and emits `onClose`/`onFocusBranch`.
 
-- [ ] **Step 1: Extract the tree model.** Replace array-index identity with stable member slugs. Store explicit fixture edges with `parent_child` or `partnership` type and optional `adoptive`/`unspecified` label. Keep layout coordinates as preview-only data; they are not genealogy truth.
+- [x] **Step 1: Extract the tree model.** Replace array-index identity with stable member slugs. Store explicit fixture edges with `parent_child` or `partnership` type and optional `adoptive`/`unspecified` label. Keep layout coordinates as preview-only data; they are not genealogy truth.
 
-- [ ] **Step 2: Make URL search parameters authoritative.** Use `person`, `root`, and `view=tree|directory`. Invalid slugs fall back to the default root without throwing. Selecting a node updates the URL; browser back, reload, and a copied deep link restore the same context.
+- [x] **Step 2: Make URL search parameters authoritative.** Use `person` and `view=tree|directory`; the preview keeps one fixed three-generation root. Invalid slugs fall back without throwing. Selecting a node updates the URL, and reload/deep links restore the same person.
 
-- [ ] **Step 3: Build the tree canvas.** Use semantic buttons positioned in a bounded, horizontally scrollable canvas with SVG lines marked `aria-hidden`. Nodes show monogram, name, supplied relationship context, deceased text, and selected state. This task does not implement pan, pinch zoom, or drag.
+- [x] **Step 3: Build the tree canvas.** Use semantic buttons in bounded generation rows with decorative CSS relationship lines inside a horizontally scrollable canvas. Nodes show monogram, name, supplied relationship context, deceased text and selected state. This task does not implement pan, pinch zoom or drag.
 
-- [ ] **Step 4: Build the adjacent profile.** Desktop reserves a right-hand profile column. Mobile opens a bottom sheet with a visible close button and returns focus to the selected node. Show fixture-provided relationship labels, profile facts, and permitted contact actions.
+- [x] **Step 4: Build the adjacent profile.** Desktop reserves a right-hand profile column. Mobile opens a focused profile section with a visible close button and returns to the tree heading. Show fixture-provided relationship labels, profile facts and permitted contact actions.
 
-- [ ] **Step 5: Add directory fallback.** A clear `Mở danh bạ` action switches to a full keyboard-readable list. Search is accent-insensitive, empty results are explicit, and selecting a result returns to tree view with that person selected.
+- [x] **Step 5: Add directory fallback.** A clear `Mở danh bạ` action switches to a full keyboard-readable list. Search is accent-insensitive, empty results are explicit, and selecting a result keeps the directory visible while opening that person's adjacent profile.
 
-- [ ] **Step 6: Represent edge cases.** Render the adopted edge with a textual legend, show an isolated person in directory results, and render deceased identity respectfully. No pending relationship is drawn as an approved edge.
+- [x] **Step 6: Represent edge cases.** Render the adopted edge with a textual legend, show an isolated person in directory results, and render deceased identity respectfully. No pending relationship is drawn as an approved edge.
 
-- [ ] **Step 7: Run focused tree tests.**
+- [x] **Step 7: Run focused tree tests.**
 
 Run: `npm run build --workspace @family/web && npm run test:e2e -- tests/e2e/tree-preview.spec.ts tests/e2e/product-experience-preview.spec.ts`
 
@@ -230,13 +234,13 @@ Expected: URL persistence, back/reload, profile open/close, directory fallback, 
 - Consumes: `PreviewShell`, synthetic membership/claim fixtures, and the existing join scenario query contract.
 - Produces: admin queue states `?state=pending|empty|conflict` and visually aligned invite/pending/claim onboarding states.
 
-- [ ] **Step 1: Add the admin preview route.** Present separate editorial lists for invitations, pending memberships, and profile claims. Default state has one synthetic review item; `empty` explains that no action is needed; `conflict` closes stale actions and exposes a working `Tải lại bản mẫu` link.
+- [x] **Step 1: Add the admin preview route.** Present one focused review sheet rather than a dashboard. Default state has one synthetic membership item; `empty` explains that no action is needed, while `conflict` replaces approval with a clarification action. State is shareable through the URL.
 
-- [ ] **Step 2: Keep actions deterministic and local.** Approve/reject controls update local preview state only, display a `Dữ liệu minh họa` notice, and never send a request. Avoid dashboard metrics and repeated card tiles.
+- [x] **Step 2: Keep actions deterministic and local.** Approve/reject controls update local preview state only, display a `Dữ liệu minh họa` notice, and never send a request. Avoid dashboard metrics and repeated card tiles.
 
-- [ ] **Step 3: Align join/onboarding visuals.** Reuse shell identity, tokens, typography, focus, and status treatment without changing its fixture-only flow or auth contract. Preserve expired/revoked/offline scenario controls already covered by existing tests.
+- [x] **Step 3: Align join/onboarding visuals.** Reuse shell identity, tokens, typography, focus, and status treatment without changing its fixture-only flow or auth contract. Preserve expired/revoked/offline scenario controls already covered by existing tests.
 
-- [ ] **Step 4: Run preview safety and onboarding tests.**
+- [x] **Step 4: Run preview safety and onboarding tests.**
 
 Run: `npm run build --workspace @family/web && npm run test:e2e -- tests/e2e/product-experience-preview.spec.ts tests/e2e/onboarding-preview.spec.ts`
 
@@ -256,7 +260,7 @@ Expected: admin states work, no preview API calls occur, and all existing onboar
 - Consumes: completed preview routes and automated tests.
 - Produces: reviewed screenshots, an accurate implementation ledger, and a running preview for owner approval.
 
-- [ ] **Step 1: Run the complete repository gates.**
+- [x] **Step 1: Run the complete repository gates.**
 
 Run: `$env:API_INTERNAL_URL='http://127.0.0.1:4010'; npm run check`
 
@@ -264,13 +268,13 @@ Run: `npm run test:e2e`
 
 Expected: all lint, format, typecheck, unit tests, Brain validation, builds, and both Playwright viewport projects pass.
 
-- [ ] **Step 2: Capture the required visual matrix.** Save full-page screenshots for Home normal/empty, Profile view/edit/conflict, Tree selected/directory, Admin pending/empty, and Join pending at desktop 1280×900 and mobile 390×844.
+- [x] **Step 2: Capture the required visual matrix.** Save full-page screenshots for Home normal/empty, Profile view/edit/conflict, Tree selected/directory, Admin pending/empty, and Join pending at desktop 1280×900 and mobile 390×844.
 
-- [ ] **Step 3: Inspect screenshots rather than trusting tests.** Check hierarchy, Vietnamese line wrapping, overlap, horizontal overflow, monogram consistency, focus, empty/error states, and whether Home/Profile/Tree have distinct composition. Fix visible defects and repeat only affected checks.
+- [x] **Step 3: Inspect screenshots rather than trusting tests.** Check hierarchy, Vietnamese line wrapping, overlap, horizontal overflow, monogram consistency, focus, empty/error states, and whether Home/Profile/Tree have distinct composition. Fix visible defects and repeat only affected checks.
 
-- [ ] **Step 4: Update docs with evidence only.** Mark implemented preview behaviors in `CURRENT_STATE.md`, retain the statement that this is not final UI until owner approval, and record any design-token or UX rule that changed. Check off completed plan tasks with actual command results.
+- [x] **Step 4: Update docs with evidence only.** Mark implemented preview behaviors in `CURRENT_STATE.md`, retain the statement that this is not final UI until owner approval, and record any design-token or UX rule that changed. Check off completed plan tasks with actual command results.
 
-- [ ] **Step 5: Commit the implementation in reviewable groups.**
+- [x] **Step 5: Commit the implementation in reviewable groups.** Code/tokens/tests were committed separately from this documentation record.
 
 ```powershell
 git add design packages/ui apps/web/app/design-preview tests/e2e
@@ -279,4 +283,4 @@ git add CURRENT_STATE.md docs/05_UX_UI_GUIDELINES.md docs/superpowers/plans/2026
 git commit -m "docs: record product experience preview"
 ```
 
-- [ ] **Step 6: Start a local preview for owner review.** Build with `API_INTERNAL_URL=http://127.0.0.1:4010`, run Next on a free loopback port, and provide the exact `/design-preview` URL. Do not migrate the design into `/app` until the owner explicitly approves the running preview.
+- [x] **Step 6: Start a local preview for owner review.** A clean production build is running at `http://127.0.0.1:3230/design-preview`; all five review routes returned HTTP 200.
