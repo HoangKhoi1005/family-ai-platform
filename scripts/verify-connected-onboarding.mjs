@@ -154,10 +154,12 @@ try {
   await member.getByRole('heading', { name: 'Cây đang bắt đầu từ bạn.' }).waitFor();
   await member.getByRole('button', { name: 'Bổ sung quan hệ', exact: true }).click();
   await member.getByRole('button', { name: 'Bổ sung quan hệ cho Người thân minh họa' }).click();
-  await member.getByLabel('Người này là').selectOption('parent');
-  await member.getByLabel('Chọn người thân').selectOption({ label: 'Cha kiểm thử' });
+  await member.getByLabel('Người này là', { exact: true }).selectOption('parent');
   await member.getByLabel('Loại quan hệ').selectOption('biological');
-  await member.getByRole('button', { name: 'Gửi đề xuất' }).click();
+  await member.getByRole('button', { name: 'Tiếp tục', exact: true }).click();
+  await member.getByLabel('Chọn người thân').selectOption({ label: 'Cha kiểm thử' });
+  await member.getByRole('button', { name: 'Xem lại', exact: true }).click();
+  await member.getByRole('button', { name: 'Gửi quản trị viên duyệt' }).click();
   await member.getByRole('status').filter({ hasText: 'Đã gửi đề xuất' }).waitFor();
   console.log('Stage: relationship proposed');
   await admin.reload();
