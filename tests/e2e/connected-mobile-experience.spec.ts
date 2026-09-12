@@ -151,6 +151,10 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
   await page.route('**/api/v1/families/family-1/change-requests?status=pending', (route) =>
     route.fulfill({ json: { change_requests: [] } }),
   );
+  await page.route(
+    '**/api/v1/families/family-1/change-requests?status=pending&scope=mine',
+    (route) => route.fulfill({ json: { change_requests: [] } }),
+  );
 }
 
 test('active member gets the five-destination mobile shell without preview data', async ({
@@ -215,11 +219,14 @@ test('member explores the approved tree and submits a reviewed relationship prop
   await expect(page.getByText('Người luôn nhắc cả nhà gọi điện cho nhau.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Bổ sung quan hệ cho Nguyễn Minh Anh' }).click();
-  await expect(page.getByLabel('Người này là')).toBeFocused();
-  await page.getByLabel('Người này là').selectOption('child');
-  await page.getByLabel('Chọn người thân').selectOption('member-3');
+  await expect(page.getByLabel('Người này là', { exact: true })).toBeFocused();
+  await page.getByLabel('Người này là', { exact: true }).selectOption('child');
   await page.getByLabel('Loại quan hệ').selectOption('adoptive');
-  await page.getByRole('button', { name: 'Gửi đề xuất' }).click();
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByLabel('Chọn người thân').selectOption('member-3');
+  await page.getByRole('button', { name: 'Xem lại' }).click();
+  await expect(page.getByText('Nuôi dưỡng', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Gửi quản trị viên duyệt' }).click();
 
   await expect(page.getByRole('status')).toContainText('Đã gửi đề xuất');
   expect(submitted).toEqual({
@@ -237,6 +244,108 @@ test('member explores the approved tree and submits a reviewed relationship prop
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+});
+
+test('member creates, cancels and revises tree proposals from a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  const submitted: unknown[] = [];
+  let pending: Array<Record<string, unknown>> = [];
+  await page.route(
+    '**/api/v1/families/family-1/change-requests?status=pending&scope=mine',
+    (route) => route.fulfill({ json: { change_requests: pending } }),
+  );
+  await page.route('**/api/v1/families/family-1/change-requests', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    const body = route.request().postDataJSON();
+    submitted.push(body);
+    pending = [
+      {
+        id: `request-${submitted.length}`,
+        ...body,
+        target_id: 'target_id' in body ? body.target_id : null,
+        base_version: 'base_version' in body ? body.base_version : null,
+        status: 'pending',
+        requested_by: 'membership-1',
+        reviewer_id: null,
+        decision_note: null,
+        decided_at: null,
+        version: 1,
+        created_at: '2026-09-13T00:00:00.000Z',
+        updated_at: '2026-09-13T00:00:00.000Z',
+      },
+    ];
+    await route.fulfill({ status: 201, json: pending[0] });
+  });
+  let cancelled: unknown;
+  await page.route(
+    '**/api/v1/families/family-1/change-requests/request-1/cancel',
+    async (route) => {
+      cancelled = route.request().postDataJSON();
+      pending = [];
+      await route.fulfill({ json: { id: 'request-1', status: 'cancelled', version: 2 } });
+    },
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+  await page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' }).click();
+  await page.getByRole('button', { name: 'Bổ sung quan hệ cho Nguyễn Minh Anh' }).click();
+  await page.getByLabel('Người này là', { exact: true }).selectOption('child');
+  await page.getByLabel('Loại quan hệ').selectOption('adoptive');
+  await page.getByRole('button', { name: 'Tiếp tục' }).click();
+  await page.getByRole('button', { name: 'Tạo hồ sơ mới' }).click();
+  await page.getByLabel('Họ và tên').fill('Nguyễn Minh An');
+  await page.getByLabel('Tên thường gọi').fill('Bé An');
+  await page.getByLabel('Quê quán').fill('Cà Mau');
+  await page.getByLabel('Năm sinh').fill('2018');
+  await page.getByRole('button', { name: 'Xem lại' }).click();
+  await expect(page.getByText('Nguyễn Minh An', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Gửi quản trị viên duyệt' }).click();
+
+  expect(submitted[0]).toEqual({
+    type: 'member_create',
+    payload: {
+      member: {
+        display_name: 'Nguyễn Minh An',
+        familiar_name: 'Bé An',
+        hometown: 'Cà Mau',
+        birth_year: 2018,
+        deceased: false,
+      },
+      relationship: {
+        anchor_member_id: 'member-2',
+        kind: 'child',
+        subtype: 'adoptive',
+      },
+    },
+  });
+  await page.getByRole('button', { name: 'Đóng hồ sơ' }).click();
+  await expect(page.getByText('1 đề xuất chưa lên cây.')).toBeVisible();
+  await page.getByRole('button', { name: 'Hủy đề xuất' }).click();
+  expect(cancelled).toEqual({ version: 1 });
+  await expect(page.getByText('1 đề xuất chưa lên cây.')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' }).click();
+  await page.getByRole('button', { name: 'Sửa quan hệ với Nguyễn Gia Bảo' }).click();
+  await page
+    .getByRole('region', { name: 'Xem lại thay đổi quan hệ' })
+    .getByRole('combobox')
+    .selectOption('adoptive');
+  await page.getByRole('button', { name: 'Gửi đề xuất sửa' }).click();
+  expect(submitted[1]).toEqual({
+    type: 'relationship_update',
+    target_id: 'relationship-1',
+    base_version: 1,
+    payload: { subtype: 'adoptive' },
+  });
+  await page.getByRole('button', { name: 'Sửa quan hệ với Nguyễn Gia Bảo' }).click();
+  await page.getByRole('button', { name: 'Gửi đề xuất gỡ' }).click();
+  expect(submitted[2]).toEqual({
+    type: 'relationship_remove',
+    target_id: 'relationship-1',
+    base_version: 1,
+  });
 });
 
 test('member profile ignores a stale response and keeps keyboard focus inside the sheet', async ({
@@ -276,7 +385,7 @@ test('member profile ignores a stale response and keeps keyboard focus inside th
   await page.keyboard.press('Tab');
   await expect(dialog.getByRole('button', { name: 'Đóng hồ sơ' })).toBeFocused();
 
-  await dialog.getByRole('button', { name: /Nguyễn Gia Bảo/ }).click();
+  await dialog.getByRole('button', { name: 'Con Nguyễn Gia Bảo', exact: true }).click();
   await expect(dialog.getByRole('heading', { name: 'Nguyễn Gia Bảo' })).toBeVisible();
   releaseMemberTwo?.();
   await expect(dialog.getByText('Thích lưu lại chuyện nhà.')).toBeVisible();

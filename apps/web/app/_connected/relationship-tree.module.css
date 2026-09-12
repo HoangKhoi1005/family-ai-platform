@@ -684,3 +684,196 @@
     top: 0;
   }
 }
+
+.pending {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid var(--color-border-soft);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-primary);
+}
+
+.pending p,
+.pending h2,
+.relationshipEdit h3,
+.relationshipEdit p {
+  margin: 0;
+}
+
+.pending p {
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.pending h2 {
+  margin-top: 4px;
+  font: 400 22px/1.2 var(--typography-font-title);
+}
+
+.pending ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pending li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.pending button,
+.relationshipTools button,
+.cancelProposal {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.proposal > .cancelProposal {
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.relationshipTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.proposal input,
+.relationshipEdit select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-px-input);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+}
+
+.sourceSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-px-button);
+  background: var(--color-surface-muted);
+}
+
+.sourceSwitch button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+}
+
+.sourceSwitch button[aria-pressed='true'] {
+  background: var(--color-surface-primary);
+  color: var(--color-brand-primary);
+  font-weight: 700;
+}
+
+.newMemberFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.newMemberFields label:first-child {
+  grid-column: 1 / -1;
+}
+
+.proposalActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.proposalActions button {
+  min-height: 46px;
+}
+
+.proposalActions button:first-child {
+  margin-right: auto;
+  background: transparent;
+}
+
+.review {
+  display: grid;
+  margin: 0;
+  border-block: 1px solid var(--color-border-soft);
+}
+
+.review > div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.review > div:last-child {
+  border-bottom: 0;
+}
+
+.review dt,
+.reviewNote {
+  color: var(--color-text-secondary);
+}
+
+.review dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.reviewNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.relationshipEdit {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0 16px;
+  padding: 16px;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-muted);
+}
+
+.relationshipEdit label {
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .newMemberFields {
+    grid-template-columns: 1fr;
+  }
+
+  .newMemberFields label:first-child {
+    grid-column: auto;
+  }
+
+  .pending li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

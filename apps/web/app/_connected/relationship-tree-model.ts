@@ -2,6 +2,7 @@ import type {
   CreateRelationshipChangeRequestInput,
   ParentChildSubtype,
   PartnershipSubtype,
+  ProposedMemberDraft,
   RelationshipGraphNodeDto,
   RelationshipGraphResponse,
 } from '@family/contracts';
@@ -198,4 +199,51 @@ export function relationshipProposal(
       subtype: choice.subtype,
     },
   };
+}
+
+export function newMemberProposal(
+  selectedMemberId: string,
+  choice: RelationshipProposalChoice,
+  draft: ProposedMemberDraft,
+): CreateRelationshipChangeRequestInput {
+  const optionalText = (value: string | null | undefined) => {
+    const normalized = value?.trim();
+    return normalized ? normalized : undefined;
+  };
+  const relationship =
+    choice.kind === 'partner'
+      ? {
+          anchor_member_id: selectedMemberId,
+          kind: choice.kind,
+          subtype: choice.subtype,
+        }
+      : {
+          anchor_member_id: selectedMemberId,
+          kind: choice.kind,
+          subtype: choice.subtype,
+        };
+  return {
+    type: 'member_create',
+    payload: {
+      member: {
+        display_name: draft.display_name.trim(),
+        ...(optionalText(draft.familiar_name)
+          ? { familiar_name: optionalText(draft.familiar_name)! }
+          : {}),
+        ...(optionalText(draft.hometown) ? { hometown: optionalText(draft.hometown)! } : {}),
+        ...(draft.birth_year !== undefined && draft.birth_year !== null
+          ? { birth_year: draft.birth_year }
+          : {}),
+        deceased: draft.deceased ?? false,
+      },
+      relationship,
+    },
+  };
+}
+
+export function relationshipRemovalProposal(
+  relationshipId: string,
+  version: number,
+): CreateRelationshipChangeRequestInput {
+  return { type: 'relationship_remove', target_id: relationshipId, base_version: version };
 }

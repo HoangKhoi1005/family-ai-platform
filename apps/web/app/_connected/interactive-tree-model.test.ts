@@ -140,4 +140,129 @@ describe('interactive family tree layout', () => {
 
     expect(graph).toEqual(before);
   });
+
+  it('keeps active partners together and centers their child below the pair', () => {
+    const family: RelationshipGraphResponse = {
+      root_member_id: 'child',
+      depth: 2,
+      nodes: [
+        { ...graph.nodes[0]!, id: 'child', display_name: 'Con' },
+        { ...graph.nodes[1]!, id: 'mother', display_name: 'Mẹ' },
+        { ...graph.nodes[1]!, id: 'father', display_name: 'Cha' },
+      ],
+      relationships: [
+        {
+          id: 'parents',
+          from_member_id: 'father',
+          to_member_id: 'mother',
+          type: 'partnership',
+          subtype: 'married',
+          start_date: null,
+          end_date: null,
+          version: 1,
+        },
+        {
+          id: 'father-child',
+          from_member_id: 'father',
+          to_member_id: 'child',
+          type: 'parent_child',
+          subtype: 'biological',
+          start_date: null,
+          end_date: null,
+          version: 1,
+        },
+        {
+          id: 'mother-child',
+          from_member_id: 'mother',
+          to_member_id: 'child',
+          type: 'parent_child',
+          subtype: 'biological',
+          start_date: null,
+          end_date: null,
+          version: 1,
+        },
+      ],
+    };
+    const layout = buildInteractiveTreeLayout(family, new Set());
+    const positions = new Map(layout.nodes.map((node) => [node.id, node.position]));
+    const father = positions.get('father')!;
+    const mother = positions.get('mother')!;
+    const child = positions.get('child')!;
+
+    expect(Math.abs(father.x - mother.x)).toBeLessThan(190);
+    expect(child.x + 74).toBe((father.x + mother.x) / 2 + 74);
+    expect(child.y).toBeGreaterThan(father.y);
+  });
+
+  it('does not cluster a historical partner into the active couple', () => {
+    const family: RelationshipGraphResponse = {
+      root_member_id: 'person',
+      depth: 2,
+      nodes: [
+        { ...graph.nodes[0]!, id: 'person', display_name: 'Một người có tên rất dài' },
+        { ...graph.nodes[0]!, id: 'active', display_name: 'Bạn đời hiện tại' },
+        { ...graph.nodes[0]!, id: 'former', display_name: 'Bạn đời trước' },
+      ],
+      relationships: [
+        {
+          id: 'active-partner',
+          from_member_id: 'active',
+          to_member_id: 'person',
+          type: 'partnership',
+          subtype: 'married',
+          start_date: null,
+          end_date: null,
+          version: 1,
+        },
+        {
+          id: 'former-partner',
+          from_member_id: 'former',
+          to_member_id: 'person',
+          type: 'partnership',
+          subtype: 'married',
+          start_date: '2000-01-01',
+          end_date: '2010-01-01',
+          version: 1,
+        },
+      ],
+    };
+    const layout = buildInteractiveTreeLayout(family, new Set());
+    const positions = new Map(layout.nodes.map((node) => [node.id, node.position.x]));
+
+    expect(Math.abs(positions.get('active')! - positions.get('person')!)).toBeLessThan(190);
+    expect(Math.abs(positions.get('former')! - positions.get('person')!)).toBeGreaterThanOrEqual(
+      190,
+    );
+  });
+
+  it('packs a dense generation without overlapping nodes', () => {
+    const children = Array.from({ length: 8 }, (_, index) => ({
+      ...graph.nodes[3]!,
+      id: `child-${index}`,
+      display_name: `Nguyễn Một Tên Rất Dài Số ${index}`,
+    }));
+    const dense: RelationshipGraphResponse = {
+      root_member_id: 'root',
+      depth: 2,
+      nodes: [{ ...graph.nodes[0]!, id: 'root' }, ...children],
+      relationships: children.map((child, index) => ({
+        id: `edge-${index}`,
+        from_member_id: 'root',
+        to_member_id: child.id,
+        type: 'parent_child' as const,
+        subtype: index === 0 ? ('adoptive' as const) : ('unspecified' as const),
+        start_date: null,
+        end_date: null,
+        version: 1,
+      })),
+    };
+    const row = buildInteractiveTreeLayout(dense, new Set())
+      .nodes.filter((node) => node.position.y === 220)
+      .sort((left, right) => left.position.x - right.position.x);
+
+    expect(row).toHaveLength(8);
+    for (let index = 1; index < row.length; index += 1) {
+      expect(row[index]!.position.x - row[index - 1]!.position.x).toBeGreaterThanOrEqual(190);
+    }
+  });
 });

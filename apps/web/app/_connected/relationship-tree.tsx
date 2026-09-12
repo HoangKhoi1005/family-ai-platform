@@ -1,13 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import type { MemberProfileDto, RelationshipGraphResponse } from '@family/contracts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type {
+  CreateRelationshipChangeRequestInput,
+  MemberProfileDto,
+  RelationshipChangeRequestDto,
+  RelationshipChangeRequestListResponse,
+  RelationshipGraphResponse,
+} from '@family/contracts';
 import { explain, request, RequestError } from './api';
 import type { Member } from './types';
 import { ConnectedIdentity } from './connected-app-shell';
 import { InteractiveTreeCanvas } from './interactive-tree-canvas';
 import {
   connectionsFor,
+  newMemberProposal,
+  relationshipRemovalProposal,
   relationshipProposal,
   relationshipStatements,
   safeContactHref,
@@ -47,6 +55,7 @@ export function RelationshipTree({
   const [profileLoading, setProfileLoading] = useState(false);
   const [proposalOpen, setProposalOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [pending, setPending] = useState<RelationshipChangeRequestDto[]>([]);
   const opener = useRef<HTMLButtonElement | null>(null);
   const profileSequence = useRef(0);
 
@@ -85,6 +94,23 @@ export function RelationshipTree({
     void loadGraph(controller.signal);
     return () => controller.abort();
   }, [loadGraph]);
+
+  const loadPending = useCallback(async () => {
+    try {
+      const result = await request<RelationshipChangeRequestListResponse>(
+        `${base}/change-requests?status=pending&scope=mine`,
+      );
+      setPending(result.change_requests);
+    } catch (error) {
+      if (error instanceof RequestError && [401, 403, 404].includes(error.status)) onError(error);
+    }
+  }, [base, onError]);
+
+  useEffect(() => {
+    // The pending queue is server state and is refreshed after each local mutation.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadPending();
+  }, [loadPending]);
 
   const graphMembers = useMemo(
     () => new Map(graph?.nodes.map((member) => [member.id, member]) ?? []),
@@ -150,6 +176,38 @@ export function RelationshipTree({
         <p className={styles.notice} role="status">
           {message}
         </p>
+      ) : null}
+
+      {pending.length ? (
+        <section className={styles.pending} aria-labelledby="pending-tree-heading">
+          <div>
+            <p>ĐANG CHỜ GIA ĐÌNH XÁC NHẬN</p>
+            <h2 id="pending-tree-heading">{pending.length} đề xuất chưa lên cây.</h2>
+          </div>
+          <ul>
+            {pending.map((item) => (
+              <li key={item.id}>
+                <span>{pendingLabel(item, members)}</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await request(`${base}/change-requests/${item.id}/cancel`, {
+                        version: item.version,
+                      });
+                      setMessage('Đã hủy đề xuất. Cây gia phả không thay đổi.');
+                      await loadPending();
+                    } catch (error) {
+                      onError(error);
+                    }
+                  }}
+                >
+                  Hủy đề xuất
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       {view === 'tree' ? (
@@ -242,15 +300,19 @@ export function RelationshipTree({
           selectedId={selectedId}
           proposalOpen={proposalOpen}
           onProposalOpen={() => setProposalOpen(true)}
+          onProposalClose={() => setProposalOpen(false)}
           onClose={closeProfile}
           onSelect={(id) => void openProfile(id)}
-          onSubmit={async (choice, targetMemberId) => {
-            await request(
-              `${base}/change-requests`,
-              relationshipProposal(selectedId, targetMemberId, choice),
-            );
+          onSubmit={async (input) => {
+            await request(`${base}/change-requests`, input);
             setProposalOpen(false);
+            await loadPending();
             setMessage('Đã gửi đề xuất. Quản trị viên sẽ kiểm tra trước khi cây thay đổi.');
+          }}
+          onRelationshipAction={async (input) => {
+            await request(`${base}/change-requests`, input);
+            setMessage('Đã gửi đề xuất sửa quan hệ để quản trị viên kiểm tra.');
+            await loadPending();
           }}
           onError={onError}
         />
@@ -356,9 +418,11 @@ function MemberProfileSheet({
   selectedId,
   proposalOpen,
   onProposalOpen,
+  onProposalClose,
   onClose,
   onSelect,
   onSubmit,
+  onRelationshipAction,
   onError,
 }: {
   member: ProfileMember | undefined;
@@ -368,15 +432,18 @@ function MemberProfileSheet({
   selectedId: string;
   proposalOpen: boolean;
   onProposalOpen: () => void;
+  onProposalClose: () => void;
   onClose: () => void;
   onSelect: (id: string) => void;
-  onSubmit: (choice: RelationshipProposalChoice, targetMemberId: string) => Promise<void>;
+  onSubmit: (input: CreateRelationshipChangeRequestInput) => Promise<void>;
+  onRelationshipAction: (input: CreateRelationshipChangeRequestInput) => Promise<void>;
   onError: (error: unknown) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [editingRelationshipId, setEditingRelationshipId] = useState<string | null>(null);
   const links = graph ? connectionsFor(graph, selectedId) : [];
   const graphMembers = new Map(graph?.nodes.map((item) => [item.id, item]) ?? []);
 
@@ -460,6 +527,43 @@ function MemberProfileSheet({
                 })}
               </section>
             ) : null}
+            {links.length ? (
+              <section className={styles.relationshipTools} aria-label="Chỉnh sửa quan hệ">
+                {links.map((link) => {
+                  const linked = graphMembers.get(link.member_id);
+                  return linked ? (
+                    <button
+                      key={link.relationship_id}
+                      type="button"
+                      onClick={() => setEditingRelationshipId(link.relationship_id)}
+                    >
+                      Sửa quan hệ với {linked.display_name}
+                    </button>
+                  ) : null;
+                })}
+              </section>
+            ) : null}
+            {editingRelationshipId && graph ? (
+              <RelationshipEditForm
+                relationship={graph.relationships.find((item) => item.id === editingRelationshipId)}
+                busy={busy}
+                error={localError}
+                onCancel={() => setEditingRelationshipId(null)}
+                onSubmit={async (input) => {
+                  setBusy(true);
+                  setLocalError('');
+                  try {
+                    await onRelationshipAction(input);
+                    setEditingRelationshipId(null);
+                  } catch (error) {
+                    setLocalError(explain(error));
+                    onError(error);
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              />
+            ) : null}
             {'contacts' in member && member.contacts?.length ? (
               <nav className={styles.contacts} aria-label={`Liên hệ ${member.display_name}`}>
                 {member.contacts.map((contact, index) => {
@@ -482,11 +586,12 @@ function MemberProfileSheet({
                 members={members}
                 busy={busy}
                 error={localError}
-                onSubmit={async (choice, targetMemberId) => {
+                onCancel={onProposalClose}
+                onSubmit={async (input) => {
                   setBusy(true);
                   setLocalError('');
                   try {
-                    await onSubmit(choice, targetMemberId);
+                    await onSubmit(input);
                   } catch (error) {
                     setLocalError(explain(error));
                     onError(error);
@@ -508,92 +613,326 @@ function ProposalForm({
   members,
   busy,
   error,
+  onCancel,
   onSubmit,
 }: {
   selected: ProfileMember;
   members: Member[];
   busy: boolean;
   error: string;
-  onSubmit: (choice: RelationshipProposalChoice, targetMemberId: string) => Promise<void>;
+  onCancel: () => void;
+  onSubmit: (input: CreateRelationshipChangeRequestInput) => Promise<void>;
 }) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [kind, setKind] = useState<'parent' | 'child' | 'partner'>('parent');
-  const kindRef = useRef<HTMLSelectElement>(null);
+  const [subtype, setSubtype] = useState('unspecified');
+  const [source, setSource] = useState<'existing' | 'new'>('existing');
+  const [targetId, setTargetId] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [familiarName, setFamiliarName] = useState('');
+  const [hometown, setHometown] = useState('');
+  const [birthYear, setBirthYear] = useState('');
   const candidates = members.filter((member) => member.id !== selected.id);
-  useEffect(() => {
-    kindRef.current?.focus();
-  }, []);
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const target = String(data.get('target'));
-    const subtype = String(data.get('subtype'));
-    const choice: RelationshipProposalChoice =
-      kind === 'partner'
-        ? { kind, subtype: subtype as 'married' | 'partner' }
-        : { kind, subtype: subtype as 'biological' | 'adoptive' | 'unspecified' };
-    await onSubmit(choice, target);
+  const choice: RelationshipProposalChoice =
+    kind === 'partner'
+      ? { kind, subtype: subtype as 'married' | 'partner' }
+      : { kind, subtype: subtype as 'biological' | 'adoptive' | 'unspecified' };
+  const targetName =
+    source === 'new'
+      ? displayName.trim()
+      : (candidates.find((member) => member.id === targetId)?.display_name ?? '');
+
+  function changeKind(next: typeof kind) {
+    setKind(next);
+    setSubtype(next === 'partner' ? 'married' : 'unspecified');
   }
+
+  async function submit() {
+    if (source === 'existing') {
+      await onSubmit(relationshipProposal(selected.id, targetId, choice));
+      return;
+    }
+    await onSubmit(
+      newMemberProposal(selected.id, choice, {
+        display_name: displayName,
+        familiar_name: familiarName,
+        hometown,
+        ...(birthYear ? { birth_year: Number(birthYear) } : {}),
+      }),
+    );
+  }
+
   return (
-    <form className={styles.proposal} onSubmit={(event) => void submit(event)}>
+    <section className={styles.proposal} aria-labelledby="proposal-heading">
       <div>
-        <p>ĐỀ XUẤT THAY ĐỔI</p>
-        <h3>Nối thêm một người.</h3>
-        <span>Đề xuất chỉ thành quan hệ chính thức sau khi quản trị viên duyệt.</span>
+        <p>ĐỀ XUẤT THAY ĐỔI · BƯỚC {step}/3</p>
+        <h3 id="proposal-heading">
+          {step === 1
+            ? 'Người này là ai?'
+            : step === 2
+              ? 'Chọn đúng hồ sơ.'
+              : 'Xem lại trước khi gửi.'}
+        </h3>
+        <span>Quan hệ chỉ xuất hiện trên cây sau khi quản trị viên xác nhận.</span>
       </div>
       {error ? <p role="alert">{error}</p> : null}
+      {step === 1 ? (
+        <>
+          <label>
+            Quan hệ với {selected.display_name}
+            <select
+              autoFocus
+              aria-label="Người này là"
+              value={kind}
+              onChange={(event) => changeKind(event.target.value as typeof kind)}
+            >
+              <option value="parent">Cha / mẹ</option>
+              <option value="child">Con</option>
+              <option value="partner">Vợ / chồng hoặc bạn đời</option>
+            </select>
+          </label>
+          <label>
+            Loại quan hệ
+            <select
+              aria-label="Loại quan hệ"
+              value={subtype}
+              onChange={(event) => setSubtype(event.target.value)}
+            >
+              {kind === 'partner' ? (
+                <>
+                  <option value="married">Hôn nhân</option>
+                  <option value="partner">Bạn đời</option>
+                </>
+              ) : (
+                <>
+                  <option value="unspecified">Chưa xác định</option>
+                  <option value="biological">Huyết thống</option>
+                  <option value="adoptive">Nuôi dưỡng</option>
+                </>
+              )}
+            </select>
+          </label>
+          <button type="button" onClick={() => setStep(2)}>
+            Tiếp tục
+          </button>
+        </>
+      ) : null}
+      {step === 2 ? (
+        <>
+          <div className={styles.sourceSwitch} role="group" aria-label="Nguồn hồ sơ">
+            <button
+              type="button"
+              aria-pressed={source === 'existing'}
+              onClick={() => setSource('existing')}
+            >
+              Người đã có
+            </button>
+            <button type="button" aria-pressed={source === 'new'} onClick={() => setSource('new')}>
+              Tạo hồ sơ mới
+            </button>
+          </div>
+          {source === 'existing' ? (
+            <label>
+              Chọn người thân
+              <select
+                aria-label="Chọn người thân"
+                value={targetId}
+                onChange={(event) => setTargetId(event.target.value)}
+              >
+                <option value="">Chọn trong danh bạ</option>
+                {candidates.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.display_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <div className={styles.newMemberFields}>
+              <label>
+                Họ và tên
+                <input
+                  autoFocus
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Tên thường gọi
+                <input
+                  value={familiarName}
+                  onChange={(event) => setFamiliarName(event.target.value)}
+                />
+              </label>
+              <label>
+                Quê quán
+                <input value={hometown} onChange={(event) => setHometown(event.target.value)} />
+              </label>
+              <label>
+                Năm sinh
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]{4}"
+                  value={birthYear}
+                  onChange={(event) => setBirthYear(event.target.value)}
+                />
+              </label>
+            </div>
+          )}
+          <div className={styles.proposalActions}>
+            <button type="button" onClick={() => setStep(1)}>
+              Quay lại
+            </button>
+            <button type="button" disabled={!targetName} onClick={() => setStep(3)}>
+              Xem lại
+            </button>
+          </div>
+        </>
+      ) : null}
+      {step === 3 ? (
+        <>
+          <dl className={styles.review}>
+            <div>
+              <dt>Người được chọn</dt>
+              <dd>{targetName}</dd>
+            </div>
+            <div>
+              <dt>Quan hệ</dt>
+              <dd>
+                {proposalKindLabel(kind)} của {selected.display_name}
+              </dd>
+            </div>
+            <div>
+              <dt>Ghi nhận</dt>
+              <dd>{proposalSubtypeLabel(subtype)}</dd>
+            </div>
+          </dl>
+          <p className={styles.reviewNote}>
+            Thông tin liên hệ riêng tư sẽ được bổ sung sau khi hồ sơ được duyệt.
+          </p>
+          <div className={styles.proposalActions}>
+            <button type="button" onClick={() => setStep(2)}>
+              Sửa lại
+            </button>
+            <button type="button" disabled={busy} onClick={() => void submit()}>
+              {busy ? 'Đang gửi…' : 'Gửi quản trị viên duyệt'}
+            </button>
+          </div>
+        </>
+      ) : null}
+      <button className={styles.cancelProposal} type="button" onClick={onCancel}>
+        Hủy thao tác
+      </button>
+    </section>
+  );
+}
+
+function RelationshipEditForm({
+  relationship,
+  busy,
+  error,
+  onCancel,
+  onSubmit,
+}: {
+  relationship: RelationshipGraphResponse['relationships'][number] | undefined;
+  busy: boolean;
+  error: string;
+  onCancel: () => void;
+  onSubmit: (input: CreateRelationshipChangeRequestInput) => Promise<void>;
+}) {
+  const [subtype, setSubtype] = useState(relationship?.subtype ?? 'unspecified');
+  if (!relationship) return null;
+  const choices =
+    relationship.type === 'partnership'
+      ? [
+          ['married', 'Hôn nhân'],
+          ['partner', 'Bạn đời'],
+        ]
+      : [
+          ['biological', 'Huyết thống'],
+          ['adoptive', 'Nuôi dưỡng'],
+          ['unspecified', 'Chưa xác định'],
+        ];
+  return (
+    <section className={styles.relationshipEdit} aria-label="Xem lại thay đổi quan hệ">
+      <h3>Sửa hoặc gỡ quan hệ</h3>
+      {error ? <p role="alert">{error}</p> : null}
       <label>
-        Người này là
+        Loại quan hệ
         <select
-          ref={kindRef}
-          aria-label="Người này là"
-          value={kind}
-          onChange={(event) => setKind(event.target.value as typeof kind)}
+          value={subtype}
+          onChange={(event) => setSubtype(event.target.value as typeof subtype)}
         >
-          <option value="parent">Cha / mẹ của {selected.display_name}</option>
-          <option value="child">Con của {selected.display_name}</option>
-          <option value="partner">Bạn đời của {selected.display_name}</option>
-        </select>
-      </label>
-      <label>
-        Chọn người thân
-        <select aria-label="Chọn người thân" name="target" required defaultValue="">
-          <option value="" disabled>
-            Chọn trong danh bạ
-          </option>
-          {candidates.map((member) => (
-            <option key={member.id} value={member.id}>
-              {member.display_name}
+          {choices.map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </select>
       </label>
-      <label>
-        Loại quan hệ
-        <select
-          key={kind}
-          aria-label="Loại quan hệ"
-          name="subtype"
-          defaultValue={kind === 'partner' ? 'married' : 'unspecified'}
+      <p>Mọi thay đổi đều chờ quản trị viên duyệt trước khi cây cập nhật.</p>
+      <div className={styles.proposalActions}>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            void onSubmit({
+              type: 'relationship_update',
+              target_id: relationship.id,
+              base_version: relationship.version,
+              payload: { subtype: subtype as typeof relationship.subtype },
+            })
+          }
         >
-          {kind === 'partner' ? (
-            <>
-              <option value="married">Hôn nhân</option>
-              <option value="partner">Bạn đời</option>
-            </>
-          ) : (
-            <>
-              <option value="unspecified">Chưa xác định</option>
-              <option value="biological">Huyết thống</option>
-              <option value="adoptive">Nuôi dưỡng</option>
-            </>
-          )}
-        </select>
-      </label>
-      <button type="submit" disabled={busy || !candidates.length}>
-        {busy ? 'Đang gửi…' : 'Gửi đề xuất'}
-      </button>
-    </form>
+          Gửi đề xuất sửa
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() =>
+            void onSubmit(relationshipRemovalProposal(relationship.id, relationship.version))
+          }
+        >
+          Gửi đề xuất gỡ
+        </button>
+        <button type="button" onClick={onCancel}>
+          Thôi
+        </button>
+      </div>
+    </section>
   );
+}
+
+function proposalKindLabel(kind: 'parent' | 'child' | 'partner') {
+  if (kind === 'parent') return 'Cha / mẹ';
+  if (kind === 'child') return 'Con';
+  return 'Vợ / chồng hoặc bạn đời';
+}
+
+function proposalSubtypeLabel(subtype: string) {
+  if (subtype === 'biological') return 'Huyết thống';
+  if (subtype === 'adoptive') return 'Nuôi dưỡng';
+  if (subtype === 'married') return 'Hôn nhân';
+  if (subtype === 'partner') return 'Bạn đời';
+  return 'Chưa xác định';
+}
+
+function pendingLabel(requestItem: RelationshipChangeRequestDto, members: Member[]) {
+  const names = new Map(members.map((member) => [member.id, member.display_name]));
+  if (
+    requestItem.type === 'member_create' &&
+    requestItem.payload &&
+    'member' in requestItem.payload
+  ) {
+    return `Thêm ${requestItem.payload.member.display_name} vào gia phả`;
+  }
+  if (requestItem.type === 'relationship_remove') return 'Gỡ một quan hệ đã xác nhận';
+  if (requestItem.type === 'relationship_update') return 'Sửa loại quan hệ đã xác nhận';
+  if (requestItem.payload && 'from_member_id' in requestItem.payload) {
+    return `${names.get(requestItem.payload.from_member_id) ?? 'Một người thân'} ↔ ${names.get(requestItem.payload.to_member_id) ?? 'một người thân'}`;
+  }
+  return 'Thay đổi gia phả';
 }
 
 function fold(value: string) {
