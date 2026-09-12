@@ -12,6 +12,7 @@
   "dependencies": {
     "@family/contracts": "*",
     "@family/ui": "*",
+    "@xyflow/react": "12.11.6",
     "next": "16.3.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
