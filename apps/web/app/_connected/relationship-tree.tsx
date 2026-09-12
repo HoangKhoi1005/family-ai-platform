@@ -1,11 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import type {
-  MemberProfileDto,
-  RelationshipGraphNodeDto,
-  RelationshipGraphResponse,
-} from '@family/contracts';
+import type { MemberProfileDto, RelationshipGraphResponse } from '@family/contracts';
 import { explain, request, RequestError } from './api';
 import type { Member } from './types';
 import { ConnectedIdentity } from './connected-app-shell';
@@ -13,11 +9,22 @@ import {
   buildTreeRows,
   connectionsFor,
   relationshipProposal,
+  relationshipStatements,
+  safeContactHref,
   type RelationshipProposalChoice,
 } from './relationship-tree-model';
 import styles from './relationship-tree.module.css';
 
 type TreeView = 'tree' | 'directory';
+
+const focusableSelector = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 export function RelationshipTree({
   base,
@@ -41,6 +48,7 @@ export function RelationshipTree({
   const [proposalOpen, setProposalOpen] = useState(false);
   const [message, setMessage] = useState('');
   const opener = useRef<HTMLButtonElement | null>(null);
+  const profileSequence = useRef(0);
 
   const loadGraph = useCallback(
     async (signal?: AbortSignal) => {
@@ -72,6 +80,8 @@ export function RelationshipTree({
 
   useEffect(() => {
     const controller = new AbortController();
+    // The request owns this view's loading and error state for both the initial load and retries.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadGraph(controller.signal);
     return () => controller.abort();
   }, [loadGraph]);
@@ -82,8 +92,10 @@ export function RelationshipTree({
     [graph],
   );
   const root = rootMemberId ? graphMembers.get(rootMemberId) : undefined;
+  const statements = useMemo(() => (graph ? relationshipStatements(graph) : []), [graph]);
 
   async function openProfile(memberId: string, button?: HTMLButtonElement) {
+    const run = ++profileSequence.current;
     if (button) opener.current = button;
     setSelectedId(memberId);
     setProfile(null);
@@ -91,20 +103,22 @@ export function RelationshipTree({
     setProposalOpen(false);
     setMessage('');
     try {
-      setProfile(await request<MemberProfileDto>(`${base}/members/${memberId}`));
+      const nextProfile = await request<MemberProfileDto>(`${base}/members/${memberId}`);
+      if (run === profileSequence.current) setProfile(nextProfile);
     } catch (error) {
-      onError(error);
+      if (run === profileSequence.current) onError(error);
     } finally {
-      setProfileLoading(false);
+      if (run === profileSequence.current) setProfileLoading(false);
     }
   }
 
-  function closeProfile() {
+  const closeProfile = useCallback(() => {
+    profileSequence.current += 1;
     setSelectedId(null);
     setProfile(null);
     setProposalOpen(false);
     requestAnimationFrame(() => opener.current?.focus());
-  }
+  }, []);
 
   return (
     <section className={styles.page} aria-labelledby="connected-tree-title">
@@ -197,6 +211,22 @@ export function RelationshipTree({
                   </section>
                 ))}
               </div>
+              {statements.length ? (
+                <section className={styles.edgeLedger} aria-labelledby="approved-edges-heading">
+                  <h3 id="approved-edges-heading">Các quan hệ trong phần cây này</h3>
+                  <ul>
+                    {statements.map((statement) => (
+                      <li
+                        key={statement.relationship_id}
+                        data-approved-relationship={statement.relationship_id}
+                      >
+                        <span>{statement.detail}</span>
+                        <strong>{statement.title}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
               {graph.relationships.length === 0 ? (
                 <EmptyTree
                   title="Cây đang bắt đầu từ bạn."
@@ -321,6 +351,7 @@ function Directory({
           <button
             type="button"
             key={member.id}
+            aria-label={`Mở hồ sơ ${member.display_name}`}
             onClick={(event) => onOpen(member.id, event.currentTarget)}
           >
             <ConnectedIdentity name={member.display_name} />
@@ -377,6 +408,7 @@ function MemberProfileSheet({
   onError: (error: unknown) => void;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState('');
   const links = graph ? connectionsFor(graph, selectedId) : [];
@@ -384,11 +416,31 @@ function MemberProfileSheet({
 
   useEffect(() => {
     closeRef.current?.focus();
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector));
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener('keydown', escape);
-    return () => window.removeEventListener('keydown', escape);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, selectedId]);
 
   return (
@@ -400,6 +452,7 @@ function MemberProfileSheet({
       }}
     >
       <aside
+        ref={dialogRef}
         className={styles.sheet}
         role="dialog"
         aria-modal="true"
@@ -443,14 +496,14 @@ function MemberProfileSheet({
             ) : null}
             {'contacts' in member && member.contacts?.length ? (
               <nav className={styles.contacts} aria-label={`Liên hệ ${member.display_name}`}>
-                {member.contacts.map((contact, index) => (
-                  <a
-                    key={contact.id ?? `${contact.kind}:${index}`}
-                    href={contactHref(contact.kind, contact.value)}
-                  >
-                    {contactLabel(contact.kind)}
-                  </a>
-                ))}
+                {member.contacts.map((contact, index) => {
+                  const href = safeContactHref(contact.kind, contact.value);
+                  return href ? (
+                    <a key={contact.id ?? `${contact.kind}:${index}`} href={href}>
+                      {contactLabel(contact.kind)}
+                    </a>
+                  ) : null;
+                })}
               </nav>
             ) : null}
             {!proposalOpen ? (
@@ -498,7 +551,11 @@ function ProposalForm({
   onSubmit: (choice: RelationshipProposalChoice, targetMemberId: string) => Promise<void>;
 }) {
   const [kind, setKind] = useState<'parent' | 'child' | 'partner'>('parent');
+  const kindRef = useRef<HTMLSelectElement>(null);
   const candidates = members.filter((member) => member.id !== selected.id);
+  useEffect(() => {
+    kindRef.current?.focus();
+  }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -521,6 +578,7 @@ function ProposalForm({
       <label>
         Người này là
         <select
+          ref={kindRef}
           aria-label="Người này là"
           value={kind}
           onChange={(event) => setKind(event.target.value as typeof kind)}
@@ -578,12 +636,6 @@ function fold(value: string) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/g, 'd');
-}
-
-function contactHref(kind: 'phone' | 'email' | 'facebook', value: string) {
-  if (kind === 'phone') return `tel:${value.replaceAll(' ', '')}`;
-  if (kind === 'email') return `mailto:${value}`;
-  return value;
 }
 
 function contactLabel(kind: 'phone' | 'email' | 'facebook') {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { RelationshipGraphResponse } from '@family/contracts';
-import { buildTreeRows, connectionsFor, relationshipProposal } from './relationship-tree-model';
+import {
+  buildTreeRows,
+  connectionsFor,
+  relationshipProposal,
+  relationshipStatements,
+  safeContactHref,
+} from './relationship-tree-model';
 
 const graph: RelationshipGraphResponse = {
   root_member_id: 'member-child',
@@ -97,10 +103,7 @@ describe('connected relationship tree model', () => {
 
     const adoptive: RelationshipGraphResponse = {
       ...graph,
-      relationships: [
-        { ...graph.relationships[0]!, subtype: 'adoptive' },
-        graph.relationships[1]!,
-      ],
+      relationships: [{ ...graph.relationships[0]!, subtype: 'adoptive' }, graph.relationships[1]!],
     };
     expect(connectionsFor(adoptive, 'member-parent-a')).toEqual(
       expect.arrayContaining([
@@ -108,6 +111,23 @@ describe('connected relationship tree model', () => {
         expect.objectContaining({ member_id: 'member-parent-b', label: 'Bạn đời' }),
       ]),
     );
+  });
+
+  it('keeps one readable statement for every approved edge', () => {
+    expect(relationshipStatements(graph)).toEqual([
+      {
+        relationship_id: 'relationship-parent',
+        kind: 'parent_child',
+        title: 'Nguyễn Minh Đức là cha / mẹ của Nguyễn Gia Bảo',
+        detail: 'Huyết thống',
+      },
+      {
+        relationship_id: 'relationship-partner',
+        kind: 'partnership',
+        title: 'Nguyễn Minh Đức ↔ Trần Thu Hà',
+        detail: 'Hôn nhân',
+      },
+    ]);
   });
 
   it('builds create requests with the correct parent-child direction', () => {
@@ -144,5 +164,15 @@ describe('connected relationship tree model', () => {
         subtype: 'married',
       },
     });
+  });
+
+  it('only turns supported contact values into safe links', () => {
+    expect(safeContactHref('phone', '090 123 4567')).toBe('tel:0901234567');
+    expect(safeContactHref('email', 'bao@example.test')).toBe('mailto:bao@example.test');
+    expect(safeContactHref('facebook', 'https://www.facebook.com/giabao')).toBe(
+      'https://www.facebook.com/giabao',
+    );
+    expect(safeContactHref('facebook', 'javascript:alert(1)')).toBeNull();
+    expect(safeContactHref('facebook', 'data:text/html,unsafe')).toBeNull();
   });
 });
