@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import type {
   CreateRelationshipChangeRequestInput,
+  CreateMemberRelationshipPayload,
   CreateRelationshipPayload,
   RelationshipChangeRequestDto,
   RelationshipChangeRequestListResponse,
@@ -17,7 +18,8 @@ interface ChangeRequestRow {
   type: CreateRelationshipChangeRequestInput['type'];
   target_id: string | null;
   base_version: number | null;
-  proposed_payload: CreateRelationshipPayload | UpdateRelationshipPayload | null;
+  proposed_payload:
+    CreateMemberRelationshipPayload | CreateRelationshipPayload | UpdateRelationshipPayload | null;
   status: RelationshipChangeRequestDto['status'];
   actor_membership_id: string;
   reviewer_id: string | null;
@@ -104,6 +106,80 @@ function normalizeCreatePayload(payload: CreateRelationshipPayload): CreateRelat
   };
 }
 
+function normalizeMemberCreatePayload(
+  payload: CreateMemberRelationshipPayload,
+): CreateMemberRelationshipPayload {
+  const text = (value: string | null | undefined, field: string, max: number) => {
+    if (value === undefined || value === null) return value;
+    const normalized = value.trim().normalize('NFC');
+    if (!normalized || normalized.length > max) invalid(`${field} không hợp lệ.`);
+    return normalized;
+  };
+  const birthYear = payload.member.birth_year;
+  if (birthYear !== undefined && birthYear !== null) {
+    const currentYear = new Date().getUTCFullYear();
+    if (!Number.isInteger(birthYear) || birthYear < 1000 || birthYear > currentYear) {
+      invalid('Năm sinh không hợp lệ.');
+    }
+  }
+  return {
+    member: {
+      display_name: text(payload.member.display_name, 'Họ tên', 160)!,
+      ...(payload.member.familiar_name !== undefined
+        ? {
+            familiar_name:
+              payload.member.familiar_name === null
+                ? null
+                : text(payload.member.familiar_name, 'Tên thường gọi', 80)!,
+          }
+        : {}),
+      ...(payload.member.hometown !== undefined
+        ? {
+            hometown:
+              payload.member.hometown === null
+                ? null
+                : text(payload.member.hometown, 'Quê quán', 160)!,
+          }
+        : {}),
+      ...(birthYear !== undefined ? { birth_year: birthYear } : {}),
+      deceased: payload.member.deceased ?? false,
+    },
+    relationship: { ...payload.relationship },
+  };
+}
+
+function memberCreateRelationship(
+  payload: CreateMemberRelationshipPayload,
+  memberId: string,
+): CreateRelationshipPayload {
+  const anchorMemberId = payload.relationship.anchor_member_id;
+  if (payload.relationship.kind === 'parent') {
+    return {
+      from_member_id: memberId,
+      to_member_id: anchorMemberId,
+      type: 'parent_child',
+      subtype: payload.relationship.subtype,
+    };
+  }
+  if (payload.relationship.kind === 'child') {
+    return {
+      from_member_id: anchorMemberId,
+      to_member_id: memberId,
+      type: 'parent_child',
+      subtype: payload.relationship.subtype,
+    };
+  }
+  if (payload.relationship.kind === 'partner') {
+    return {
+      from_member_id: anchorMemberId,
+      to_member_id: memberId,
+      type: 'partnership',
+      subtype: payload.relationship.subtype,
+    };
+  }
+  return invalid('Quan hệ đề xuất không hợp lệ.');
+}
+
 function normalizeUpdatePayload(payload: UpdateRelationshipPayload): UpdateRelationshipPayload {
   const normalized: UpdateRelationshipPayload = {};
   if (payload.subtype !== undefined) normalized.subtype = payload.subtype;
@@ -118,6 +194,9 @@ function normalizeUpdatePayload(payload: UpdateRelationshipPayload): UpdateRelat
 function normalizeInput(
   input: CreateRelationshipChangeRequestInput,
 ): CreateRelationshipChangeRequestInput {
+  if (input.type === 'member_create') {
+    return { type: input.type, payload: normalizeMemberCreatePayload(input.payload) };
+  }
   if (input.type === 'relationship_create') {
     return { type: input.type, payload: normalizeCreatePayload(input.payload) };
   }
@@ -246,7 +325,15 @@ export async function createRelationshipChangeRequest(
 ): Promise<RelationshipChangeRequestDto> {
   const membership = await requireFamily(client, input.actorId, input.familyId);
   const normalized = normalizeInput(input.request);
-  if (normalized.type === 'relationship_create') {
+  if (normalized.type === 'member_create') {
+    const anchor = await client.query('SELECT 1 FROM members WHERE family_id=$1 AND id=$2', [
+      input.familyId,
+      normalized.payload.relationship.anchor_member_id,
+    ]);
+    if (!anchor.rowCount) {
+      throw new FamilyHttpError(404, 'NOT_FOUND', 'Không tìm thấy người thân được chọn.');
+    }
+  } else if (normalized.type === 'relationship_create') {
     await validateCreate(client, input.familyId, normalized.payload);
   } else {
     const relationship = await requireRelationship(client, input.familyId, normalized.target_id);
@@ -265,8 +352,12 @@ export async function createRelationshipChangeRequest(
       input.familyId,
       membership.id,
       normalized.type,
-      normalized.type === 'relationship_create' ? null : normalized.target_id,
-      normalized.type === 'relationship_create' ? null : normalized.base_version,
+      normalized.type === 'relationship_create' || normalized.type === 'member_create'
+        ? null
+        : normalized.target_id,
+      normalized.type === 'relationship_create' || normalized.type === 'member_create'
+        ? null
+        : normalized.base_version,
       payload === null ? null : JSON.stringify(payload),
     ],
   );
@@ -284,13 +375,20 @@ export async function createRelationshipChangeRequest(
 
 export async function listPendingRelationshipChangeRequests(
   client: PoolClient,
-  input: { familyId: string; actorId: string },
+  input: { familyId: string; actorId: string; scope?: 'all' | 'mine' },
 ): Promise<RelationshipChangeRequestListResponse> {
-  await requireFamily(client, input.actorId, input.familyId, true);
+  const membership = await requireFamily(
+    client,
+    input.actorId,
+    input.familyId,
+    input.scope !== 'mine',
+  );
   const rows = await client.query<ChangeRequestRow>(
     `SELECT ${requestColumns} FROM change_requests
-      WHERE family_id=$1 AND status='pending' ORDER BY created_at,id`,
-    [input.familyId],
+      WHERE family_id=$1 AND status='pending'
+        AND ($2::boolean = false OR actor_membership_id=$3)
+      ORDER BY created_at,id`,
+    [input.familyId, input.scope === 'mine', membership.id],
   );
   return { change_requests: rows.rows.map(mapRequest) };
 }
@@ -331,8 +429,59 @@ export async function cancelRelationshipChangeRequest(
 async function applyApprovedRequest(
   client: PoolClient,
   familyId: string,
+  actorId: string,
   request: ChangeRequestRow,
 ): Promise<{ id: string; action: AuditAction; version: number }> {
+  if (request.type === 'member_create') {
+    const payload = normalizeMemberCreatePayload(
+      request.proposed_payload as CreateMemberRelationshipPayload,
+    );
+    const insertedMember = await client.query<{ id: string; version: number }>(
+      `INSERT INTO members
+         (family_id,display_name,familiar_name,hometown,birth_year,deceased)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       RETURNING id,version`,
+      [
+        familyId,
+        payload.member.display_name,
+        payload.member.familiar_name ?? null,
+        payload.member.hometown ?? null,
+        payload.member.birth_year ?? null,
+        payload.member.deceased ?? false,
+      ],
+    );
+    const member = insertedMember.rows[0]!;
+    await writeAudit(client, {
+      familyId,
+      actorId,
+      action: 'member.created',
+      targetType: 'member',
+      targetId: member.id,
+      changeSummary: 'approved member_create proposal',
+      version: member.version,
+    });
+    const relationship = normalizeCreatePayload(memberCreateRelationship(payload, member.id));
+    await validateCreate(client, familyId, relationship);
+    const insertedRelationship = await client.query<{ id: string; version: number }>(
+      `INSERT INTO relationships
+         (family_id,from_member_id,to_member_id,type,subtype,start_date,end_date)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id,version`,
+      [
+        familyId,
+        relationship.from_member_id,
+        relationship.to_member_id,
+        relationship.type,
+        relationship.subtype,
+        null,
+        null,
+      ],
+    );
+    return {
+      id: insertedRelationship.rows[0]!.id,
+      action: 'relationship.created',
+      version: insertedRelationship.rows[0]!.version,
+    };
+  }
   if (request.type === 'relationship_create') {
     const payload = normalizeCreatePayload(request.proposed_payload as CreateRelationshipPayload);
     await validateCreate(client, familyId, payload);
@@ -412,7 +561,7 @@ export async function decideRelationshipChangeRequest(
 
   let applied: { id: string; action: AuditAction; version: number } | undefined;
   if (input.decision.decision === 'approved') {
-    applied = await applyApprovedRequest(client, input.familyId, request);
+    applied = await applyApprovedRequest(client, input.familyId, input.actorId, request);
     await writeAudit(client, {
       familyId: input.familyId,
       actorId: input.actorId,

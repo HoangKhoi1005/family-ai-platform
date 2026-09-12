@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   createRelationshipChangeRequestBodySchema,
+  relationshipChangeRequestListQuerySchema,
   relationshipDecisionBodySchema,
   relationshipGraphQuerySchema,
 } from './relationships.js';
@@ -21,18 +22,25 @@ app.post(
 app.post('/decision', { schema: { body: relationshipDecisionBodySchema } }, async (request) => ({
   body: request.body,
 }));
+app.get(
+  '/requests',
+  { schema: { querystring: relationshipChangeRequestListQuerySchema } },
+  async (request) => ({
+    query: request.query,
+  }),
+);
 
 beforeAll(async () => app.ready());
 afterAll(async () => app.close());
 
 async function validate(options: {
-  route: '/graph' | '/change-request' | '/decision';
+  route: '/graph' | '/change-request' | '/decision' | '/requests';
   location: 'body' | 'querystring';
   value: unknown;
 }) {
   if (options.location === 'querystring') {
     return app.inject({
-      method: 'POST',
+      method: options.route === '/requests' ? 'GET' : 'POST',
       url: `${options.route}?${new URLSearchParams(options.value as Record<string, string>)}`,
     });
   }
@@ -152,6 +160,84 @@ describe('relationship API schemas', () => {
       },
     });
     expect(accepted.statusCode).toBe(200);
+  });
+
+  it('accepts a minimal new-member proposal linked to an existing member', async () => {
+    const accepted = await validate({
+      route: '/change-request',
+      location: 'body',
+      value: {
+        type: 'member_create',
+        payload: {
+          member: {
+            display_name: 'Nguyễn Minh Anh',
+            familiar_name: 'Bé An',
+            hometown: 'Cà Mau',
+            birth_year: 2018,
+            deceased: false,
+          },
+          relationship: {
+            anchor_member_id: firstMember,
+            kind: 'child',
+            subtype: 'biological',
+          },
+        },
+      },
+    });
+    expect(accepted.statusCode).toBe(200);
+  });
+
+  it('rejects sensitive or incompatible fields in a new-member proposal', async () => {
+    const sensitive = await validate({
+      route: '/change-request',
+      location: 'body',
+      value: {
+        type: 'member_create',
+        payload: {
+          member: { display_name: 'Nguyễn Minh Anh', phone: '0900000000' },
+          relationship: {
+            anchor_member_id: firstMember,
+            kind: 'child',
+            subtype: 'biological',
+          },
+        },
+      },
+    });
+    expect(sensitive.statusCode).toBe(400);
+
+    const incompatible = await validate({
+      route: '/change-request',
+      location: 'body',
+      value: {
+        type: 'member_create',
+        payload: {
+          member: { display_name: 'Nguyễn Minh Anh' },
+          relationship: {
+            anchor_member_id: firstMember,
+            kind: 'partner',
+            subtype: 'adoptive',
+          },
+        },
+      },
+    });
+    expect(incompatible.statusCode).toBe(400);
+  });
+
+  it('supports administrator and requester list scopes only', async () => {
+    const mine = await validate({
+      route: '/requests',
+      location: 'querystring',
+      value: { status: 'pending', scope: 'mine' },
+    });
+    expect(mine.statusCode).toBe(200);
+    expect(mine.json().query).toEqual({ status: 'pending', scope: 'mine' });
+
+    const rejected = await validate({
+      route: '/requests',
+      location: 'querystring',
+      value: { scope: 'family' },
+    });
+    expect(rejected.statusCode).toBe(400);
   });
 
   it('rejects malformed decision fields', async () => {

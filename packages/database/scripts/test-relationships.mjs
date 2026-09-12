@@ -216,14 +216,52 @@ try {
   );
   assert.equal(createdRequest.rows[0].status, 'pending');
 
+  const memberCreateRequest = await withActorTransaction(runtimePool, ids.member, (client) =>
+    client.query(
+      `INSERT INTO change_requests
+         (family_id,actor_membership_id,type,proposed_payload)
+       VALUES ($1,$2,'member_create',$3::jsonb)
+       RETURNING id,status`,
+      [
+        ids.familyA,
+        ids.memberMembership,
+        JSON.stringify({
+          member: { display_name: 'Synthetic proposed person' },
+          relationship: {
+            anchor_member_id: ids.parent,
+            kind: 'child',
+            subtype: 'unspecified',
+          },
+        }),
+      ],
+    ),
+  );
+  assert.equal(memberCreateRequest.rows[0].status, 'pending');
+  await mustFail(
+    () =>
+      owner.query(
+        `INSERT INTO change_requests
+           (family_id,actor_membership_id,type,target_id,base_version,proposed_payload)
+         VALUES ($1,$2,'member_create',$3,1,$4::jsonb)`,
+        [ids.familyA, ids.memberMembership, ids.parentChild, JSON.stringify({ member: {} })],
+      ),
+    '23514',
+  );
+
   const adminRequests = await withActorTransaction(runtimePool, ids.admin, (client) =>
     client.query('SELECT id FROM change_requests'),
   );
-  assert.deepEqual(adminRequests.rows, [{ id: createdRequest.rows[0].id }]);
+  assert.deepEqual(
+    adminRequests.rows.map((row) => row.id).sort(),
+    [createdRequest.rows[0].id, memberCreateRequest.rows[0].id].sort(),
+  );
   const ownRequests = await withActorTransaction(runtimePool, ids.member, (client) =>
     client.query('SELECT id FROM change_requests'),
   );
-  assert.deepEqual(ownRequests.rows, [{ id: createdRequest.rows[0].id }]);
+  assert.deepEqual(
+    ownRequests.rows.map((row) => row.id).sort(),
+    [createdRequest.rows[0].id, memberCreateRequest.rows[0].id].sort(),
+  );
 
   const deniedDecision = await withActorTransaction(runtimePool, ids.member, (client) =>
     client.query("UPDATE change_requests SET status='approved',version=version+1 WHERE id=$1", [

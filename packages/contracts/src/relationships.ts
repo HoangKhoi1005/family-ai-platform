@@ -51,7 +51,33 @@ export interface UpdateRelationshipPayload {
   end_date?: string | null;
 }
 
+export type ProposedRelationshipKind = 'parent' | 'child' | 'partner';
+
+export interface ProposedMemberDraft {
+  display_name: string;
+  familiar_name?: string | null;
+  hometown?: string | null;
+  birth_year?: number | null;
+  deceased?: boolean;
+}
+
+export interface CreateMemberRelationshipPayload {
+  member: ProposedMemberDraft;
+  relationship:
+    | {
+        anchor_member_id: string;
+        kind: 'parent' | 'child';
+        subtype: ParentChildSubtype;
+      }
+    | {
+        anchor_member_id: string;
+        kind: 'partner';
+        subtype: PartnershipSubtype;
+      };
+}
+
 export type CreateRelationshipChangeRequestInput =
+  | { type: 'member_create'; payload: CreateMemberRelationshipPayload }
   | { type: 'relationship_create'; payload: CreateRelationshipPayload }
   | {
       type: 'relationship_update';
@@ -73,7 +99,8 @@ export interface RelationshipChangeRequestDto {
   type: RelationshipChangeRequestType;
   target_id: string | null;
   base_version: number | null;
-  payload: CreateRelationshipPayload | UpdateRelationshipPayload | null;
+  payload:
+    CreateMemberRelationshipPayload | CreateRelationshipPayload | UpdateRelationshipPayload | null;
   status: RelationshipChangeRequestStatus;
   requested_by: string;
   reviewer_id: string | null;
@@ -144,6 +171,51 @@ const updatePayloadSchema = {
   },
 } as const;
 
+const proposedMemberSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['display_name'],
+  properties: {
+    display_name: { type: 'string', minLength: 1, maxLength: 160 },
+    familiar_name: { type: ['string', 'null'], minLength: 1, maxLength: 80 },
+    hometown: { type: ['string', 'null'], minLength: 1, maxLength: 160 },
+    birth_year: { type: ['integer', 'null'], minimum: 1000, maximum: 9999 },
+    deceased: { type: 'boolean' },
+  },
+} as const;
+
+const memberCreatePayloadSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['member', 'relationship'],
+  properties: {
+    member: proposedMemberSchema,
+    relationship: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['anchor_member_id', 'kind', 'subtype'],
+      properties: {
+        anchor_member_id: uuid,
+        kind: { type: 'string', enum: ['parent', 'child', 'partner'] },
+        subtype: {
+          type: 'string',
+          enum: ['biological', 'adoptive', 'unspecified', 'married', 'partner'],
+        },
+      },
+      allOf: [
+        {
+          if: { properties: { kind: { enum: ['parent', 'child'] } } },
+          then: { properties: { subtype: { enum: ['biological', 'adoptive', 'unspecified'] } } },
+        },
+        {
+          if: { properties: { kind: { const: 'partner' } } },
+          then: { properties: { subtype: { enum: ['married', 'partner'] } } },
+        },
+      ],
+    },
+  },
+} as const;
+
 export const createRelationshipChangeRequestBodySchema = {
   type: 'object',
   additionalProperties: false,
@@ -151,13 +223,24 @@ export const createRelationshipChangeRequestBodySchema = {
   properties: {
     type: {
       type: 'string',
-      enum: ['relationship_create', 'relationship_update', 'relationship_remove'],
+      enum: ['member_create', 'relationship_create', 'relationship_update', 'relationship_remove'],
     },
     target_id: uuid,
     base_version: { type: 'integer', minimum: 1 },
     payload: { type: 'object' },
   },
   allOf: [
+    {
+      if: { properties: { type: { const: 'member_create' } } },
+      then: {
+        required: ['payload'],
+        properties: {
+          target_id: false,
+          base_version: false,
+          payload: memberCreatePayloadSchema,
+        },
+      },
+    },
     {
       if: { properties: { type: { const: 'relationship_create' } } },
       then: {
@@ -216,6 +299,7 @@ export const relationshipChangeRequestListQuerySchema = {
   additionalProperties: false,
   properties: {
     status: { type: 'string', enum: ['pending'], default: 'pending' },
+    scope: { type: 'string', enum: ['all', 'mine'], default: 'all' },
   },
 } as const;
 
