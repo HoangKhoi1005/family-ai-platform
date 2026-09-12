@@ -26,7 +26,7 @@ MVP hiển thị đường nối và quan hệ gần khi đủ dữ liệu. Khô
 
 Mở rộng sau: thuật ngữ họ hàng vùng miền đầy đủ, GEDCOM, export sơ đồ in lớn. Chưa có thư viện graph/layout đã chọn.
 
-## Trạng thái triển khai 2026-09-12
+## Trạng thái triển khai 2026-09-13
 
 Backend C1–C4 đã merge vào `main` qua PR #11: migration 0010, graph read, create/update/remove request, cancel, admin list/approve/reject, audit và kiểm chu trình đồng thời.
 
@@ -36,4 +36,8 @@ Nhánh `feat/interactive-family-tree` dùng `@xyflow/react` làm lớp viewport 
 
 Layout ban đầu vẫn do mô hình hàng thế hệ xác định để ổn định với pilot 15 người. Kéo node và trạng thái thu nhánh chỉ nằm trong client, không ghi Member/Relationship và không đổi API hay quyền. Mỗi cạnh hiển thị vẫn ánh xạ đúng một relationship đã duyệt từ server; không suy luận quan hệ mới.
 
-Lưu bố cục, tự động nhóm vợ/chồng và gia đình hạt nhân, tải graph lớn theo nhánh, cùng UI update/remove/cancel vẫn thuộc gói tiếp theo. Thêm Member trực tiếp từ node cần đi qua proposal/approval, không được ghi thẳng vào cây chuẩn.
+Nhánh `feat/interactive-family-tree` đã bổ sung workflow ba bước từ hồ sơ đang chọn: chọn cha/mẹ, con hoặc vợ/chồng; chọn hồ sơ có sẵn hoặc đề xuất hồ sơ tối thiểu mới; xem lại rồi gửi admin. Người gửi xem được pending của mình, hủy, sửa subtype hoặc đề xuất gỡ quan hệ. Admin duyệt `member_create` sẽ tạo Member và Relationship trong cùng transaction; từ chối hoặc lỗi không để lại Member mồ côi.
+
+Layout client gom partnership đang còn hiệu lực thành cụm, đặt con của một hoặc hai cha mẹ ở thế hệ dưới, giữ partnership đã kết thúc tách khỏi cụm hiện tại và đóng gói deterministic để không chồng node ở nhánh đông. Biological, adoptive và unspecified tiếp tục là dữ liệu tường minh; bố cục không suy luận hoặc ghi thêm quan hệ.
+
+Lưu bố cục, tải graph lớn theo nhánh và mô hình Household/Branch vẫn thuộc gói sau. Kéo node chỉ có hiệu lực trong phiên hiện tại.

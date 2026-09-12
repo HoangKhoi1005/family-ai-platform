@@ -26,29 +26,35 @@
 ### Task 1: Member-create change-request contract and migration
 
 **Files:**
+
 - Create: `packages/database/migrations/0011_member_create_change_requests.sql`
 - Modify: `packages/contracts/src/relationships.ts`
 - Modify: `packages/contracts/src/relationships.test.ts`
 - Modify: `packages/database/scripts/test-relationships.mjs`
 
 **Interfaces:**
+
 - Produces: `CreateMemberWithRelationshipPayload`, `MemberCreateChangeRequestInput`, and `scope: 'all' | 'mine'` query validation.
 - Preserves: all existing relationship request DTO fields and route URLs.
 
 - [ ] **Step 1: Write failing contract tests**
 
 ```ts
-expect(await inject('/change-request', {
-  type: 'member_create',
-  payload: {
-    member: { display_name: 'Trần Ngọc Hà', birth_year: 1990 },
-    relationship: { anchor_member_id: idA, kind: 'child', subtype: 'biological' },
-  },
-})).toBe(200);
-expect(await inject('/change-request', {
-  type: 'member_create',
-  payload: { member: { display_name: 'A', contacts: [] }, relationship: {} },
-})).toBe(400);
+expect(
+  await inject('/change-request', {
+    type: 'member_create',
+    payload: {
+      member: { display_name: 'Trần Ngọc Hà', birth_year: 1990 },
+      relationship: { anchor_member_id: idA, kind: 'child', subtype: 'biological' },
+    },
+  }),
+).toBe(200);
+expect(
+  await inject('/change-request', {
+    type: 'member_create',
+    payload: { member: { display_name: 'A', contacts: [] }, relationship: {} },
+  }),
+).toBe(400);
 ```
 
 - [ ] **Step 2: Run the contract tests and confirm RED**
@@ -60,7 +66,10 @@ Expected: the valid `member_create` body is rejected.
 
 ```ts
 export interface CreateMemberWithRelationshipPayload {
-  member: Pick<CreateMemberInput, 'display_name' | 'familiar_name' | 'hometown' | 'birth_year' | 'deceased'>;
+  member: Pick<
+    CreateMemberInput,
+    'display_name' | 'familiar_name' | 'hometown' | 'birth_year' | 'deceased'
+  >;
   relationship: {
     anchor_member_id: string;
     kind: 'parent' | 'child' | 'partner';
@@ -87,12 +96,14 @@ git commit -m "feat(family): define new-relative proposals"
 ### Task 2: Authorized creation, own-list, cancellation, and atomic approval
 
 **Files:**
+
 - Modify: `apps/api/src/family/change-requests.ts`
 - Modify: `apps/api/src/family/routes.ts`
 - Modify: `apps/api/tests/relationships.integration.test.ts`
 - Modify: `apps/api/src/family/relationship-routes.test.ts`
 
 **Interfaces:**
+
 - Consumes: `CreateRelationshipChangeRequestInput` including `member_create`.
 - Produces: `listPendingRelationshipChangeRequests(client, { familyId, actorId, scope })` where `scope='all'` requires admin and `scope='mine'` filters the actor membership.
 - Approval creates an unlinked Member and one approved Relationship in the same transaction.
@@ -103,7 +114,10 @@ git commit -m "feat(family): define new-relative proposals"
 it('creates a new relative only after atomic admin approval', async () => {
   const proposed = await member.post('/change-requests', memberCreateBody);
   expect(await graph()).not.toContainName('Trần Ngọc Hà');
-  await admin.post(`/change-requests/${proposed.id}/decision`, { decision: 'approved', version: 1 });
+  await admin.post(`/change-requests/${proposed.id}/decision`, {
+    decision: 'approved',
+    version: 1,
+  });
   expect(await graph()).toContainName('Trần Ngọc Hà');
 });
 ```
@@ -119,7 +133,11 @@ Expected: `member_create` and `scope=mine` cases fail before implementation.
 
 ```ts
 if (request.type === 'member_create') {
-  const created = await createMember(client, { familyId, actorId, member: request.proposed_payload.member });
+  const created = await createMember(client, {
+    familyId,
+    actorId,
+    member: request.proposed_payload.member,
+  });
   const relationship = relationshipForNewMember(created.id, request.proposed_payload.relationship);
   return insertApprovedRelationship(client, familyId, relationship);
 }
@@ -143,6 +161,7 @@ git commit -m "feat(api): approve new relatives atomically"
 ### Task 3: Mobile proposal wizard and pending requests
 
 **Files:**
+
 - Create: `apps/web/app/_connected/relationship-proposal-wizard.tsx`
 - Create: `apps/web/app/_connected/relationship-pending-list.tsx`
 - Modify: `apps/web/app/_connected/relationship-tree.tsx`
@@ -152,6 +171,7 @@ git commit -m "feat(api): approve new relatives atomically"
 - Modify: `tests/e2e/connected-mobile-experience.spec.ts`
 
 **Interfaces:**
+
 - Produces: `RelationshipProposalWizard` with `selected`, `members`, `onSubmit`, and `onCancel` props.
 - Produces: `RelationshipPendingList` using `GET ?status=pending&scope=mine` and the existing cancel endpoint.
 - Preserves: existing profile sheet focus trap and directory fallback.
@@ -205,12 +225,14 @@ git commit -m "feat(web): complete relationship proposal workflow"
 ### Task 4: Admin review detail and graph refresh
 
 **Files:**
+
 - Modify: `apps/web/app/_connected/relationship-admin.tsx`
 - Modify: `apps/web/app/_connected/admin-panel.tsx`
 - Modify: `apps/web/app/_connected/family-app.tsx`
 - Modify: `tests/e2e/connected-mobile-experience.spec.ts`
 
 **Interfaces:**
+
 - Consumes: all `RelationshipChangeRequestDto` payload variants.
 - Produces: resolved, type-specific review text and `onGraphChanged()` after approval.
 
@@ -250,6 +272,7 @@ git commit -m "feat(web): review and refresh family changes"
 ### Task 5: Partner units and parent-aligned children
 
 **Files:**
+
 - Modify: `apps/web/app/_connected/interactive-tree-model.ts`
 - Modify: `apps/web/app/_connected/interactive-tree-model.test.ts`
 - Modify: `apps/web/app/_connected/interactive-tree-canvas.tsx`
@@ -257,6 +280,7 @@ git commit -m "feat(web): review and refresh family changes"
 - Modify: `tests/e2e/connected-mobile-experience.spec.ts`
 
 **Interfaces:**
+
 - Produces: deterministic `buildInteractiveTreeLayout()` positions with active-partner unit spacing and child preferred centers.
 - Preserves: node/edge IDs, drag behavior, collapse behavior, relationship labels, and approved-only input.
 
@@ -264,7 +288,9 @@ git commit -m "feat(web): review and refresh family changes"
 
 ```ts
 const layout = buildInteractiveTreeLayout(remarriageFixture, new Set());
-expect(gap(layout, 'parent-a', 'current-partner')).toBeLessThan(gap(layout, 'parent-a', 'former-partner'));
+expect(gap(layout, 'parent-a', 'current-partner')).toBeLessThan(
+  gap(layout, 'parent-a', 'former-partner'),
+);
 expect(center(layout, 'child')).toBeCloseTo(midpoint(layout, 'parent-a', 'current-partner'));
 expect(hasOverlap(buildInteractiveTreeLayout(denseFixture, new Set()).nodes)).toBe(false);
 ```
@@ -302,6 +328,7 @@ git commit -m "feat(web): group family units in tree layout"
 ### Task 6: Project Brain, full verification, and PR update
 
 **Files:**
+
 - Modify: `CURRENT_STATE.md`
 - Modify: `docs/07_DATABASE_SCHEMA.md`
 - Modify: `docs/11_API_CONTRACTS.md`
@@ -310,6 +337,7 @@ git commit -m "feat(web): group family units in tree layout"
 - Modify: this plan checkboxes
 
 **Interfaces:**
+
 - Records: migration `0011`, request behavior, evidence, remaining physical-phone limits, and next slice.
 
 - [ ] **Step 1: Update docs from implemented behavior**

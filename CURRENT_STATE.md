@@ -1,6 +1,6 @@
 # Trạng thái dự án
 
-- Cập nhật: 2026-09-12. Context version: **1.4.0**.
+- Cập nhật: 2026-09-13. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
 - Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Nhánh `feat/interactive-family-tree` đang nâng graph thật trong `/app` thành canvas tương tác. Lịch âm, chat, moments, notifications và AI chưa có backend.
@@ -54,8 +54,8 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Kiểm chứng mới nhất
 
-- Trên `feat/interactive-family-tree`, `npm run check` đạt: boundaries, design tokens, lint, Prettier, typecheck **12/12 task**, **65/65 unit tests** trong 17 file, Project Brain **62 Markdown files / 4 JSON assets / 24 seed cases**, và build **8/8 workspace** đều đạt.
-- Suite connected đạt **32/32** trên Chromium desktop và Pixel 7 emulation. Toàn bộ `npm run test:e2e` đạt **133 test, 3 skip đúng theo project**. Browser tests chứng minh zoom, **Về tôi**, thu/mở nhánh, viewport 320px, kéo node không mở nhầm hồ sơ, graph error cục bộ, danh bạ fallback, proposal/approval và các luồng onboarding không bị hồi quy. Pan/pinch vật lý vẫn cần thử trên điện thoại thật.
+- Trên `feat/interactive-family-tree`, quality gate đạt: boundaries, design tokens, lint, Prettier, typecheck **12/12 task**, **73/73 unit tests** trong 17 file, Project Brain **64 Markdown files / 4 JSON assets / 24 seed cases**, và build **8/8 workspace** đều đạt.
+- Suite integration PostgreSQL/Mailpit đạt **19/19**. Toàn bộ `npm run test:e2e` đạt **135 test, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Browser tests chứng minh zoom, **Về tôi**, thu/mở nhánh, viewport 320px, kéo node không mở nhầm hồ sơ, graph error cục bộ, danh bạ fallback, workflow proposal/approval và các luồng onboarding không bị hồi quy. Pan/pinch vật lý vẫn cần thử trên điện thoại thật.
 
 - `npm run check`: đạt ngày 2026-09-12 trên `feat/connected-family-tree`; boundaries, tokens, lint, Prettier, typecheck, **61/61 unit tests**, brain validation 60 Markdown files và build 8 workspace đều đạt.
 - Integration với PostgreSQL/Mailpit local: **17/17 tests đạt**. Migration `0010_relationships.sql`, database constraint/RLS test và tenant test đều đạt; hai role giới hạn vẫn được provision đúng.
@@ -74,4 +74,11 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node và thu nhánh nhưng layout ban đầu vẫn theo hàng thế hệ; trạng thái kéo/thu không được lưu và chưa có thuật toán nhóm vợ/chồng/gia đình hạt nhân. Luồng web mới tạo đề xuất quan hệ; update/remove vẫn cần bề mặt quản trị tiếp theo. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request. Migration tiếp theo phải được thêm sau `0010`.
+Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
+
+## Cập nhật cây tương tác 2026-09-13
+
+- Migration `0011_member_create_change_requests.sql` mở rộng hàng đợi duyệt cho hồ sơ mới tối thiểu. Approval tạo Member không gắn tài khoản và Relationship trong cùng transaction; rejection không tạo dữ liệu chuẩn.
+- API hỗ trợ `scope=mine` để người gửi xem pending của mình. Web có workflow ba bước, chọn người có sẵn hoặc tạo hồ sơ mới, xem lại, gửi, hủy, sửa subtype và đề xuất gỡ.
+- Layout gom partnership active, đặt con dưới tâm cha mẹ, tách partnership lịch sử và đóng gói nhánh đông deterministic. Test bao phủ remarriage, adoptive, unspecified, tên dài và thiếu ảnh qua monogram hiện có.
+- PR đang mở: #13 trên nhánh `feat/interactive-family-tree`. Kết quả CI cuối cùng sẽ được ghi sau khi push các commit của gói này.
