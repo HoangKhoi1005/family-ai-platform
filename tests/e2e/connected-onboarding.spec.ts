@@ -165,7 +165,10 @@ test('clears the previous family when switching families fails mid-refresh', asy
 
   await page.goto('/app');
   await page.getByRole('button', { name: 'Người thân', exact: true }).click();
-  await expect(page.getByText('Dữ liệu riêng của Nhà A')).toBeVisible();
+  await page.getByRole('button', { name: 'Mở danh bạ' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Mở hồ sơ Dữ liệu riêng của Nhà A' }),
+  ).toBeVisible();
   switched = true;
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
@@ -191,11 +194,15 @@ test('hides an opened directory contact when the app regains focus', async ({ pa
 
   await page.goto('/app');
   await page.getByRole('button', { name: 'Người thân', exact: true }).click();
-  await page.getByRole('button', { name: /Người có liên hệ/ }).click();
-  await expect(page.getByText('0900000000')).toBeVisible();
+  await page.getByRole('button', { name: 'Mở danh bạ' }).click();
+  await page.getByRole('button', { name: 'Mở hồ sơ Người có liên hệ' }).click();
+  await expect(page.getByRole('link', { name: 'Gọi điện' })).toHaveAttribute(
+    'href',
+    'tel:0900000000',
+  );
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
 
-  await expect(page.getByText('0900000000')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Gọi điện' })).toHaveCount(0);
 });
 
 test('reloads a claim preview when the server reports a newer claim version', async ({ page }) => {

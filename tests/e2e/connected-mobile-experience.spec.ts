@@ -40,7 +40,7 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
           },
           {
             id: 'member-3',
-            display_name: 'Trần Thảo Chi',
+            display_name: 'Trần Nguyễn Thị Thảo Chi',
             familiar_name: 'Thảo Chi',
             hometown: 'Huế',
             version: 1,
@@ -79,6 +79,17 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
               version: 1,
               distance: 1,
             },
+            {
+              id: 'member-3',
+              display_name: 'Trần Nguyễn Thị Thảo Chi',
+              familiar_name: 'Thảo Chi',
+              hometown: 'Huế',
+              birth_date: null,
+              birth_year: 1972,
+              deceased: false,
+              version: 1,
+              distance: 2,
+            },
           ],
           relationships: [
             {
@@ -87,6 +98,16 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
               to_member_id: 'member-1',
               type: 'parent_child',
               subtype: 'biological',
+              start_date: null,
+              end_date: null,
+              version: 1,
+            },
+            {
+              id: 'relationship-2',
+              from_member_id: 'member-2',
+              to_member_id: 'member-3',
+              type: 'partnership',
+              subtype: 'married',
               start_date: null,
               end_date: null,
               version: 1,
@@ -188,10 +209,13 @@ test('member explores the approved tree and submits a reviewed relationship prop
   await expect(page.getByRole('heading', { name: 'Gia phả nhà mình.' })).toBeVisible();
   await expect(page.getByText('Quanh Gia Bảo')).toBeVisible();
   await expect(page.getByText('Cha / mẹ', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-approved-relationship]')).toHaveCount(2);
+  await expect(page.getByText('Nguyễn Minh Anh ↔ Trần Nguyễn Thị Thảo Chi')).toBeVisible();
   await page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' }).click();
   await expect(page.getByText('Người luôn nhắc cả nhà gọi điện cho nhau.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Bổ sung quan hệ cho Nguyễn Minh Anh' }).click();
+  await expect(page.getByLabel('Người này là')).toBeFocused();
   await page.getByLabel('Người này là').selectOption('child');
   await page.getByLabel('Chọn người thân').selectOption('member-3');
   await page.getByLabel('Loại quan hệ').selectOption('adoptive');
@@ -213,6 +237,127 @@ test('member explores the approved tree and submits a reviewed relationship prop
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+});
+
+test('member profile ignores a stale response and keeps keyboard focus inside the sheet', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let releaseMemberTwo: (() => void) | undefined;
+  const memberTwoReleased = new Promise<void>((resolve) => {
+    releaseMemberTwo = resolve;
+  });
+  await page.route('**/api/v1/families/family-1/members/member-2', async (route) => {
+    await memberTwoReleased;
+    await route.fulfill({
+      json: {
+        id: 'member-2',
+        display_name: 'Nguyễn Minh Anh',
+        familiar_name: 'Minh Anh',
+        hometown: 'Đà Nẵng',
+        biography: 'Phản hồi cũ không được hiển thị.',
+        contacts: [],
+        version: 1,
+      },
+    });
+  });
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+  await page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Đóng hồ sơ' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(
+    dialog.getByRole('button', { name: 'Bổ sung quan hệ cho Nguyễn Minh Anh' }),
+  ).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Đóng hồ sơ' })).toBeFocused();
+
+  await dialog.getByRole('button', { name: /Nguyễn Gia Bảo/ }).click();
+  await expect(dialog.getByRole('heading', { name: 'Nguyễn Gia Bảo' })).toBeVisible();
+  releaseMemberTwo?.();
+  await expect(dialog.getByText('Thích lưu lại chuyện nhà.')).toBeVisible();
+  await expect(dialog.getByText('Phản hồi cũ không được hiển thị.')).toHaveCount(0);
+});
+
+test('member without a linked profile keeps directory access without requesting a graph', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let graphRequests = 0;
+  await page.route('**/api/v1/families/family-1/onboarding', (route) =>
+    route.fulfill({ json: { member_id: null, claims: [] } }),
+  );
+  await page.route('**/api/v1/families/family-1/relationships**', (route) => {
+    graphRequests += 1;
+    return route.fulfill({ status: 500, json: { error: { code: 'UNEXPECTED_REQUEST' } } });
+  });
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Chưa xác định vị trí của bạn.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mở danh bạ' }).click();
+  await expect(page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' })).toBeVisible();
+  expect(graphRequests).toBe(0);
+});
+
+test('graph failure stays local and preserves the directory fallback', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  await page.route('**/api/v1/families/family-1/relationships**', (route) =>
+    route.fulfill({ status: 503, json: { error: { code: 'GRAPH_UNAVAILABLE' } } }),
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  const graphAlert = page.getByRole('alert').filter({ hasText: 'Chưa mở được sơ đồ.' });
+  await expect(graphAlert).toContainText('Chưa mở được sơ đồ.');
+  await expect(graphAlert).toContainText('Nhà mình đang gặp lỗi kết nối.');
+  await page.getByRole('button', { name: 'Danh bạ' }).click();
+  await expect(page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Gia Bảo' })).toBeVisible();
+});
+
+test('one-person graph invites a proposal without inventing an edge', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  await page.route('**/api/v1/families/family-1/relationships**', (route) =>
+    route.fulfill({
+      json: {
+        root_member_id: 'member-1',
+        depth: 2,
+        nodes: [
+          {
+            id: 'member-1',
+            display_name: 'Nguyễn Gia Bảo',
+            familiar_name: 'Gia Bảo',
+            hometown: 'Cần Thơ',
+            birth_date: null,
+            birth_year: 1996,
+            deceased: false,
+            version: 1,
+            distance: 0,
+          },
+        ],
+        relationships: [],
+      },
+    }),
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'Cây đang bắt đầu từ bạn.' })).toBeVisible();
+  await expect(page.getByText('Cha / mẹ', { exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Bổ sung quan hệ', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Bổ sung quan hệ cho Nguyễn Gia Bảo' }),
+  ).toBeVisible();
 });
 
 test('active admin reaches administration through Tôi instead of primary navigation', async ({
@@ -284,9 +429,12 @@ test('admin reviews a pending family relationship with resolved member names', a
 
   await expect(page.getByRole('heading', { name: 'Duyệt thay đổi gia phả.' })).toBeVisible();
   await expect(
-    page.getByText('Nguyễn Gia Bảo là cha / mẹ của Trần Thảo Chi', { exact: true }),
+    page.getByText('Nguyễn Gia Bảo là cha / mẹ của Trần Nguyễn Thị Thảo Chi', { exact: true }),
   ).toBeVisible();
   await expect(page.getByText('Quan hệ cha / mẹ nuôi')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   await page.getByRole('button', { name: 'Duyệt quan hệ' }).click();
 
   await expect(page.getByRole('status')).toContainText('Đã duyệt quan hệ');
@@ -314,6 +462,8 @@ test('desktop rail leaves the product content inside the viewport', async ({ pag
   await page.goto('/app');
 
   await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toBeVisible();
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+  await expect(page.getByText('Quanh Gia Bảo')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
