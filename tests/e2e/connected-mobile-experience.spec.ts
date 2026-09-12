@@ -283,6 +283,80 @@ test('member profile ignores a stale response and keeps keyboard focus inside th
   await expect(dialog.getByText('Phản hồi cũ không được hiển thị.')).toHaveCount(0);
 });
 
+test('interactive family tree supports viewport controls and root-relative branch collapse', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  const canvas = page.getByRole('region', { name: 'Cây gia phả tương tác' });
+  await expect(canvas).toBeVisible();
+  for (const label of ['Thu nhỏ', 'Phóng to', 'Vừa cây', 'Về tôi']) {
+    await expect(canvas.getByRole('button', { name: label, exact: true })).toBeVisible();
+  }
+
+  const viewport = canvas.locator('.react-flow__viewport');
+  const initialTransform = await viewport.getAttribute('style');
+  await canvas.getByRole('button', { name: 'Phóng to', exact: true }).click();
+  await expect.poll(() => viewport.getAttribute('style')).not.toBe(initialTransform);
+  await canvas.getByRole('button', { name: 'Về tôi', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Gia Bảo' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thu nhánh Minh Anh' }).click();
+  await expect(page.getByRole('button', { name: 'Mở hồ sơ Trần Nguyễn Thị Thảo Chi' })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole('button', { name: 'Mở nhánh Minh Anh' })).toBeVisible();
+  await page.getByRole('button', { name: 'Mở nhánh Minh Anh' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Mở hồ sơ Trần Nguyễn Thị Thảo Chi' }),
+  ).toBeVisible();
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
+test('dragging a family node changes only its session position and does not open its profile', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  const node = page.locator('.react-flow__node:has([data-tree-node-id="member-2"])');
+  const handle = node.locator('[data-tree-drag-handle]');
+  const before = await node.getAttribute('style');
+  const box = await handle.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) return;
+
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 42, box.y + box.height / 2 + 18, { steps: 5 });
+  await page.mouse.up();
+
+  await expect.poll(() => node.getAttribute('style')).not.toBe(before);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('interactive family tree keeps a 320px mobile page inside the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await mockActiveFamily(page);
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  await expect(page.getByRole('region', { name: 'Cây gia phả tương tác' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  await page.getByRole('button', { name: 'Danh bạ' }).click();
+  await expect(page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' })).toBeVisible();
+});
+
 test('member without a linked profile keeps directory access without requesting a graph', async ({
   page,
 }) => {

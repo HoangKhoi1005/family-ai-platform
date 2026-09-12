@@ -5,8 +5,8 @@ import type { MemberProfileDto, RelationshipGraphResponse } from '@family/contra
 import { explain, request, RequestError } from './api';
 import type { Member } from './types';
 import { ConnectedIdentity } from './connected-app-shell';
+import { InteractiveTreeCanvas } from './interactive-tree-canvas';
 import {
-  buildTreeRows,
   connectionsFor,
   relationshipProposal,
   relationshipStatements,
@@ -86,7 +86,6 @@ export function RelationshipTree({
     return () => controller.abort();
   }, [loadGraph]);
 
-  const rows = useMemo(() => (graph ? buildTreeRows(graph) : []), [graph]);
   const graphMembers = useMemo(
     () => new Map(graph?.nodes.map((member) => [member.id, member]) ?? []),
     [graph],
@@ -94,23 +93,26 @@ export function RelationshipTree({
   const root = rootMemberId ? graphMembers.get(rootMemberId) : undefined;
   const statements = useMemo(() => (graph ? relationshipStatements(graph) : []), [graph]);
 
-  async function openProfile(memberId: string, button?: HTMLButtonElement) {
-    const run = ++profileSequence.current;
-    if (button) opener.current = button;
-    setSelectedId(memberId);
-    setProfile(null);
-    setProfileLoading(true);
-    setProposalOpen(false);
-    setMessage('');
-    try {
-      const nextProfile = await request<MemberProfileDto>(`${base}/members/${memberId}`);
-      if (run === profileSequence.current) setProfile(nextProfile);
-    } catch (error) {
-      if (run === profileSequence.current) onError(error);
-    } finally {
-      if (run === profileSequence.current) setProfileLoading(false);
-    }
-  }
+  const openProfile = useCallback(
+    async (memberId: string, button?: HTMLButtonElement) => {
+      const run = ++profileSequence.current;
+      if (button) opener.current = button;
+      setSelectedId(memberId);
+      setProfile(null);
+      setProfileLoading(true);
+      setProposalOpen(false);
+      setMessage('');
+      try {
+        const nextProfile = await request<MemberProfileDto>(`${base}/members/${memberId}`);
+        if (run === profileSequence.current) setProfile(nextProfile);
+      } catch (error) {
+        if (run === profileSequence.current) onError(error);
+      } finally {
+        if (run === profileSequence.current) setProfileLoading(false);
+      }
+    },
+    [base, onError],
+  );
 
   const closeProfile = useCallback(() => {
     profileSequence.current += 1;
@@ -170,47 +172,17 @@ export function RelationshipTree({
                 Thử lại
               </button>
             </div>
-          ) : graph && rows.length ? (
+          ) : graph && graph.nodes.length ? (
             <section className={styles.canvas} aria-label="Sơ đồ quan hệ gia đình đã xác nhận">
               <div className={styles.canvasIntro}>
                 <span>QUANH HỒ SƠ CỦA BẠN · {graph.depth} BƯỚC KẾT NỐI</span>
                 <h2>Quanh {root?.familiar_name ?? root?.display_name ?? 'bạn'}</h2>
               </div>
-              <div className={styles.rows}>
-                {rows.map((row) => (
-                  <section className={styles.generation} key={row.level}>
-                    <p>{generationLabel(row.level)}</p>
-                    <div className={styles.nodes}>
-                      {row.members.map((member) => {
-                        const connection = rootMemberId
-                          ? connectionsFor(graph, rootMemberId).find(
-                              (item) => item.member_id === member.id,
-                            )
-                          : undefined;
-                        return (
-                          <div className={styles.nodeWrap} key={member.id}>
-                            {connection ? <span>{connection.label}</span> : null}
-                            <button
-                              className={member.id === rootMemberId ? styles.rootNode : styles.node}
-                              type="button"
-                              aria-label={`Mở hồ sơ ${member.display_name}`}
-                              onClick={(event) => void openProfile(member.id, event.currentTarget)}
-                            >
-                              <ConnectedIdentity name={member.display_name} />
-                              <strong>{member.familiar_name ?? member.display_name}</strong>
-                              <small>
-                                {member.deceased
-                                  ? 'Hồ sơ tưởng nhớ'
-                                  : (member.hometown ?? 'Người thân')}
-                              </small>
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </div>
+              <InteractiveTreeCanvas
+                graph={graph}
+                rootMemberId={rootMemberId}
+                onOpenProfile={(memberId, button) => void openProfile(memberId, button)}
+              />
               {statements.length ? (
                 <section className={styles.edgeLedger} aria-labelledby="approved-edges-heading">
                   <h3 id="approved-edges-heading">Các quan hệ trong phần cây này</h3>
@@ -285,12 +257,6 @@ export function RelationshipTree({
       ) : null}
     </section>
   );
-}
-
-function generationLabel(level: number) {
-  if (level === 0) return 'VỊ TRÍ ĐANG XEM';
-  if (level < 0) return level === -1 ? 'THẾ HỆ TRƯỚC' : `${Math.abs(level)} THẾ HỆ TRƯỚC`;
-  return level === 1 ? 'THẾ HỆ SAU' : `${level} THẾ HỆ SAU`;
 }
 
 function EmptyTree({
