@@ -68,15 +68,39 @@ export function explain(error: unknown): string {
   return 'Thông tin chưa hợp lệ hoặc liên kết đã hết hạn. Kiểm tra lại và thử lại nhé.';
 }
 const inviteKey = 'family.pending-invitation';
+const invitationTokenPattern = /^[A-Za-z0-9_-]+$/;
+
+function validInvitationToken(value: string | null): string {
+  const token = value?.trim() ?? '';
+  return token.length > 0 && token.length <= 256 && invitationTokenPattern.test(token) ? token : '';
+}
+
+export function inviteTokenFrom(value: string): string {
+  const input = value.trim();
+  if (!input || input.length > 2048) return '';
+
+  try {
+    const url = new URL(input);
+    const hashToken = new URLSearchParams(url.hash.slice(1)).get('invite');
+    return validInvitationToken(hashToken ?? url.searchParams.get('invite'));
+  } catch {
+    return validInvitationToken(input);
+  }
+}
+
 export function pendingInvite() {
   return sessionStorage.getItem(inviteKey) ?? '';
+}
+export function rememberInvite(value: string) {
+  const token = inviteTokenFrom(value);
+  if (token) sessionStorage.setItem(inviteKey, token);
+  return token;
 }
 export function clearInvite() {
   sessionStorage.removeItem(inviteKey);
 }
 export function captureInvite() {
   const url = new URL(window.location.href);
-  const token = new URLSearchParams(url.hash.slice(1)).get('invite');
-  if (token && token.length <= 256) sessionStorage.setItem(inviteKey, token);
+  rememberInvite(url.href);
   if (url.hash) window.history.replaceState(null, '', url.pathname + url.search);
 }

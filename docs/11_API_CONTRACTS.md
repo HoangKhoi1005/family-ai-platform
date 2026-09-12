@@ -2,7 +2,7 @@
 
 Đợt nối UI 2026-09-09: thêm `GET /api/v1/families/{familyId}/onboarding`, trả `{ member_id: string | null, claims: [{ id, version }] }` của chính actor active. Không trả contacts hoặc claim của người khác. Guest trả 401; pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên. Xem [luồng đã nối](CONNECTED_ONBOARDING.md). Danh bạ/hồ sơ API đã được merge vào `main` tại `c07a225`.
 
-Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim và danh bạ/hồ sơ. Các routes lịch, quan hệ gia phả, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src/onboarding.ts`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ và quan hệ gia phả. Các routes lịch, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
@@ -73,9 +73,9 @@ Mutation tạo nội dung hỗ trợ idempotency; cùng key/body trả kết qu�
 
 Envelope realtime: `event_id`, `family_id`, `type`, `entity_id`, `server_seq?`, `revision`, `occurred_at`; chỉ tới người được phép, không broadcast contact private. Loại ban đầu: message.created/deleted, moment.created/deleted, event.updated, membership.revoked. Client dedupe event_id, reconnect lấy lịch sử sau cursor, không giả định event tới đúng thứ tự. HTTP persistence là nguồn chuẩn.
 
-## Danh bạ/hồ sơ — bản triển khai đang review
+## Danh bạ/hồ sơ — đã triển khai
 
-Task 3 bổ sung GET /members, GET /members/{id}, GET /members/{id}/management, POST /members và PATCH /members/{id} sau prefix family. DTO/JSON Schema nằm tại packages/contracts/src/profile.ts; chưa nghiệm thu bản này.
+GET /members, GET /members/{id}, GET /members/{id}/management, POST /members và PATCH /members/{id} đã được triển khai sau prefix family. DTO/JSON Schema nằm tại `packages/contracts/src/profile.ts`.
 
 - Danh sách trả members và next_cursor; q chỉ tìm display_name/familiar_name, limit mặc định 20 và tối đa 100. Liên hệ không có trong kết quả tìm kiếm.
 - Profile trả biography và contacts đã lọc quyền. Management dành cho admin active quản lý hồ sơ chưa liên kết; không mở quyền xem self contact của người đã liên kết.
@@ -83,8 +83,10 @@ Task 3 bổ sung GET /members, GET /members/{id}, GET /members/{id}/management, 
 - contacts nếu có là thay thế toàn bộ danh sách, tối đa 10, gồm kind/value/visibility; visibility mặc định self. Bỏ contacts khỏi PATCH giữ nguyên danh sách; contacts rỗng xóa các liên hệ trong phạm vi hồ sơ được quyền sửa.
 - Thay đổi hồ sơ hoặc liên hệ tăng version và ghi audit cùng transaction. Version cũ trả 409. Ngày sinh giữ dạng YYYY-MM-DD; chỉ biết năm không sinh thêm ngày giả.
 
-## Quan hệ gia phả — backend trên nhánh tính năng
+## Quan hệ gia phả — đã triển khai backend và đang nối web
 
 Contract máy đọc nằm tại `packages/contracts/src/relationships.ts`. `GET /relationships` yêu cầu `root_member_id`, depth mặc định 2 và giới hạn 1–4; quá 100 node trả `GRAPH_TOO_LARGE`. Response chỉ có member summary và cạnh chưa bị loại bỏ, không có contact/biography và không chứa đề xuất pending.
 
-`POST /change-requests` nhận union create/update/remove. Update chỉ đổi subtype hoặc ngày partnership; đổi đầu cạnh/loại quan hệ dùng remove rồi create để audit rõ. Admin duyệt/từ chối qua `/decision`; người gửi hủy qua `/cancel`. Same-origin JSON, rate limit, version, cùng nhà, duplicate và cycle đều được kiểm phía server; approval kiểm lại trong transaction có khóa theo nhà. Các route này đã triển khai trong `feat/family-relationships`, chưa có trong `main`.
+`POST /change-requests` nhận union create/update/remove. Update chỉ đổi subtype hoặc ngày partnership; đổi đầu cạnh/loại quan hệ dùng remove rồi create để audit rõ. Admin duyệt/từ chối qua `/decision`; người gửi hủy qua `/cancel`. Same-origin JSON, rate limit, version, cùng nhà, duplicate và cycle đều được kiểm phía server; approval kiểm lại trong transaction có khóa theo nhà. Các route này đã merge vào `main` qua PR #11.
+
+Nhánh web `feat/connected-family-tree` dùng `GET /relationships` cho sơ đồ quanh hồ sơ đã liên kết, `GET /members/{id}` cho hồ sơ đã lọc contact, `POST /change-requests` cho đề xuất create và danh sách/decision cho quản trị viên. Web chưa có thao tác update/remove/cancel; đây là giới hạn giao diện, không phải giới hạn contract.

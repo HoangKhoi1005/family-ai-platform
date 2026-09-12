@@ -1,11 +1,21 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { captureInvite, clearInvite, pendingInvite, request, explain, RequestError } from './api';
+import {
+  captureInvite,
+  clearInvite,
+  pendingInvite,
+  rememberInvite,
+  request,
+  explain,
+  RequestError,
+} from './api';
 import type { Me, Onboarding, Member } from './types';
 import { ProfilePanel } from './profile-panel';
 import { AdminPanel } from './admin-panel';
 import { ConnectedAppShell, ConnectedIdentity, type ConnectedTab } from './connected-app-shell';
+import { RelationshipTree } from './relationship-tree';
+import { JoinHouse } from './join-house';
 import s from './connected.module.css';
 
 export function FamilyApp() {
@@ -19,7 +29,8 @@ export function FamilyApp() {
   const [loading, setLoading] = useState(true);
   const [invite, setInvite] = useState('');
   const [busy, setBusy] = useState(false);
-  const [query, setQuery] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const [revision, setRevision] = useState(0);
   const [directoryRevision, setDirectoryRevision] = useState(0);
   const [profileRevision, setProfileRevision] = useState(0);
@@ -55,6 +66,7 @@ export function FamilyApp() {
     try {
       next = await request<Me>('/api/v1/me');
       if (run !== sequence.current) return;
+      setLastCheckedAt(new Date());
       const previousFamilyId = familyIdRef.current;
       const active =
         next.memberships.find((m) => m.status === 'active' && m.family_id === previousFamilyId) ??
@@ -152,8 +164,21 @@ export function FamilyApp() {
       setBusy(false);
     }
   }
+  async function checkMembership() {
+    setChecking(true);
+    await refresh();
+    setChecking(false);
+  }
+  function prepareInvitation(value: string) {
+    const token = rememberInvite(value);
+    if (!token) return false;
+    setInvite(token);
+    setError('');
+    return true;
+  }
   const active = me?.memberships.find((m) => m.status === 'active' && m.family_id === familyId);
-  const pending = me?.memberships.some((m) => m.status === 'pending');
+  const pending = me?.memberships.some((m) => m.status === 'pending') ?? false;
+  const revoked = me?.memberships.some((m) => m.status === 'revoked') ?? false;
   const own = members.find((member) => member.id === onboarding?.member_id);
   const base = '/api/v1/families/' + familyId;
   const navigate = (destination: ConnectedTab) => {
@@ -259,52 +284,13 @@ export function FamilyApp() {
             />
           )}
           {tab === 'directory' && (
-            <section className={s.productPage}>
-              <header className={s.productHeader}>
-                <p className={s.eyebrow}>GIA PHẢ</p>
-                <h1>Người thân trong nhà.</h1>
-                <p className={s.productLead}>
-                  Danh bạ này lấy từ dữ liệu thật của nhà bạn. Quan hệ và các đường nối trên cây sẽ
-                  xuất hiện sau khi mô hình quan hệ được kết nối.
-                </p>
-              </header>
-              <label className={`${s.search} ${s.productSearch}`}>
-                <span className={s.visuallyHidden}>Tìm theo tên</span>
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Tìm tên người thân…"
-                />
-              </label>
-              <div className={`${s.memberList} ${s.productMemberList}`}>
-                {members
-                  .filter((member) =>
-                    fold(member.display_name + ' ' + (member.familiar_name ?? '')).includes(
-                      fold(query),
-                    ),
-                  )
-                  .map((member) => (
-                    <DirectoryEntry
-                      key={`${familyId}:${revision}:${directoryRevision}:${member.id}`}
-                      member={member}
-                      base={base}
-                      onError={fail}
-                    />
-                  ))}
-                {!members.length && <p>Nhà chưa có hồ sơ. Quản trị viên có thể thêm người thân.</p>}
-                {members.length > 0 &&
-                  !members.some((member) =>
-                    fold(member.display_name + ' ' + (member.familiar_name ?? '')).includes(
-                      fold(query),
-                    ),
-                  ) && <p>Chưa tìm thấy tên này.</p>}
-              </div>
-              {members.length === 100 && (
-                <p>
-                  Đang hiển thị 100 hồ sơ đầu tiên; phân trang cho nhà lớn chưa có trong đợt pilot.
-                </p>
-              )}
-            </section>
+            <RelationshipTree
+              key={`${familyId}:${directoryRevision}`}
+              base={base}
+              rootMemberId={onboarding.member_id}
+              members={members}
+              onError={fail}
+            />
           )}
           {tab === 'chat' && (
             <UnavailableDestination
@@ -398,43 +384,22 @@ export function FamilyApp() {
           <Link href="/login">Về đăng nhập</Link>
         </section>
       ) : (
-        <>
-          {invite && (
-            <section className={s.invitation}>
-              <p className={s.eyebrow}>BẠN CÓ LỜI MỜI</p>
-              <h2>Thêm một người, thêm chuyện nhà.</h2>
-              <p>
-                Nhận lời mời bằng tài khoản {me.user.email}. Quản trị viên sẽ xác nhận trước khi bạn
-                xem thông tin nhà.
-              </p>
-              <button className={s.primary} onClick={accept} disabled={busy}>
-                {busy ? 'Đang gửi…' : 'Nhận lời mời'}
-              </button>
-              <button
-                onClick={() => {
-                  clearInvite();
-                  setInvite('');
-                }}
-              >
-                Để sau
-              </button>
-            </section>
-          )}
-          {!active || !onboarding ? (
-            <section className={s.content}>
-              <p className={s.eyebrow}>CHÀO {me.user.name}</p>
-              <h1>{pending ? 'Chờ nhà mình đón bạn.' : 'Bạn chưa tham gia nhà nào.'}</h1>
-              <p>
-                {pending
-                  ? 'Yêu cầu đã được gửi. Quản trị viên cần duyệt để bảo vệ thông tin của mọi người. Trang sẽ tự kiểm tra trạng thái.'
-                  : me.memberships.some((m) => m.status === 'revoked')
-                    ? 'Quyền vào nhà đã được thu hồi. Liên hệ quản trị viên nếu cần tham gia lại.'
-                    : 'Mở link lời mời mà người thân đã chia sẻ, hoặc nhờ quản trị viên tạo lời mời cho bạn.'}
-              </p>
-              <button onClick={() => void refresh()}>Kiểm tra trạng thái</button>
-            </section>
-          ) : null}
-        </>
+        <JoinHouse
+          userName={me.user.name}
+          email={me.user.email}
+          invitation={invite}
+          pending={pending}
+          revoked={revoked}
+          busy={busy || checking}
+          lastCheckedAt={lastCheckedAt}
+          onPrepareInvitation={prepareInvitation}
+          onAcceptInvitation={() => void accept()}
+          onClearInvitation={() => {
+            clearInvite();
+            setInvite('');
+          }}
+          onRefresh={() => void checkMembership()}
+        />
       )}
     </main>
   );
@@ -460,68 +425,5 @@ function UnavailableDestination({
       <h1>{title}</h1>
       <p className={s.productLead}>{description}</p>
     </section>
-  );
-}
-function fold(value: string) {
-  return value
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd');
-}
-function DirectoryEntry({
-  member,
-  base,
-  onError,
-}: {
-  member: Member;
-  base: string;
-  onError: (error: unknown) => void;
-}) {
-  const [profile, setProfile] = useState<Member | null>(null);
-  const [busy, setBusy] = useState(false);
-  return (
-    <article>
-      <button
-        disabled={busy}
-        aria-expanded={Boolean(profile)}
-        onClick={async () => {
-          if (profile) {
-            setProfile(null);
-            return;
-          }
-          setBusy(true);
-          try {
-            setProfile(await request<Member>(base + '/members/' + member.id));
-          } catch (error) {
-            onError(error);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <ConnectedIdentity name={member.display_name} />
-        <span className={s.memberName}>
-          <strong>{member.display_name}</strong>
-          <small>{member.familiar_name ?? member.hometown ?? 'Xem hồ sơ'}</small>
-        </span>
-        <span className={s.memberDisclosure}>
-          {busy ? 'Đang tải…' : profile ? 'Thu gọn' : 'Xem'} →
-        </span>
-      </button>
-      {profile && (
-        <div>
-          <p>{profile.hometown ?? 'Chưa bổ sung quê quán'}</p>
-          <p>{profile.biography}</p>
-          {profile.contacts?.map((c, index) => (
-            <p key={index}>
-              {c.kind === 'phone' ? 'Điện thoại' : c.kind === 'email' ? 'Email' : 'Facebook'}:{' '}
-              {c.value}
-            </p>
-          ))}
-          {!profile.contacts?.length && <p>Chưa có liên hệ được chia sẻ với bạn.</p>}
-        </div>
-      )}
-    </article>
   );
 }

@@ -115,7 +115,7 @@ try {
   await register(member, emails[1], 'Người thân minh họa');
   await login(member, emails[1]);
   await member.getByRole('button', { name: 'Nhận lời mời', exact: true }).click();
-  await member.getByRole('heading', { name: 'Chờ nhà mình đón bạn.' }).waitFor();
+  await member.getByRole('heading', { name: 'Nhà mình đang xác nhận bạn.' }).waitFor();
   await member.screenshot({ path: evidence + '/flow-pending-mobile.png', fullPage: true });
   await admin.getByRole('button', { name: 'Tải lại danh sách' }).click();
   await admin.getByRole('button', { name: 'Duyệt vào nhà' }).click();
@@ -144,9 +144,34 @@ try {
   await member.getByRole('button', { name: 'Lưu hồ sơ', exact: true }).click();
   await member.getByRole('status').filter({ hasText: 'Đã lưu hồ sơ' }).waitFor();
   await member.screenshot({ path: evidence + '/flow-profile-mobile.png', fullPage: true });
+  await admin.getByLabel('Tên người chưa có trong danh bạ').fill('Cha kiểm thử');
+  await admin.getByRole('button', { name: 'Thêm hồ sơ mới', exact: true }).click();
+  await admin.getByRole('status').filter({ hasText: 'Đã thêm hồ sơ' }).waitFor();
+  console.log('Stage: relationship candidate created');
+  await member.reload();
   await member.getByRole('button', { name: 'Nhà mình', exact: true }).click();
   await member.getByRole('button', { name: 'Người thân', exact: true }).click();
-  await member.getByRole('heading', { name: 'Người thân trong nhà.' }).waitFor();
+  await member.getByRole('heading', { name: 'Cây đang bắt đầu từ bạn.' }).waitFor();
+  await member.getByRole('button', { name: 'Bổ sung quan hệ', exact: true }).click();
+  await member.getByRole('button', { name: 'Bổ sung quan hệ cho Người thân minh họa' }).click();
+  await member.getByLabel('Người này là').selectOption('parent');
+  await member.getByLabel('Chọn người thân').selectOption({ label: 'Cha kiểm thử' });
+  await member.getByLabel('Loại quan hệ').selectOption('biological');
+  await member.getByRole('button', { name: 'Gửi đề xuất' }).click();
+  await member.getByRole('status').filter({ hasText: 'Đã gửi đề xuất' }).waitFor();
+  console.log('Stage: relationship proposed');
+  await admin.reload();
+  await admin.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
+  await admin.getByRole('button', { name: 'Quản trị nhà', exact: true }).click();
+  await admin.getByRole('heading', { name: 'Duyệt thay đổi gia phả.' }).waitFor();
+  await admin.getByText('Cha kiểm thử là cha / mẹ của Người thân minh họa').waitFor();
+  await admin.getByRole('button', { name: 'Duyệt quan hệ' }).click();
+  await admin.getByRole('status').filter({ hasText: 'Đã duyệt quan hệ' }).waitFor();
+  console.log('Stage: relationship approved');
+  await member.reload();
+  await member.getByRole('button', { name: 'Người thân', exact: true }).click();
+  await member.getByText('Cha / mẹ', { exact: true }).waitFor();
+  await member.screenshot({ path: evidence + '/flow-family-tree-mobile.png', fullPage: true });
   await member.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await member.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
   await member.waitForURL('**/login');
@@ -176,7 +201,7 @@ try {
   await member.reload();
   await member.getByText('Quyền vào nhà đã được thu hồi.', { exact: false }).waitFor();
   console.log(
-    'PASS browser real API: register, verify, invitation, pending, admin approval, claim, profile save, directory, logout, password reset, revocation',
+    'PASS browser real API: register, verify, invitation, membership approval, claim, profile save, relationship proposal/approval, graph read, logout, password reset, revocation',
   );
 } catch (error) {
   await admin.screenshot({ path: evidence + '/flow-failure-admin.png', fullPage: true });
@@ -187,6 +212,8 @@ try {
   await browser.close();
   for (const table of [
     'audit_entries',
+    'change_requests',
+    'relationships',
     'member_claims',
     'invitations',
     'member_contacts',
