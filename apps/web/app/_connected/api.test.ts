@@ -1,5 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { RequestError, request } from './api';
+import { inviteTokenFrom, RequestError, request } from './api';
+
+describe('invitation input', () => {
+  it('accepts the shared link format and keeps only its token', () => {
+    expect(inviteTokenFrom('https://family.example/login#invite=family_token-123')).toBe(
+      'family_token-123',
+    );
+  });
+
+  it('accepts a raw invitation token', () => {
+    expect(inviteTokenFrom('  family_token-123  ')).toBe('family_token-123');
+  });
+
+  it('rejects links without an invitation and malformed values', () => {
+    expect(inviteTokenFrom('https://family.example/login')).toBe('');
+    expect(inviteTokenFrom('not an invitation')).toBe('');
+    expect(inviteTokenFrom('x'.repeat(257))).toBe('');
+  });
+});
 
 describe('connected request', () => {
   afterEach(() => vi.unstubAllGlobals());
