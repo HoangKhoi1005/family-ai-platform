@@ -25,7 +25,9 @@
 5. Người nhận xem trước, xác nhận hoặc từ chối claim; sau khi nhận có thể cập nhật hồ sơ và visibility từng liên hệ.
 6. Người đã được duyệt vào shell năm đích, xem danh bạ API thật trong Gia phả và quản lý hồ sơ trong Tôi. Preview dữ liệu hư cấu không còn được liên kết từ `/app`.
 
-Endpoint `GET /api/v1/families/:familyId/onboarding` chỉ trả link/claim của chính actor active. Guest trả 401; pending, revoked và cross-family trả 404 để che tài nguyên. Token lời mời nhận qua URL fragment, giữ tạm trong `sessionStorage` của tab và xóa khỏi URL; không lưu hồ sơ, liên hệ hay mật khẩu trong browser storage.
+Endpoint `GET /api/v1/families/:familyId/onboarding` chỉ trả link/claim của chính actor active. Guest trả 401; pending, revoked và cross-family trả 404 để che tài nguyên. Token lời mời nhận qua URL fragment hoặc được dán thủ công, giữ tạm trong `sessionStorage` của tab và xóa khỏi URL; không lưu hồ sơ, liên hệ hay mật khẩu trong browser storage.
+
+Tài khoản đã xác minh nhưng chưa có nhà không còn rơi vào trang trống: có thể dán link/token mời, xem lại tài khoản trước khi nhận hoặc sao chép lời nhắn xin mời. Pending có tiến trình ba bước, tự kiểm tra và thời điểm kiểm tra gần nhất; revoked giải thích cần lời mời mới. Tên nhà và dữ liệu thành viên vẫn được che trước khi admin duyệt.
 
 Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](docs/CONNECTED_ONBOARDING.md).
 
@@ -52,11 +54,11 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Kiểm chứng mới nhất
 
-- `npm run check`: đạt ngày 2026-09-12 trên `feat/connected-family-tree`; boundaries, tokens, lint, Prettier, typecheck, **58/58 unit tests**, brain validation 60 Markdown files và build 8 workspace đều đạt.
+- `npm run check`: đạt ngày 2026-09-12 trên `feat/connected-family-tree`; boundaries, tokens, lint, Prettier, typecheck, **61/61 unit tests**, brain validation 60 Markdown files và build 8 workspace đều đạt.
 - Integration với PostgreSQL/Mailpit local: **17/17 tests đạt**. Migration `0010_relationships.sql`, database constraint/RLS test và tenant test đều đạt; hai role giới hạn vẫn được provision đúng.
-- `npm run test:e2e`: **119 đạt, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Ngoài preview, test connected xác nhận graph đã duyệt, mọi cạnh đều có mô tả tường minh, đề xuất/duyệt quan hệ, fallback danh bạ, cây một người, lỗi graph cục bộ, tài khoản chưa link, phản hồi hồ sơ cũ không ghi đè người mới, focus trap, tên tiếng Việt dài, quyền contact sau focus, đổi family, viewport 320/390/768/1280 và không tràn ngang.
-- Bốn bề mặt connected mới đã được chụp và kiểm bằng mắt ở 390×844 và 1280×900: graph có cạnh, cây một người, hàng duyệt với tên dài và desktop rail. Giao diện giữ hướng album gia đình, không dùng card dashboard chung; node thiếu ảnh dùng monogram có chủ đích. Bottom navigation cố định vẫn cần kiểm thêm trên điện thoại thật với thanh trình duyệt động.
-- `verify-connected-onboarding.mjs`: đạt lại qua web/API/PostgreSQL/Mailpit thật trên cổng local cấu hình 3200/4010 với hai tài khoản hư cấu. Ngoài đăng ký, xác minh, lời mời, pending, duyệt membership, claim và lưu hồ sơ, script tạo hồ sơ thứ hai, gửi/duyệt quan hệ và đọc cạnh vừa duyệt trong graph trước khi kiểm logout, reset password và revoke; script cleanup cả relationship/change request của lần chạy.
+- `npm run test:e2e`: **127 đạt, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Ngoài preview, test connected xác nhận graph đã duyệt, mọi cạnh đều có mô tả tường minh, đề xuất/duyệt quan hệ, fallback danh bạ, cây một người, lỗi graph cục bộ, tài khoản chưa link, phản hồi hồ sơ cũ không ghi đè người mới, focus trap, tên tiếng Việt dài, quyền contact sau focus, đổi family, các trạng thái chưa có nhà/pending/revoked, dán link mời, viewport 320/390/768/1280 và không tràn ngang.
+- Bảy bề mặt connected mới đã được chụp và kiểm bằng mắt ở 390×844 và 1280×900: graph có cạnh, cây một người, hàng duyệt với tên dài, desktop rail cùng ba trạng thái chưa có nhà, pending và revoked. Giao diện giữ hướng album gia đình, không dùng card dashboard chung; node thiếu ảnh dùng monogram có chủ đích. Font tiêu đề trạng thái vào nhà dùng token serif đã kiểm glyph tiếng Việt. Bottom navigation cố định vẫn cần kiểm thêm trên điện thoại thật với thanh trình duyệt động.
+- `verify-connected-onboarding.mjs`: đạt lại qua web/API/PostgreSQL/Mailpit thật trên cổng kiểm thử riêng 3220/4020 với hai tài khoản hư cấu. Ngoài đăng ký, xác minh, lời mời, pending, duyệt membership, claim và lưu hồ sơ, script tạo hồ sơ thứ hai, gửi/duyệt quan hệ và đọc cạnh vừa duyệt trong graph trước khi kiểm logout, reset password và revoke; script cleanup cả relationship/change request của lần chạy.
 - Workflow CI có gate browser thật; run của merge commit `9854d39` đạt trên GitHub trong khoảng 2 phút.
 
 ## Tiếp theo

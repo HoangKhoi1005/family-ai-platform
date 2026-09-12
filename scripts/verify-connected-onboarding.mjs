@@ -115,7 +115,7 @@ try {
   await register(member, emails[1], 'Người thân minh họa');
   await login(member, emails[1]);
   await member.getByRole('button', { name: 'Nhận lời mời', exact: true }).click();
-  await member.getByRole('heading', { name: 'Chờ nhà mình đón bạn.' }).waitFor();
+  await member.getByRole('heading', { name: 'Nhà mình đang xác nhận bạn.' }).waitFor();
   await member.screenshot({ path: evidence + '/flow-pending-mobile.png', fullPage: true });
   await admin.getByRole('button', { name: 'Tải lại danh sách' }).click();
   await admin.getByRole('button', { name: 'Duyệt vào nhà' }).click();

@@ -8,6 +8,8 @@ Chỉ người được mời và duyệt được vào nhà. Admin quản lý m
 
 Admin tạo link mời có hạn, có thể nhắm một Member → người nhận xác thực và nhận lời mời → pending → admin kiểm danh tính/liên kết → approved active. Không coi ai có link cũng là đúng người được nhắm; tên/email trùng chỉ là gợi ý.
 
+Tài khoản đã xác minh nhưng chưa thuộc nhà nào có thể dán nguyên link hoặc token mời vào `/app`, xem lại tài khoản sẽ dùng rồi mới gửi yêu cầu. Không có lời mời thì giao diện hướng dẫn xin link; pending hiển thị ba bước và tự kiểm tra; revoked yêu cầu lời mời mới thay vì tiếp tục hiện nút kiểm tra vô nghĩa. Trước khi duyệt, UI không hiển thị tên nhà, danh sách thành viên hoặc ảnh.
+
 Admin xem hàng chờ với phần thay đổi trước/sau, người đề xuất, thời gian và version. Duyệt chạy validation lại và apply trong một transaction. Link mời, quyết định và thu hồi ghi audit tối thiểu. Cách bootstrap admin đầu tiên phải được chọn trong task auth, không mở endpoint công khai tự nhận admin.
 
 ## Trạng thái lỗi

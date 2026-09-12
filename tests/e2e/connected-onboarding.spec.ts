@@ -25,6 +25,66 @@ test('guest app redirects to login and preserves the invitation only in its orig
   await otherTab.close();
 });
 
+test('a verified account can paste an invitation and review it before joining', async ({
+  page,
+}) => {
+  let accepted = false;
+  let acceptedToken = '';
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (value: string) => {
+          (window as Window & { copiedInvitationHelp?: string }).copiedInvitationHelp = value;
+        },
+      },
+    });
+  });
+  await page.route('**/api/v1/me', (route) =>
+    route.fulfill({
+      json: {
+        user: { id: 'new-user', name: 'Trần Hoàng Khôi', email: 'khoi@example.test' },
+        memberships: accepted ? [{ id: 'pending-membership', status: 'pending' }] : [],
+      },
+    }),
+  );
+  await page.route('**/api/v1/invitations/accept', async (route) => {
+    acceptedToken = (await route.request().postDataJSON()).token;
+    accepted = true;
+    return route.fulfill({ json: { status: 'pending' } });
+  });
+
+  await page.goto('/app');
+
+  await expect(page.getByRole('heading', { name: 'Một lời mời là đủ để về nhà.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Kiểm tra trạng thái' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sao chép lời nhắn xin mời' }).click();
+  await expect(page.getByRole('status')).toContainText('Đã sao chép lời nhắn');
+  expect(
+    await page.evaluate(
+      () => (window as Window & { copiedInvitationHelp?: string }).copiedInvitationHelp,
+    ),
+  ).toContain('gửi cho mình link mời');
+
+  await page
+    .getByLabel('Link hoặc mã mời')
+    .fill('https://family.example/login#invite=family_token-123');
+  await page.getByRole('button', { name: 'Xem lời mời' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Bạn đang vào Nhà mình.' })).toBeVisible();
+  await expect(page.getByText('khoi@example.test')).toBeVisible();
+  expect(await page.evaluate(() => sessionStorage.getItem('family.pending-invitation'))).toBe(
+    'family_token-123',
+  );
+  await page.getByRole('button', { name: 'Nhận lời mời', exact: true }).click();
+
+  expect(acceptedToken).toBe('family_token-123');
+  await expect(page.getByRole('heading', { name: 'Nhà mình đang xác nhận bạn.' })).toBeVisible();
+  await expect(page.getByText('Tài khoản đã xác minh')).toBeVisible();
+  await expect(page.getByText('Lời mời đã nhận')).toBeVisible();
+  await expect(page.getByText('Chờ quản trị viên duyệt')).toBeVisible();
+});
+
 test('pending user sees only waiting state and no family data calls', async ({ page }) => {
   const familyCalls: string[] = [];
   page.on('request', (request) => {
@@ -39,11 +99,60 @@ test('pending user sees only waiting state and no family data calls', async ({ p
     }),
   );
   await page.goto('/app');
-  await expect(page.getByRole('heading', { name: 'Chờ nhà mình đón bạn.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Nhà mình đang xác nhận bạn.' })).toBeVisible();
+  await expect(page.getByText(/Lần kiểm tra gần nhất/)).toBeVisible();
   await page.getByRole('button', { name: 'Kiểm tra trạng thái' }).click();
   await expect(page.getByRole('button', { name: 'Quản trị nhà', exact: true })).toHaveCount(0);
   expect(familyCalls).toEqual([]);
 });
+
+test('a revoked account gets a clear recovery path instead of a status check', async ({ page }) => {
+  await page.route('**/api/v1/me', (route) =>
+    route.fulfill({
+      json: {
+        user: { id: 'revoked-user', name: 'Người từng tham gia', email: 'former@example.test' },
+        memberships: [{ id: 'revoked-membership', status: 'revoked' }],
+      },
+    }),
+  );
+
+  await page.goto('/app');
+
+  await expect(page.getByRole('heading', { name: 'Quyền vào nhà đã được thu hồi.' })).toBeVisible();
+  await expect(page.getByLabel('Link hoặc mã mời')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Kiểm tra trạng thái' })).toHaveCount(0);
+  await expect(page.getByText('Lời mời cũ không còn mở lại quyền truy cập.')).toBeVisible();
+});
+
+for (const width of [320, 390]) {
+  test(`the invitation entry remains usable at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.route('**/api/v1/me', (route) =>
+      route.fulfill({
+        json: {
+          user: {
+            id: 'narrow-user',
+            name: 'Người có tên tiếng Việt khá dài',
+            email: 'narrow@example.test',
+          },
+          memberships: [],
+        },
+      }),
+    );
+
+    await page.goto('/app');
+
+    await expect(page.getByLabel('Link hoặc mã mời')).toBeVisible();
+    const dimensions = await page.evaluate(() => ({
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+    }));
+    expect(dimensions.documentWidth).toBeLessThanOrEqual(dimensions.viewportWidth + 1);
+    for (const button of await page.getByRole('button').all()) {
+      expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+  });
+}
 
 test('password reset without token is disabled and offers a fresh link', async ({ page }) => {
   await page.goto('/reset-password');

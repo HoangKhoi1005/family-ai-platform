@@ -18,7 +18,7 @@ Lệnh phải chạy ở worktree onboarding với `.env` local đúng. Không c
 ## Luồng hai người
 
 1. Admin đăng nhập `/app`, mở Quản trị nhà, tạo link lời mời rồi tự chia sẻ cho đúng người. App không tự gửi tin/email mời.
-2. Người nhận mở link, đăng ký/xác minh hoặc đăng nhập, bấm Nhận lời mời. Trang chờ chỉ hiển thị trạng thái của chính tài khoản.
+2. Người nhận mở link, đăng ký/xác minh hoặc đăng nhập, rồi xem lại trước khi bấm Nhận lời mời. Tài khoản đã xác minh nhưng chưa có nhà cũng có thể dán nguyên link hoặc token vào `/app`. Trang chờ chỉ hiển thị trạng thái của chính tài khoản.
 3. Admin tải lại danh sách và duyệt. Trang người nhận tự kiểm tra mỗi 15 giây khi đang hiển thị, khi quay lại cửa sổ, hoặc qua nút Kiểm tra trạng thái.
 4. Admin chọn hồ sơ sẵn có hoặc tạo hồ sơ mới, chỉ định cho tài khoản đã duyệt. Claim chỉ định chỉ có một người nhận; server từ chối hồ sơ trùng/đã liên kết.
 5. Người nhận mở Hồ sơ của tôi, kiểm tra thông tin, chọn visibility từng liên hệ, xác nhận ownership hoặc từ chối.
@@ -27,7 +27,7 @@ Lệnh phải chạy ở worktree onboarding với `.env` local đúng. Không c
 
 ## Lời mời và riêng tư
 
-Token lời mời dùng URL fragment rồi được xóa khỏi URL và giữ tạm trong sessionStorage của tab. Không lưu mật khẩu, hồ sơ hoặc liên hệ trong browser storage. Nhận lời mời/đăng xuất xóa token. Nếu mở thư xác minh ở tab khác, quay lại tab lời mời hoặc mở lại link mời để tiếp tục. Không coi tên nhà là đã xác thực trước khi server cho phép xem.
+Token lời mời dùng URL fragment rồi được xóa khỏi URL và giữ tạm trong sessionStorage của tab; token dán thủ công cũng đi qua cùng bộ kiểm tra định dạng và vùng lưu này. Không lưu mật khẩu, hồ sơ hoặc liên hệ trong browser storage. Nhận lời mời/đăng xuất xóa token. Nếu mở thư xác minh ở tab khác, quay lại tab lời mời, mở lại link mời hoặc dán link tại `/app` để tiếp tục. Không coi tên nhà là đã xác thực trước khi server cho phép xem.
 
 `GET /api/v1/families/:familyId/onboarding` trả `{ member_id, claims: [{ id, version }] }` cho đúng actor active. Endpoint không trả contacts hoặc claim của tài khoản khác. RLS và requireFamily áp dụng trước truy vấn. Membership pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên; guest trả 401.
 
