@@ -38,3 +38,7 @@ Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISI
 ## Cây gia phả tương tác — 2026-09-12
 
 - **PAD-021 / Baseline:** dùng `@xyflow/react` 12.11.x làm lớp viewport cho cây connected; giữ thuật toán thế hệ xác định trong D1 và chưa thêm Dagre/ELK. Pan, pinch/wheel zoom, điều khiển viewport, kéo node và thu nhánh là trạng thái trình bày phía client; PostgreSQL cùng graph API đã kiểm quyền vẫn là nguồn sự thật duy nhất. Mở lại lựa chọn layout khi dữ liệu pilot chứng minh cần nhóm vợ/chồng, gia đình hạt nhân hoặc graph lớn hơn. [Thiết kế](superpowers/specs/2026-09-12-interactive-family-tree-design.md).
+
+## Ngày quan trọng — 2026-09-13
+
+- **PAD-022 / Confirmed:** sau cây gia phả, triển khai Ngày quan trọng/nhắc ngày làm vertical slice giữ chân đầu tiên. Timeline mở từ Nhà mình và chuông mở inbox, không thêm bottom-tab ngoài năm đích mobile-primary. Làm calendar core → trải nghiệm mobile → inbox/outbox → push pilot; push không chặn dữ liệu lịch và chỉ hoàn thành sau thử app đóng trên thiết bị thật. [Thiết kế](superpowers/specs/2026-09-13-family-calendar-foundation-design.md).

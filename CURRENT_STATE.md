@@ -3,7 +3,7 @@
 - Cập nhật: 2026-09-13. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Nhánh `feat/interactive-family-tree` đang nâng graph thật trong `/app` thành canvas tương tác. Lịch âm, chat, moments, notifications và AI chưa có backend.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Lịch âm, chat, moments, notifications và AI chưa có backend.
 
 ## Gói A — ổn định onboarding
 
@@ -43,7 +43,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Membership active trong `/app` đã dùng app bar, tab bar mobile có safe-area và desktop rail. Home chỉ hiển thị tên nhà, danh tính và số thành viên từ API thật. Gia phả tải graph đã duyệt quanh hồ sơ đang liên kết, giữ danh bạ làm lối tương đương, mở hồ sơ đã lọc liên hệ phía server và gửi đề xuất quan hệ chờ duyệt. Moments và Chat là trạng thái chưa sẵn sàng trung thực, không gửi API giả hoặc trộn fixture. Guest, invitation, pending và revoked vẫn dùng luồng truy cập đã ổn định.
 - Đây vẫn chưa phải UI cuối. Ba bề mặt connected Home, Gia phả/danh bạ và Tôi đã được kiểm trực quan ở Pixel 7; cần tiếp tục thử với thành viên gia đình thật trước khi mở rộng các tính năng giữ chân.
 
-## Quan hệ gia đình — backend và web đã merge, canvas đang ở nhánh tính năng
+## Quan hệ gia đình và canvas — đã merge
 
 - Migration `0010_relationships.sql` tạo `relationships` và `change_requests` với composite foreign key cùng nhà, RLS, optimistic version, cạnh partnership có lịch sử và dấu loại bỏ riêng với ngày kết thúc.
 - `GET /relationships` đọc graph đã duyệt quanh một root, depth 1–4 và tối đa 100 node. DTO node chỉ có member summary, không có biography hoặc contact.
@@ -56,6 +56,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 - Trên `feat/interactive-family-tree`, quality gate đạt: boundaries, design tokens, lint, Prettier, typecheck **12/12 task**, **73/73 unit tests** trong 17 file, Project Brain **64 Markdown files / 4 JSON assets / 24 seed cases**, và build **8/8 workspace** đều đạt.
 - Suite integration PostgreSQL/Mailpit đạt **19/19**. Toàn bộ `npm run test:e2e` đạt **135 test, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Browser tests chứng minh zoom, **Về tôi**, thu/mở nhánh, viewport 320px, kéo node không mở nhầm hồ sơ, graph error cục bộ, danh bạ fallback, workflow proposal/approval và các luồng onboarding không bị hồi quy. Pan/pinch vật lý vẫn cần thử trên điện thoại thật.
+- PR #13 đạt **2/2 GitHub checks** trên head `eeb2e0c` và đã merge vào `main` tại `a67371a`. GitHub Monorepo CI run #48 của merge commit đạt trong 3 phút 5 giây.
 
 - `npm run check`: đạt ngày 2026-09-12 trên `feat/connected-family-tree`; boundaries, tokens, lint, Prettier, typecheck, **61/61 unit tests**, brain validation 60 Markdown files và build 8 workspace đều đạt.
 - Integration với PostgreSQL/Mailpit local: **17/17 tests đạt**. Migration `0010_relationships.sql`, database constraint/RLS test và tenant test đều đạt; hai role giới hạn vẫn được provision đúng.
@@ -66,11 +67,10 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Đưa `feat/interactive-family-tree` qua review/PR khi chủ dự án yêu cầu; sau merge, xác nhận CI trên merge commit.
-2. Chủ dự án thử pan/pinch và kéo node trên điện thoại thật với dữ liệu pilot; ghi nhận cây có dễ hiểu với người lớn tuổi, tên dài và nhánh đông hay không.
-3. Làm D2 cho cây: thêm Member từ vị trí đang xem qua proposal, cập nhật/xóa/hủy đề xuất quan hệ và thiết kế nhóm vợ/chồng/gia đình hạt nhân trước khi cân nhắc lưu bố cục.
-4. Sau khi cây thật ổn định, chọn vertical slice giữ chân đầu tiên giữa Moments và Ngày quan trọng/nhắc ngày; Chat realtime chỉ bắt đầu khi có contract retry, delivery và privacy rõ.
-5. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
+1. Chủ dự án thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
+2. Thực hiện calendar core theo [kế hoạch Ngày quan trọng](docs/superpowers/plans/2026-09-13-family-calendar-foundation.md): dataset/converter được kiểm chứng, contracts, migration, occurrence, CRUD và RSVP.
+3. Nối timeline Ngày quan trọng vào Nhà mình, sau đó làm inbox/outbox worker; push chỉ bật sau khi delivery không trùng và có thiết bị thật để thử app đóng.
+4. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật. Moments và Chat triển khai sau vertical slice calendar; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
 
 ## Giới hạn
 
@@ -81,4 +81,4 @@ Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. C�
 - Migration `0011_member_create_change_requests.sql` mở rộng hàng đợi duyệt cho hồ sơ mới tối thiểu. Approval tạo Member không gắn tài khoản và Relationship trong cùng transaction; rejection không tạo dữ liệu chuẩn.
 - API hỗ trợ `scope=mine` để người gửi xem pending của mình. Web có workflow ba bước, chọn người có sẵn hoặc tạo hồ sơ mới, xem lại, gửi, hủy, sửa subtype và đề xuất gỡ.
 - Layout gom partnership active, đặt con dưới tâm cha mẹ, tách partnership lịch sử và đóng gói nhánh đông deterministic. Test bao phủ remarriage, adoptive, unspecified, tên dài và thiếu ảnh qua monogram hiện có.
-- PR đang mở: #13 trên nhánh `feat/interactive-family-tree`. Kết quả CI cuối cùng sẽ được ghi sau khi push các commit của gói này.
+- PR #13 đã merge vào `main` tại `a67371a`; head PR đạt 2/2 checks. Gói kế tiếp là Ngày quan trọng và lời nhắc theo PAD-022.

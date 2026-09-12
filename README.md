@@ -2,7 +2,7 @@
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng web đăng nhập, xác minh email, lời mời/duyệt, nhận hồ sơ và chỉnh hồ sơ nối API thật. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Cây gia phả và shell mobile-primary hiện là bản minh họa, chưa có API quan hệ; chưa phải MVP đầy đủ.
+Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ và cây gia phả tương tác nối API/PostgreSQL thật. Thành viên có thể đề xuất thêm/sửa/gỡ quan hệ để quản trị viên duyệt. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Lịch/nhắc, Khoảnh khắc, Chat và AI chưa có backend; dự án chưa phải MVP đầy đủ.
 
 ## Chạy local
 
