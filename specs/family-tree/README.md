@@ -28,4 +28,8 @@ Mở rộng sau: thuật ngữ họ hàng vùng miền đầy đủ, GEDCOM, exp
 
 ## Trạng thái triển khai 2026-09-10
 
-Backend C1–C4 đã có trên nhánh `feat/family-relationships`: migration 0010, graph read, create/update/remove request, cancel, admin list/approve/reject, audit và kiểm chu trình đồng thời. Tab Gia phả trong `/app` chưa nối contract này; thư viện graph và thao tác pan/pinch/drag vẫn thuộc gói D.
+Backend C1–C4 đã merge vào `main` qua PR #11: migration 0010, graph read, create/update/remove request, cancel, admin list/approve/reject, audit và kiểm chu trình đồng thời.
+
+Nhánh `feat/connected-family-tree` đã nối tab Gia phả trong `/app`: graph quanh hồ sơ đã liên kết, hàng thế hệ xác định từ cạnh tường minh, bản kê đủ từng quan hệ đã duyệt, danh bạ tương đương, hồ sơ lọc contact phía server, đề xuất create và duyệt/từ chối trên mobile. Tài khoản chưa gắn hồ sơ không gọi graph; lỗi graph không làm mất danh bạ; cây một người không tự bịa cạnh. Pending không xuất hiện trong graph chính thức. Sheet hồ sơ giữ focus và bỏ phản hồi cũ khi người dùng chuyển nhanh giữa hai hồ sơ.
+
+Thư viện graph và thao tác pan/pinch/drag, thu/mở nhánh, lưu bố cục cùng UI update/remove/cancel vẫn thuộc gói tiếp theo.
