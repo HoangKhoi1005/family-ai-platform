@@ -34,3 +34,7 @@ Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISI
 ## Mobile-primary — 2026-09-09
 
 - **PAD-020 / Confirmed:** điện thoại là trải nghiệm ứng dụng chính; pilot vẫn phát hành bằng web/PWA để 15 người cài hoặc mở nhanh. Năm đích chính là **Nhà · Khoảnh khắc · Gia phả · Trò chuyện · Tôi**; Quản trị nằm dưới Tôi. Desktop mở rộng từ cùng kiến trúc thông tin, không quyết định ngược lại bố cục mobile. [Thiết kế](superpowers/specs/2026-09-09-mobile-primary-experience-design.md).
+
+## Cây gia phả tương tác — 2026-09-12
+
+- **PAD-021 / Baseline:** dùng `@xyflow/react` 12.11.x làm lớp viewport cho cây connected; giữ thuật toán thế hệ xác định trong D1 và chưa thêm Dagre/ELK. Pan, pinch/wheel zoom, điều khiển viewport, kéo node và thu nhánh là trạng thái trình bày phía client; PostgreSQL cùng graph API đã kiểm quyền vẫn là nguồn sự thật duy nhất. Mở lại lựa chọn layout khi dữ liệu pilot chứng minh cần nhóm vợ/chồng, gia đình hạt nhân hoặc graph lớn hơn. [Thiết kế](superpowers/specs/2026-09-12-interactive-family-tree-design.md).
