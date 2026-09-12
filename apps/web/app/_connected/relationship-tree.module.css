@@ -87,78 +87,241 @@
   font: 400 29px/1.1 var(--typography-font-title);
 }
 
-.rows {
-  min-width: min-content;
-  overflow-x: auto;
-  padding: 8px 18px 26px;
-  overscroll-behavior-inline: contain;
-}
-
-.generation {
+.interactiveTree {
   position: relative;
-  min-width: 320px;
-  padding: 18px 0 28px;
-  text-align: center;
+  min-width: 0;
+  margin-top: 8px;
+  border-top: 1px solid var(--color-border-soft);
 }
 
-.generation > p {
-  margin-bottom: 12px;
-  color: var(--color-text-secondary);
+.flowViewport {
+  position: relative;
+  width: 100%;
+  height: clamp(430px, 62svh, 650px);
+  min-height: 430px;
+  background:
+    radial-gradient(circle at center, rgb(49 93 71 / 4%) 0 1px, transparent 1.5px) 0 0 / 22px 22px,
+    var(--color-surface-primary);
 }
 
-.nodes {
+.treeToolbar {
+  position: sticky;
+  z-index: 7;
+  top: 68px;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 14px;
-}
-
-.nodeWrap {
-  display: grid;
-  justify-items: center;
-  min-width: 132px;
-}
-
-.nodeWrap > span {
-  position: relative;
-  margin-bottom: 7px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--color-surface-muted);
-  color: var(--color-text-secondary);
-  font-size: 12px;
-}
-
-.node,
-.rootNode {
-  display: grid;
-  width: 132px;
-  min-height: 142px;
-  place-items: center;
-  align-content: center;
-  gap: 8px;
-  padding: 14px 10px;
-  border: 1px solid var(--color-border-soft);
-  border-radius: 46% 46% 14px 14px;
+  min-height: 58px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--color-border-soft);
   background: var(--color-surface-primary);
-  box-shadow: 0 8px 24px rgb(37 49 40 / 8%);
-  text-align: center;
 }
 
-.rootNode {
-  border: 2px solid var(--color-brand-primary);
+.treeToolbar > div {
+  display: flex;
+  border-right: 1px solid var(--color-border-soft);
+  padding-right: 6px;
+}
+
+.treeToolbar button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-brand-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.treeToolbar > button {
+  border-left: 1px solid var(--color-border-soft);
+  border-radius: 0;
+}
+
+.treeToolbar button:hover {
   background: var(--color-brand-secondary);
 }
 
-.node strong,
-.rootNode strong {
-  font: 600 17px/1.15 var(--typography-font-person-name);
+.treeToolbar button > span {
+  font-size: 22px;
+  line-height: 1;
 }
 
-.node small,
-.rootNode small {
+.gestureHint {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-border-soft);
+  background: var(--color-surface-primary);
   color: var(--color-text-secondary);
   font-size: 12px;
+  line-height: 1.35;
+}
+
+.flowNode,
+.flowNodeRoot {
+  position: relative;
+  display: grid;
+  width: 148px;
+  justify-items: center;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 70px 70px 18px 18px;
+  background: var(--color-surface-primary);
+  box-shadow: 0 9px 26px rgb(37 49 40 / 10%);
+}
+
+.flowNodeRoot {
+  border: 2px solid var(--color-brand-primary);
+  background: var(--color-brand-secondary);
+  box-shadow: 0 11px 32px rgb(49 93 71 / 16%);
+}
+
+.dragHandle {
+  display: flex;
+  width: 54px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandle i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-text-secondary);
+  opacity: 0.55;
+}
+
+.relationshipLabel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: 150px;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.profileAction {
+  display: grid;
+  width: 100%;
+  min-height: 126px;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 4px 12px 13px;
+  border: 0;
+  border-radius: 0 0 17px 17px;
+  background: transparent;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.profileAction:hover {
+  background: rgb(49 93 71 / 5%);
+}
+
+.profileAction strong {
+  max-width: 124px;
+  font: 600 17px/1.14 var(--typography-font-person-name);
+  overflow-wrap: anywhere;
+}
+
+.profileAction small {
+  max-width: 124px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.branchAction {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 5px;
+  margin: 0 8px 8px;
+  padding: 6px 9px;
+  border: 0;
+  border-top: 1px solid var(--color-border-soft);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-brand-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.branchAction span {
+  font-size: 16px;
+}
+
+.flowHandle {
+  width: 2px !important;
+  height: 2px !important;
+  min-width: 2px !important;
+  min-height: 2px !important;
+  border: 0 !important;
+  background: transparent !important;
+  opacity: 0;
+}
+
+.parentChildEdge :global(.react-flow__edge-path) {
+  stroke: var(--color-brand-primary);
+  stroke-width: 1.6;
+}
+
+.adoptiveEdge :global(.react-flow__edge-path) {
+  stroke: var(--color-accent);
+  stroke-width: 1.6;
+  stroke-dasharray: 5 4;
+}
+
+.partnershipEdge :global(.react-flow__edge-path) {
+  stroke: var(--color-accent);
+  stroke-width: 2;
+}
+
+.interactiveTree :global(.react-flow__node) {
+  border: 0;
+  background: transparent;
+}
+
+.interactiveTree :global(.react-flow__node.dragging) {
+  z-index: 4 !important;
+}
+
+.interactiveTree :global(.react-flow__pane) {
+  cursor: grab;
+}
+
+.interactiveTree :global(.react-flow__pane.dragging) {
+  cursor: grabbing;
+}
+
+.srStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .legend {
@@ -477,10 +640,6 @@
     padding: 26px 30px;
     border-radius: 0;
   }
-
-  .nodes {
-    gap: 28px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -489,5 +648,232 @@
   .page *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .canvasIntro {
+    padding-inline: 16px;
+  }
+
+  .flowViewport {
+    height: min(61svh, 540px);
+    min-height: 430px;
+  }
+
+  .treeToolbar {
+    gap: 2px;
+    padding-inline: 10px;
+  }
+
+  .treeToolbar button {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 350px) {
+  .treeToolbar button {
+    min-width: 42px;
+    padding-inline: 5px;
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 900px) {
+  .treeToolbar {
+    top: 0;
+  }
+}
+
+.pending {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 16px;
+  border: 1px solid var(--color-border-soft);
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-primary);
+}
+
+.pending p,
+.pending h2,
+.relationshipEdit h3,
+.relationshipEdit p {
+  margin: 0;
+}
+
+.pending p {
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.pending h2 {
+  margin-top: 4px;
+  font: 400 22px/1.2 var(--typography-font-title);
+}
+
+.pending ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pending li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border-soft);
+}
+
+.pending button,
+.relationshipTools button,
+.cancelProposal {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.proposal > .cancelProposal {
+  border: 0;
+  background: transparent;
+  color: var(--color-accent);
+}
+
+.relationshipTools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.proposal input,
+.relationshipEdit select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-px-input);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+}
+
+.sourceSwitch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-px-button);
+  background: var(--color-surface-muted);
+}
+
+.sourceSwitch button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+}
+
+.sourceSwitch button[aria-pressed='true'] {
+  background: var(--color-surface-primary);
+  color: var(--color-brand-primary);
+  font-weight: 700;
+}
+
+.newMemberFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.newMemberFields label:first-child {
+  grid-column: 1 / -1;
+}
+
+.proposalActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.proposalActions button {
+  min-height: 46px;
+}
+
+.proposalActions button:first-child {
+  margin-right: auto;
+  background: transparent;
+}
+
+.review {
+  display: grid;
+  margin: 0;
+  border-block: 1px solid var(--color-border-soft);
+}
+
+.review > div {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border-soft);
+}
+
+.review > div:last-child {
+  border-bottom: 0;
+}
+
+.review dt,
+.reviewNote {
+  color: var(--color-text-secondary);
+}
+
+.review dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.reviewNote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.relationshipEdit {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0 16px;
+  padding: 16px;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-surface-muted);
+}
+
+.relationshipEdit label {
+  display: grid;
+  gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .newMemberFields {
+    grid-template-columns: 1fr;
+  }
+
+  .newMemberFields label:first-child {
+    grid-column: auto;
+  }
+
+  .pending li {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

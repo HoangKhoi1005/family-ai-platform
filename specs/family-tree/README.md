@@ -26,10 +26,18 @@ MVP hiển thị đường nối và quan hệ gần khi đủ dữ liệu. Khô
 
 Mở rộng sau: thuật ngữ họ hàng vùng miền đầy đủ, GEDCOM, export sơ đồ in lớn. Chưa có thư viện graph/layout đã chọn.
 
-## Trạng thái triển khai 2026-09-10
+## Trạng thái triển khai 2026-09-13
 
 Backend C1–C4 đã merge vào `main` qua PR #11: migration 0010, graph read, create/update/remove request, cancel, admin list/approve/reject, audit và kiểm chu trình đồng thời.
 
 Nhánh `feat/connected-family-tree` đã nối tab Gia phả trong `/app`: graph quanh hồ sơ đã liên kết, hàng thế hệ xác định từ cạnh tường minh, bản kê đủ từng quan hệ đã duyệt, danh bạ tương đương, hồ sơ lọc contact phía server, đề xuất create và duyệt/từ chối trên mobile. Tài khoản chưa gắn hồ sơ không gọi graph; lỗi graph không làm mất danh bạ; cây một người không tự bịa cạnh. Pending không xuất hiện trong graph chính thức. Sheet hồ sơ giữ focus và bỏ phản hồi cũ khi người dùng chuyển nhanh giữa hai hồ sơ.
 
-Thư viện graph và thao tác pan/pinch/drag, thu/mở nhánh, lưu bố cục cùng UI update/remove/cancel vẫn thuộc gói tiếp theo.
+Nhánh `feat/interactive-family-tree` dùng `@xyflow/react` làm lớp viewport cho graph thật trong `/app`. Người dùng có thể kéo nền, pinch/wheel zoom, dùng **Thu nhỏ**, **Phóng to**, **Vừa cây**, **Về tôi**, kéo node bằng tay nắm riêng trong phiên hiện tại và thu/mở nhánh theo khoảng cách từ hồ sơ gốc. Node vẫn mở sheet hồ sơ hiện có; danh bạ và bản kê quan hệ đã duyệt tiếp tục là lối truy cập tương đương.
+
+Layout ban đầu vẫn do mô hình hàng thế hệ xác định để ổn định với pilot 15 người. Kéo node và trạng thái thu nhánh chỉ nằm trong client, không ghi Member/Relationship và không đổi API hay quyền. Mỗi cạnh hiển thị vẫn ánh xạ đúng một relationship đã duyệt từ server; không suy luận quan hệ mới.
+
+Nhánh `feat/interactive-family-tree` đã bổ sung workflow ba bước từ hồ sơ đang chọn: chọn cha/mẹ, con hoặc vợ/chồng; chọn hồ sơ có sẵn hoặc đề xuất hồ sơ tối thiểu mới; xem lại rồi gửi admin. Người gửi xem được pending của mình, hủy, sửa subtype hoặc đề xuất gỡ quan hệ. Admin duyệt `member_create` sẽ tạo Member và Relationship trong cùng transaction; từ chối hoặc lỗi không để lại Member mồ côi.
+
+Layout client gom partnership đang còn hiệu lực thành cụm, đặt con của một hoặc hai cha mẹ ở thế hệ dưới, giữ partnership đã kết thúc tách khỏi cụm hiện tại và đóng gói deterministic để không chồng node ở nhánh đông. Biological, adoptive và unspecified tiếp tục là dữ liệu tường minh; bố cục không suy luận hoặc ghi thêm quan hệ.
+
+Lưu bố cục, tải graph lớn theo nhánh và mô hình Household/Branch vẫn thuộc gói sau. Kéo node chỉ có hiệu lực trong phiên hiện tại.

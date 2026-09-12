@@ -3,6 +3,8 @@ import type { RelationshipGraphResponse } from '@family/contracts';
 import {
   buildTreeRows,
   connectionsFor,
+  newMemberProposal,
+  relationshipRemovalProposal,
   relationshipProposal,
   relationshipStatements,
   safeContactHref,
@@ -163,6 +165,45 @@ describe('connected relationship tree model', () => {
         type: 'partnership',
         subtype: 'married',
       },
+    });
+  });
+
+  it('builds a minimal new-member request without private contact fields', () => {
+    expect(
+      newMemberProposal(
+        'selected',
+        { kind: 'child', subtype: 'adoptive' },
+        {
+          display_name: '  Nguyễn Minh An  ',
+          familiar_name: '  Bé An ',
+          hometown: '',
+          birth_year: 2018,
+          deceased: false,
+        },
+      ),
+    ).toEqual({
+      type: 'member_create',
+      payload: {
+        member: {
+          display_name: 'Nguyễn Minh An',
+          familiar_name: 'Bé An',
+          birth_year: 2018,
+          deceased: false,
+        },
+        relationship: {
+          anchor_member_id: 'selected',
+          kind: 'child',
+          subtype: 'adoptive',
+        },
+      },
+    });
+  });
+
+  it('keeps the approved relationship version when proposing removal', () => {
+    expect(relationshipRemovalProposal('relationship-1', 3)).toEqual({
+      type: 'relationship_remove',
+      target_id: 'relationship-1',
+      base_version: 3,
     });
   });
 

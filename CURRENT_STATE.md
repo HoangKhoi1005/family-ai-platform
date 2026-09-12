@@ -1,9 +1,9 @@
 # Trạng thái dự án
 
-- Cập nhật: 2026-09-12. Context version: **1.4.0**.
+- Cập nhật: 2026-09-13. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Nhánh `feat/connected-family-tree` đang nối graph đã duyệt, hồ sơ, đề xuất quan hệ và quyết định quản trị vào `/app`. Lịch âm, chat, moments, notifications và AI chưa có backend.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Nhánh `feat/interactive-family-tree` đang nâng graph thật trong `/app` thành canvas tương tác. Lịch âm, chat, moments, notifications và AI chưa có backend.
 
 ## Gói A — ổn định onboarding
 
@@ -39,20 +39,23 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Hướng thị giác vẫn là **Album gia đình Việt đương đại**: nền giấy ấm, chữ màu mực, xanh lá trầm, điểm nhấn đất nung, con người/câu chuyện quyết định bố cục. Font serif token dùng fallback có glyph tiếng Việt ổn định trong Windows và Chromium CI.
 - Hồ sơ có quick actions Gọi/Nhắn/Email và view/edit/saving/error/conflict. Quản trị có pending/empty/conflict, quyết định cục bộ và state lưu trong URL.
 - `/design-preview/tree` dùng 15 người hư cấu và 22 relationship fixtures tường minh. SVG sinh một cạnh cho mỗi quan hệ đã xác nhận; Hoàng An chưa rõ nhánh chỉ ở danh bạ. Cây có ba thế hệ, zoom cục bộ, “Về tôi”, URL-backed selection, reload/deep-link, danh bạ tìm không dấu và member bottom sheet có focus trap, Escape, backdrop và trả focus đúng nút trên mobile. Desktop dùng vùng bổ trợ liền kề.
-- Chưa có pan/pinch/drag graph thật hoặc lưu bố cục; các phần này thuộc spike thư viện tiếp theo.
+- Graph thật trong `/app` đã dùng `@xyflow/react`: kéo nền, pinch/wheel zoom, **Thu nhỏ**, **Phóng to**, **Vừa cây**, **Về tôi**, kéo node bằng tay nắm riêng và thu/mở nhánh. Thanh điều khiển bám dưới app bar trên mobile; node, chữ và màu tiếp tục dùng ngôn ngữ album gia đình thay vì giao diện mặc định của trình sửa sơ đồ.
 - Membership active trong `/app` đã dùng app bar, tab bar mobile có safe-area và desktop rail. Home chỉ hiển thị tên nhà, danh tính và số thành viên từ API thật. Gia phả tải graph đã duyệt quanh hồ sơ đang liên kết, giữ danh bạ làm lối tương đương, mở hồ sơ đã lọc liên hệ phía server và gửi đề xuất quan hệ chờ duyệt. Moments và Chat là trạng thái chưa sẵn sàng trung thực, không gửi API giả hoặc trộn fixture. Guest, invitation, pending và revoked vẫn dùng luồng truy cập đã ổn định.
 - Đây vẫn chưa phải UI cuối. Ba bề mặt connected Home, Gia phả/danh bạ và Tôi đã được kiểm trực quan ở Pixel 7; cần tiếp tục thử với thành viên gia đình thật trước khi mở rộng các tính năng giữ chân.
 
-## Quan hệ gia đình — backend đã merge, web đang ở nhánh tính năng
+## Quan hệ gia đình — backend và web đã merge, canvas đang ở nhánh tính năng
 
 - Migration `0010_relationships.sql` tạo `relationships` và `change_requests` với composite foreign key cùng nhà, RLS, optimistic version, cạnh partnership có lịch sử và dấu loại bỏ riêng với ngày kết thúc.
 - `GET /relationships` đọc graph đã duyệt quanh một root, depth 1–4 và tối đa 100 node. DTO node chỉ có member summary, không có biography hoặc contact.
 - Thành viên active có thể tạo và hủy đề xuất của mình. Admin active có thể xem pending, duyệt hoặc từ chối; create/update/remove được apply cùng audit trong transaction.
 - Approval khóa advisory theo `family_id`, kiểm lại duplicate, version và chu trình. Integration test hai approval đối nghịch đồng thời chứng minh chỉ một cạnh được lưu.
-- `/app` trên `feat/connected-family-tree` gọi graph API này với root là hồ sơ đã nhận. Thành viên có thể mở hồ sơ, xem nhãn quan hệ tường minh, chuyển sang danh bạ và gửi đề xuất tạo cha/mẹ, con hoặc bạn đời. Quản trị viên xem tên hai hồ sơ rồi duyệt/từ chối trong Quản trị dưới Tôi. Pending không được vẽ thành cạnh chính thức.
+- `/app` gọi graph API này với root là hồ sơ đã nhận. Thành viên có thể thao tác canvas, mở hồ sơ, xem nhãn quan hệ tường minh, chuyển sang danh bạ và gửi đề xuất tạo cha/mẹ, con hoặc bạn đời. Quản trị viên xem tên hai hồ sơ rồi duyệt/từ chối trong Quản trị dưới Tôi. Pending không được vẽ thành cạnh chính thức.
 - Tài khoản chưa liên kết hồ sơ không gọi graph; lỗi graph giữ phạm vi trong tab và không làm mất danh bạ. Cây một người có hướng dẫn bổ sung thay vì tự sinh cạnh.
 
 ## Kiểm chứng mới nhất
+
+- Trên `feat/interactive-family-tree`, quality gate đạt: boundaries, design tokens, lint, Prettier, typecheck **12/12 task**, **73/73 unit tests** trong 17 file, Project Brain **64 Markdown files / 4 JSON assets / 24 seed cases**, và build **8/8 workspace** đều đạt.
+- Suite integration PostgreSQL/Mailpit đạt **19/19**. Toàn bộ `npm run test:e2e` đạt **135 test, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Browser tests chứng minh zoom, **Về tôi**, thu/mở nhánh, viewport 320px, kéo node không mở nhầm hồ sơ, graph error cục bộ, danh bạ fallback, workflow proposal/approval và các luồng onboarding không bị hồi quy. Pan/pinch vật lý vẫn cần thử trên điện thoại thật.
 
 - `npm run check`: đạt ngày 2026-09-12 trên `feat/connected-family-tree`; boundaries, tokens, lint, Prettier, typecheck, **61/61 unit tests**, brain validation 60 Markdown files và build 8 workspace đều đạt.
 - Integration với PostgreSQL/Mailpit local: **17/17 tests đạt**. Migration `0010_relationships.sql`, database constraint/RLS test và tenant test đều đạt; hai role giới hạn vẫn được provision đúng.
@@ -63,12 +66,19 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Đưa `feat/connected-family-tree` qua PR khi được chủ dự án yêu cầu; sau khi merge, chạy lại CI trên merge commit.
-2. Chủ dự án thử `/app` trên điện thoại với dữ liệu pilot, đặc biệt graph quanh tôi, mở hồ sơ, đề xuất và duyệt quan hệ; ghi nhận ngôn ngữ hoặc nhịp thao tác còn gượng.
-3. Spike thư viện graph cho pan, pinch/wheel zoom, kéo khung nhìn, “Về tôi” và thu/mở nhánh mà không thay nguồn dữ liệu chuẩn.
+1. Đưa `feat/interactive-family-tree` qua review/PR khi chủ dự án yêu cầu; sau merge, xác nhận CI trên merge commit.
+2. Chủ dự án thử pan/pinch và kéo node trên điện thoại thật với dữ liệu pilot; ghi nhận cây có dễ hiểu với người lớn tuổi, tên dài và nhánh đông hay không.
+3. Làm D2 cho cây: thêm Member từ vị trí đang xem qua proposal, cập nhật/xóa/hủy đề xuất quan hệ và thiết kế nhóm vợ/chồng/gia đình hạt nhân trước khi cân nhắc lưu bố cục.
 4. Sau khi cây thật ổn định, chọn vertical slice giữ chân đầu tiên giữa Moments và Ngày quan trọng/nhắc ngày; Chat realtime chỉ bắt đầu khi có contract retry, delivery và privacy rõ.
 5. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected hiện xếp theo hàng thế hệ có cuộn ngang, chưa có pan/pinch/drag, thu nhánh hoặc lưu bố cục. Luồng web mới tạo đề xuất quan hệ; update/remove vẫn cần bề mặt quản trị tiếp theo. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request. Migration tiếp theo phải được thêm sau `0010`.
+Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
+
+## Cập nhật cây tương tác 2026-09-13
+
+- Migration `0011_member_create_change_requests.sql` mở rộng hàng đợi duyệt cho hồ sơ mới tối thiểu. Approval tạo Member không gắn tài khoản và Relationship trong cùng transaction; rejection không tạo dữ liệu chuẩn.
+- API hỗ trợ `scope=mine` để người gửi xem pending của mình. Web có workflow ba bước, chọn người có sẵn hoặc tạo hồ sơ mới, xem lại, gửi, hủy, sửa subtype và đề xuất gỡ.
+- Layout gom partnership active, đặt con dưới tâm cha mẹ, tách partnership lịch sử và đóng gói nhánh đông deterministic. Test bao phủ remarriage, adoptive, unspecified, tên dài và thiếu ảnh qua monogram hiện có.
+- PR đang mở: #13 trên nhánh `feat/interactive-family-tree`. Kết quả CI cuối cùng sẽ được ghi sau khi push các commit của gói này.

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type {
   CreateRelationshipPayload,
+  CreateMemberRelationshipPayload,
   RelationshipChangeRequestDto,
   RelationshipChangeRequestListResponse,
 } from '@family/contracts';
@@ -127,6 +128,14 @@ export function RelationshipAdmin({
 }
 
 function describeRequest(row: RelationshipChangeRequestDto, names: Map<string, string>) {
+  if (row.type === 'member_create' && isMemberCreatePayload(row.payload)) {
+    const anchor =
+      names.get(row.payload.relationship.anchor_member_id) ?? 'Hồ sơ không còn trong danh bạ';
+    return {
+      title: `Thêm ${row.payload.member.display_name}`,
+      detail: `${proposalRelationLabel(row.payload.relationship.kind)} của ${anchor} · ${proposalSubtypeLabel(row.payload.relationship.subtype)}`,
+    };
+  }
   if (row.type !== 'relationship_create' || !isCreatePayload(row.payload)) {
     return {
       title:
@@ -151,6 +160,26 @@ function describeRequest(row: RelationshipChangeRequestDto, names: Map<string, s
         ? 'Quan hệ cha / mẹ'
         : 'Quan hệ cha / mẹ · chưa xác định loại';
   return { title, detail: `${from} là cha / mẹ của ${to}` };
+}
+
+function isMemberCreatePayload(
+  payload: RelationshipChangeRequestDto['payload'],
+): payload is CreateMemberRelationshipPayload {
+  return Boolean(payload && 'member' in payload && 'relationship' in payload);
+}
+
+function proposalRelationLabel(kind: CreateMemberRelationshipPayload['relationship']['kind']) {
+  if (kind === 'parent') return 'Cha / mẹ';
+  if (kind === 'child') return 'Con';
+  return 'Vợ / chồng hoặc bạn đời';
+}
+
+function proposalSubtypeLabel(subtype: string) {
+  if (subtype === 'biological') return 'Huyết thống';
+  if (subtype === 'adoptive') return 'Nuôi dưỡng';
+  if (subtype === 'married') return 'Hôn nhân';
+  if (subtype === 'partner') return 'Bạn đời';
+  return 'Chưa xác định';
 }
 
 function isCreatePayload(

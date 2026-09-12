@@ -219,6 +219,119 @@ describe('relationship routes with real sessions and PostgreSQL', () => {
     ]);
   });
 
+  it('creates a proposed member and relationship together only after approval', async () => {
+    const memberHeaders = {
+      cookie: member.cookie,
+      origin: config.webOrigin,
+      'content-type': 'application/json',
+    };
+    const adminHeaders = { ...memberHeaders, cookie: admin.cookie };
+    const base = `/api/v1/families/${familyId}`;
+    const displayName = `Nguyễn An ${Date.now()}`;
+    const proposed = await app.inject({
+      method: 'POST',
+      url: `${base}/change-requests`,
+      headers: memberHeaders,
+      payload: {
+        type: 'member_create',
+        payload: {
+          member: {
+            display_name: displayName,
+            familiar_name: 'Bé An',
+            hometown: 'Cà Mau',
+            birth_year: 2018,
+          },
+          relationship: {
+            anchor_member_id: thirdMemberId,
+            kind: 'child',
+            subtype: 'biological',
+          },
+        },
+      },
+    });
+    expect(proposed.statusCode, proposed.body).toBe(201);
+    expect(
+      (
+        await ownerPool.query('SELECT id FROM members WHERE family_id=$1 AND display_name=$2', [
+          familyId,
+          displayName,
+        ])
+      ).rowCount,
+    ).toBe(0);
+
+    const ownPending = await app.inject({
+      method: 'GET',
+      url: `${base}/change-requests?scope=mine`,
+      headers: memberHeaders,
+    });
+    expect(ownPending.statusCode).toBe(200);
+    expect(ownPending.json().change_requests).toContainEqual(
+      expect.objectContaining({ id: proposed.json().id, type: 'member_create' }),
+    );
+
+    const approved = await app.inject({
+      method: 'POST',
+      url: `${base}/change-requests/${proposed.json().id}/decision`,
+      headers: adminHeaders,
+      payload: { decision: 'approved', version: proposed.json().version },
+    });
+    expect(approved.statusCode, approved.body).toBe(200);
+    const created = await ownerPool.query<{ id: string }>(
+      'SELECT id FROM members WHERE family_id=$1 AND display_name=$2',
+      [familyId, displayName],
+    );
+    expect(created.rowCount).toBe(1);
+    const relationship = await ownerPool.query(
+      `SELECT subtype FROM relationships
+        WHERE family_id=$1 AND from_member_id=$2 AND to_member_id=$3 AND removed_at IS NULL`,
+      [familyId, thirdMemberId, created.rows[0]!.id],
+    );
+    expect(relationship.rows).toEqual([{ subtype: 'biological' }]);
+  });
+
+  it('does not create an orphan member when a member proposal is rejected', async () => {
+    const memberHeaders = {
+      cookie: member.cookie,
+      origin: config.webOrigin,
+      'content-type': 'application/json',
+    };
+    const adminHeaders = { ...memberHeaders, cookie: admin.cookie };
+    const base = `/api/v1/families/${familyId}`;
+    const displayName = `Nguyễn Không Duyệt ${Date.now()}`;
+    const proposed = await app.inject({
+      method: 'POST',
+      url: `${base}/change-requests`,
+      headers: memberHeaders,
+      payload: {
+        type: 'member_create',
+        payload: {
+          member: { display_name: displayName },
+          relationship: {
+            anchor_member_id: parentMemberId,
+            kind: 'partner',
+            subtype: 'partner',
+          },
+        },
+      },
+    });
+    expect(proposed.statusCode, proposed.body).toBe(201);
+    const rejected = await app.inject({
+      method: 'POST',
+      url: `${base}/change-requests/${proposed.json().id}/decision`,
+      headers: adminHeaders,
+      payload: { decision: 'rejected', version: proposed.json().version },
+    });
+    expect(rejected.statusCode).toBe(200);
+    expect(
+      (
+        await ownerPool.query('SELECT id FROM members WHERE family_id=$1 AND display_name=$2', [
+          familyId,
+          displayName,
+        ])
+      ).rowCount,
+    ).toBe(0);
+  });
+
   it('conceals the graph from guests and actors outside the requested family', async () => {
     const graphPath = (requestedFamily: string) =>
       `/api/v1/families/${requestedFamily}/relationships?root_member_id=${parentMemberId}&depth=2`;

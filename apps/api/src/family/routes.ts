@@ -120,6 +120,7 @@ interface ChangeRequestParams extends FamilyParams {
 
 interface ChangeRequestListQuery {
   status?: 'pending';
+  scope?: 'all' | 'mine';
 }
 
 interface MemberParams extends FamilyParams {
@@ -164,7 +165,7 @@ async function rejectRelationshipRequestUnknownKeys(request: FastifyRequest): Pr
   const body = request.body;
   if (!isJsonObject(body) || typeof body.type !== 'string') return;
   const topLevel =
-    body.type === 'relationship_create'
+    body.type === 'relationship_create' || body.type === 'member_create'
       ? ['type', 'payload']
       : [
           'type',
@@ -178,6 +179,27 @@ async function rejectRelationshipRequestUnknownKeys(request: FastifyRequest): Pr
   if (body.type === 'relationship_remove') return;
   const payload = body.payload;
   if (!isJsonObject(payload)) return;
+  if (body.type === 'member_create') {
+    if (Object.keys(payload).some((key) => !['member', 'relationship'].includes(key))) {
+      throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+    }
+    const member = payload.member;
+    const relationship = payload.relationship;
+    if (
+      (isJsonObject(member) &&
+        Object.keys(member).some(
+          (key) =>
+            !['display_name', 'familiar_name', 'hometown', 'birth_year', 'deceased'].includes(key),
+        )) ||
+      (isJsonObject(relationship) &&
+        Object.keys(relationship).some(
+          (key) => !['anchor_member_id', 'kind', 'subtype'].includes(key),
+        ))
+    ) {
+      throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+    }
+    return;
+  }
   const payloadKeys =
     body.type === 'relationship_update'
       ? ['subtype', 'start_date', 'end_date']
@@ -577,7 +599,11 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
         const { familyId } = familyParamsOf(request);
         const actor = await authenticatedActor(options.auth, request);
         const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
-          listPendingRelationshipChangeRequests(client, { familyId, actorId: actor.userId }),
+          listPendingRelationshipChangeRequests(client, {
+            familyId,
+            actorId: actor.userId,
+            scope: request.query.scope ?? 'all',
+          }),
         );
         return reply.send(result);
       } catch (error) {
