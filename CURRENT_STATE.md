@@ -78,7 +78,8 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - `@family/domain` đã có `CalendarConverter` cô lập provider, lỗi `CALENDAR_UNAVAILABLE`, kiểm tra round-trip và range 1200–2199. Không chấp nhận ngày dương sai, ngày âm không tồn tại hoặc cờ tháng nhuận không có thật.
 - Bộ golden fixture bao phủ Tết 2024, tháng 6 thường/nhuận 2025, ngày trong tháng nhuận và Tết 2026. Quy tắc `regular`, `leap_only`, `both`, `last_day`, `skip` và không nuốt lỗi provider có 12 unit tests đạt trên Node 24.18.
 - Dữ liệu tham chiếu công khai chủ yếu cùng dòng thuật toán Hồ Ngọc Đức; trước pilot thật vẫn phải đối chiếu các ngày gia đình dùng với lịch Việt Nam đáng tin cậy.
-- Contract máy đọc Event/Occurrence/RSVP đã được thêm với union dương/âm, policy bắt buộc, kiểm tra ngày dương, whole-state update có optimistic version, cancel và RSVP tối thiểu. 10 contract tests Fastify/Ajv đạt; body không nhận `family_id`, actor, creator hay RSVP membership. Bước code kế tiếp là migration tenant/RLS `0012`.
+- Contract máy đọc Event/Occurrence/RSVP đã được thêm với union dương/âm, policy bắt buộc, kiểm tra ngày dương, whole-state update có optimistic version, cancel và RSVP tối thiểu. 10 contract tests Fastify/Ajv đạt; body không nhận `family_id`, actor, creator hay RSVP membership.
+- Migration `0012_calendar_core.sql` đã tạo `events`, `event_occurrences`, `event_rsvps` với typed date parts, same-family composite FK, unique occurrence, revision/version/status và RLS. Integration test PostgreSQL chứng minh active/pending/revoked, cross-family, creator/admin, creator bị thu hồi, current revision và RSVP upsert/visibility; các suite database/auth/tenant/relationship cũ tiếp tục đạt. CI đã chạy thêm `test:calendar-schema`. Bước code kế tiếp là occurrence service và CRUD/RSVP routes.
 
 ## Giới hạn
 

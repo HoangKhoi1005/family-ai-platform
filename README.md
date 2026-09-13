@@ -46,15 +46,16 @@ Không tạo mobile app giả; khi đến phase native, thêm `apps/mobile` và 
 
 ## Lệnh kiểm tra
 
-| Lệnh                      | Chức năng                                                                           |
-| ------------------------- | ----------------------------------------------------------------------------------- |
-| `npm run check`           | Boundaries, tokens, lint, format, typecheck, unit/API test, Brain, production build |
-| `npm run build`           | Build các workspace theo dependency graph                                           |
-| `npm test`                | Vitest cho config, policy và API qua inject                                         |
-| `npm run test:db`         | PostgreSQL integration, rollback dữ liệu giả sau kiểm thử                           |
-| `npm run test:e2e`        | Playwright khởi động bản web đã build; cần Chromium                                 |
-| `npm run format`          | Định dạng các file được quản lý                                                     |
-| `npm run tokens:generate` | Sinh CSS từ `design/tokens.json`                                                    |
+| Lệnh                           | Chức năng                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------- |
+| `npm run check`                | Boundaries, tokens, lint, format, typecheck, unit/API test, Brain, production build |
+| `npm run build`                | Build các workspace theo dependency graph                                           |
+| `npm test`                     | Vitest cho config, policy và API qua inject                                         |
+| `npm run test:db`              | PostgreSQL integration, rollback dữ liệu giả sau kiểm thử                           |
+| `npm run test:calendar-schema` | Constraint, tenant RLS, creator/admin và RSVP của Calendar Core                     |
+| `npm run test:e2e`             | Playwright khởi động bản web đã build; cần Chromium                                 |
+| `npm run format`               | Định dạng các file được quản lý                                                     |
+| `npm run tokens:generate`      | Sinh CSS từ `design/tokens.json`                                                    |
 
 Lần đầu chạy E2E: `npx playwright install chromium`; sau đó `npm run build` và `npm run test:e2e`. CI cài browser tự động. Không có tác vụ tự deploy.
 

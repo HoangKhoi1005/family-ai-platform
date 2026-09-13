@@ -75,6 +75,7 @@ jobs:
       - run: node packages/database/scripts/provision-auth.mjs
       - run: node packages/database/scripts/test.mjs
       - run: node packages/database/scripts/test-auth-schema.mjs
+      - run: npm run test:calendar-schema
       - run: npm run test:auth
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
