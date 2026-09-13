@@ -2,9 +2,11 @@
 
 **Goal:** đưa FR-04 từ tài liệu thành vertical slice mobile dùng dữ liệu thật: xem ngày sắp tới, tạo/sửa/hủy, RSVP, inbox nhắc và nền push an toàn.
 
-**Design:** [Thiết kế nền tảng Ngày quan trọng](../specs/2026-09-13-family-calendar-foundation-design.md)  
-**Specs:** [Lịch nhà](../../../specs/calendar/README.md), [quy tắc thông báo](../../12_NOTIFICATION_RULES.md)  
-**Baseline:** PAD-004, PAD-005, PAD-008, PAD-011, PAD-014, PAD-020, PAD-022  
+**Design:** [Thiết kế nền tảng Ngày quan trọng](../specs/2026-09-13-family-calendar-foundation-design.md)
+
+**Specs:** [Lịch nhà](../../../specs/calendar/README.md), [quy tắc thông báo](../../12_NOTIFICATION_RULES.md)
+
+**Baseline:** PAD-004, PAD-005, PAD-008, PAD-011, PAD-014, PAD-020, PAD-022
 **Stack:** TypeScript, Fastify, PostgreSQL, Next.js, worker hiện có; không thêm microservice.
 
 ## Nguyên tắc thực hiện

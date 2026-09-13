@@ -1,8 +1,10 @@
 # Thiết kế nền tảng Ngày quan trọng và lời nhắc
 
-**Ngày:** 2026-09-13  
-**Trạng thái:** Đã chốt để lập kế hoạch triển khai  
-**Requirement:** FR-04, mở rộng FR-07  
+**Ngày:** 2026-09-13
+
+**Trạng thái:** Đã chốt để lập kế hoạch triển khai
+
+**Requirement:** FR-04, mở rộng FR-07
 **Context:** 1.4.0
 
 ## 1. Mục tiêu
