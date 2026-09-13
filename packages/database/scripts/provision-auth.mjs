@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { resolve } from 'node:path';
 import pg from 'pg';
 
-export const ROLE_NAMES = ['family_auth', 'family_runtime'];
+export const ROLE_NAMES = ['family_auth', 'family_runtime', 'family_worker'];
 export const TENANT_TABLES = [
   'family_spaces',
   'family_memberships',
@@ -23,8 +23,9 @@ const TABLE_PRIVILEGES = [
 const COLUMN_PRIVILEGES = ['SELECT', 'INSERT', 'UPDATE', 'REFERENCES'];
 const USERS_TABLE_PRIVILEGES = ['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'];
 const ROLE_URLS = [
-  ['family_auth', process.env.AUTH_DATABASE_URL],
-  ['family_runtime', process.env.RUNTIME_DATABASE_URL],
+  ['family_auth', 'AUTH_DATABASE_URL', process.env.AUTH_DATABASE_URL],
+  ['family_runtime', 'RUNTIME_DATABASE_URL', process.env.RUNTIME_DATABASE_URL],
+  ['family_worker', 'WORKER_DATABASE_URL', process.env.WORKER_DATABASE_URL],
 ];
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
@@ -82,7 +83,7 @@ export async function assertSafeApplicationRoles(client) {
     [ROLE_NAMES],
   );
   if (roles.rowCount !== ROLE_NAMES.length) {
-    throw new Error('Both auth roles must exist; run db:migrate first');
+    throw new Error('All restricted application roles must exist; run db:migrate first');
   }
   for (const role of roles.rows) {
     if (
@@ -230,6 +231,30 @@ export async function assertSafeApplicationRoles(client) {
       `Refusing family_runtime ${runtimeUsersTablePrivilege.rows[0].privilege_type} on users table`,
     );
   }
+
+  const workerTablePrivilege = await client.query(
+    `SELECT c.relname AS table_name, p.privilege_type
+       FROM pg_class c
+       JOIN pg_namespace n ON n.oid = c.relnamespace
+       CROSS JOIN unnest($1::text[]) AS p(privilege_type)
+      WHERE n.nspname = 'public'
+        AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
+        AND (
+          has_table_privilege('family_worker', format('public.%I', c.relname), p.privilege_type)
+          OR (
+            p.privilege_type = ANY($2::text[])
+            AND has_any_column_privilege(
+              'family_worker', format('public.%I', c.relname), p.privilege_type
+            )
+          )
+        )
+      LIMIT 1`,
+    [TABLE_PRIVILEGES, COLUMN_PRIVILEGES],
+  );
+  if (workerTablePrivilege.rowCount) {
+    const row = workerTablePrivilege.rows[0];
+    throw new Error(`Refusing family_worker ${row.privilege_type} on table ${row.table_name}`);
+  }
 }
 
 async function provision() {
@@ -239,8 +264,7 @@ async function provision() {
 
   const ownerUrl = process.env.DATABASE_URL;
   const owner = parseLocalDatabaseUrl('DATABASE_URL', ownerUrl);
-  const passwords = ROLE_URLS.map(([role, value]) => {
-    const name = role === 'family_auth' ? 'AUTH_DATABASE_URL' : 'RUNTIME_DATABASE_URL';
+  const passwords = ROLE_URLS.map(([role, name, value]) => {
     const target = parseLocalDatabaseUrl(name, value, role);
     if (
       target.host !== owner.host ||
@@ -270,7 +294,7 @@ async function provision() {
     }
     await client.query('COMMIT');
     inTransaction = false;
-    console.log('Provisioned local passwords for family_auth and family_runtime.');
+    console.log('Provisioned local passwords for auth, runtime and worker roles.');
   } finally {
     if (inTransaction) await client.query('ROLLBACK');
     await client.end();
@@ -283,7 +307,7 @@ try {
   }
 } catch (error) {
   console.error(
-    `Auth role provisioning failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+    `Application role provisioning failed: ${error instanceof Error ? error.message : 'unknown error'}`,
   );
   process.exitCode = 1;
 }

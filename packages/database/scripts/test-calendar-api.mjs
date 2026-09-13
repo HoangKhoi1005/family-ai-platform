@@ -153,11 +153,25 @@ async function seed() {
       ids.otherFamily,
     ],
   );
+  await owner.query(
+    `INSERT INTO notification_preferences(family_id,membership_id,reminder_offsets)
+     VALUES ($1,$2,ARRAY['one_day']::text[])`,
+    [ids.familyA, ids.memberMembership],
+  );
   await owner.query('COMMIT');
 }
 
 async function cleanup() {
+  await owner.query(
+    'GRANT EXECUTE ON FUNCTION public.actor_enqueue_event_reminders(uuid,uuid,integer) TO family_runtime',
+  );
   await owner.query('BEGIN');
+  await owner.query('DELETE FROM outbox_jobs WHERE family_id = ANY($1::uuid[])', [
+    [ids.familyA, ids.familyB],
+  ]);
+  await owner.query('DELETE FROM notification_preferences WHERE family_id = ANY($1::uuid[])', [
+    [ids.familyA, ids.familyB],
+  ]);
   await owner.query('DELETE FROM audit_entries WHERE family_id = ANY($1::uuid[])', [
     [ids.familyA, ids.familyB],
   ]);
@@ -189,7 +203,8 @@ await owner.connect();
 try {
   await seed();
   const today = vnToday();
-  const [, month, day] = today.split('-').map(Number);
+  const eventDate = shiftDays(today, 30);
+  const [, month, day] = eventDate.split('-').map(Number);
   const eventInput = {
     kind: 'gathering',
     title: 'Cơm nhà cuối tuần',
@@ -201,6 +216,41 @@ try {
     all_day: true,
     reminder_offsets: ['seven_days', 'one_day'],
   };
+
+  await owner.query(
+    'REVOKE EXECUTE ON FUNCTION public.actor_enqueue_event_reminders(uuid,uuid,integer) FROM family_runtime',
+  );
+  let enqueueFailure;
+  try {
+    enqueueFailure = await request(ids.creator, {
+      method: 'POST',
+      url: `/api/v1/families/${ids.familyA}/events`,
+      headers: { 'idempotency-key': 'calendar-api-enqueue-failure' },
+      payload: { ...eventInput, title: 'Phải rollback khi enqueue lỗi' },
+    });
+  } finally {
+    await owner.query(
+      'GRANT EXECUTE ON FUNCTION public.actor_enqueue_event_reminders(uuid,uuid,integer) TO family_runtime',
+    );
+  }
+  assert.equal(enqueueFailure.statusCode, 403, enqueueFailure.body);
+  assert.equal(enqueueFailure.json().error.code, 'FORBIDDEN');
+  const rolledBackCreate = await owner.query(
+    `SELECT
+       (SELECT count(*)::int FROM events WHERE family_id=$1) AS events,
+       (SELECT count(*)::int FROM event_occurrences WHERE family_id=$1) AS occurrences,
+       (SELECT count(*)::int FROM event_idempotency_keys WHERE family_id=$1) AS idempotency_keys,
+       (SELECT count(*)::int FROM audit_entries WHERE family_id=$1) AS audit_entries,
+       (SELECT count(*)::int FROM outbox_jobs WHERE family_id=$1) AS outbox_jobs`,
+    [ids.familyA],
+  );
+  assert.deepEqual(rolledBackCreate.rows[0], {
+    events: 0,
+    occurrences: 0,
+    idempotency_keys: 0,
+    audit_entries: 0,
+    outbox_jobs: 0,
+  });
 
   const missingKey = await request(ids.creator, {
     method: 'POST',
@@ -227,6 +277,45 @@ try {
   const created = create.json();
   assert.equal(created.event.title, eventInput.title);
   assert.ok(created.occurrences.length >= 1);
+  const initialJobs = await owner.query(
+    `SELECT job.recipient_membership_id,job.occurrence_id,job.reminder_offset,
+            job.event_revision,job.status,occurrence.local_date::text,
+            to_char(job.due_at AT TIME ZONE 'Asia/Ho_Chi_Minh','YYYY-MM-DD HH24:MI') AS due_local,
+            to_char(job.available_at AT TIME ZONE 'Asia/Ho_Chi_Minh','YYYY-MM-DD HH24:MI') AS available_local,
+            to_char(job.expires_at AT TIME ZONE 'Asia/Ho_Chi_Minh','YYYY-MM-DD HH24:MI') AS expires_local
+       FROM outbox_jobs job
+       JOIN event_occurrences occurrence
+         ON occurrence.family_id=job.family_id AND occurrence.id=job.occurrence_id
+      WHERE job.family_id=$1 AND job.event_id=$2
+      ORDER BY occurrence.local_date,job.recipient_membership_id,job.reminder_offset`,
+    [ids.familyA, created.event.id],
+  );
+  assert.equal(initialJobs.rows.length, created.occurrences.length * 5);
+  for (const occurrence of created.occurrences) {
+    const jobs = initialJobs.rows.filter((job) => job.occurrence_id === occurrence.id);
+    assert.deepEqual(
+      jobs
+        .filter((job) => job.recipient_membership_id === ids.memberMembership)
+        .map((job) => job.reminder_offset),
+      ['one_day'],
+    );
+    assert.equal(
+      jobs.filter((job) => job.recipient_membership_id === ids.creatorMembership).length,
+      2,
+    );
+    assert.equal(
+      jobs.filter((job) => job.recipient_membership_id === ids.adminMembership).length,
+      2,
+    );
+    for (const job of jobs) {
+      const daysBefore = job.reminder_offset === 'seven_days' ? -7 : -1;
+      assert.equal(job.due_local, `${shiftDays(occurrence.local_date, daysBefore)} 09:00`);
+      assert.equal(job.available_local, job.due_local);
+      assert.equal(job.expires_local, `${shiftDays(occurrence.local_date, 1)} 00:00`);
+      assert.equal(job.event_revision, 1);
+      assert.equal(job.status, 'pending');
+    }
+  }
 
   const retry = await request(ids.creator, {
     method: 'POST',
@@ -328,6 +417,29 @@ try {
   assert.equal(update.json().event.revision, 2);
   assert.equal(update.json().event.version, 2);
   assert.ok(update.json().occurrences.every((item) => item.event_revision === 2));
+  const jobsAfterUpdate = await owner.query(
+    `SELECT event_revision,status,count(*)::int AS count,
+            count(cancelled_at)::int AS cancelled_count
+       FROM outbox_jobs
+      WHERE family_id=$1 AND event_id=$2
+      GROUP BY event_revision,status
+      ORDER BY event_revision,status`,
+    [ids.familyA, created.event.id],
+  );
+  assert.deepEqual(jobsAfterUpdate.rows, [
+    {
+      event_revision: 1,
+      status: 'cancelled',
+      count: initialJobs.rows.length,
+      cancelled_count: initialJobs.rows.length,
+    },
+    {
+      event_revision: 2,
+      status: 'pending',
+      count: update.json().occurrences.length * 5,
+      cancelled_count: 0,
+    },
+  ]);
 
   const staleUpdate = await request(ids.creator, {
     method: 'PATCH',
@@ -344,6 +456,20 @@ try {
   assert.equal(cancel.statusCode, 200, cancel.body);
   assert.equal(cancel.json().event.status, 'cancelled');
   assert.ok(cancel.json().occurrences.every((item) => item.status === 'cancelled'));
+  const jobsAfterCancel = await owner.query(
+    `SELECT status,count(*)::int AS count,count(cancelled_at)::int AS cancelled_count
+       FROM outbox_jobs
+      WHERE family_id=$1 AND event_id=$2
+      GROUP BY status`,
+    [ids.familyA, created.event.id],
+  );
+  assert.deepEqual(jobsAfterCancel.rows, [
+    {
+      status: 'cancelled',
+      count: initialJobs.rows.length + update.json().occurrences.length * 5,
+      cancelled_count: initialJobs.rows.length + update.json().occurrences.length * 5,
+    },
+  ]);
 
   const lunarEventInput = { ...eventInput };
   delete lunarEventInput.feb29_policy;

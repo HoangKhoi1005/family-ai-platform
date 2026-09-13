@@ -60,6 +60,11 @@ try {
     /^DATABASE_URL=postgresql:\/\/family_owner:owner-secret-for-test@127\.0\.0\.1:54339\/family_dev$/m,
     'Full DATABASE_URL must remain unchanged',
   );
+  assert.match(
+    firstBytes,
+    /^WORKER_DATABASE_URL=postgresql:\/\/family_worker:[^\s]+@127\.0\.0\.1:54339\/family_dev$/m,
+    'Initializer must add a separate worker credential',
+  );
 
   const second = spawnSync(process.execPath, [initializer], {
     cwd: directory,
