@@ -9,6 +9,8 @@
 **Baseline:** PAD-004, PAD-005, PAD-008, PAD-011, PAD-014, PAD-020, PAD-022
 **Stack:** TypeScript, Fastify, PostgreSQL, Next.js, worker hiện có; không thêm microservice.
 
+**Trạng thái 2026-09-13:** PR 1 đã mở ở #14 và CI đạt; PR 2 đã hoàn tất implementation cùng kiểm thử local, đang ở bước quality gate và chuẩn bị PR. PR 3–4 chưa bắt đầu.
+
 ## Nguyên tắc thực hiện
 
 - Làm trực tiếp mặc định; chỉ dùng reviewer độc lập cho migration/RLS, calendar correctness hoặc worker delivery.

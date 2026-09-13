@@ -25,4 +25,8 @@ Bộ expected dates kỹ thuật đã được thêm tại [`packages/domain/tes
 
 Contract máy đọc cho Event/Occurrence/RSVP nằm tại [`packages/contracts/src/calendar.ts`](../../packages/contracts/src/calendar.ts). Pilot chấp nhận timezone `Asia/Ho_Chi_Minh`; mở thêm timezone phải đi cùng kiểm thử occurrence/DST thay vì chỉ nới schema.
 
-Calendar Core hiện có CRUD/RSVP API thật, occurrence cửa sổ 30 ngày trước đến 18 tháng sau, optimistic version, revision, audit và khóa idempotency bền trong PostgreSQL. Timeline mobile, cơ chế bổ sung occurrence khi cửa sổ trôi, inbox/outbox và push thuộc các lát phát hành kế tiếp.
+Calendar Core hiện có CRUD/RSVP API thật, occurrence cửa sổ 30 ngày trước đến 18 tháng sau, optimistic version, revision, audit và khóa idempotency bền trong PostgreSQL.
+
+Lát Calendar Mobile trên `feat/family-calendar-mobile` đã nối API này vào Nhà mình: tối đa ba ngày gần nhất, timeline theo tháng, occurrence giữ trong URL, detail sheet/rail, RSVP và wizard ba bước tạo/sửa/hủy. Form tách rõ Ngày âm, Tháng âm và Năm nguồn; lần diễn ra kế tiếp dùng chung converter đã kiểm chứng. Khi mất mạng, timeline giữ bản tốt gần nhất; 401/revoke xóa family scope; conflict version buộc xem bản mới. Browser tests bao phủ 320/390/768/1280, chữ 200%, create → reload → edit → cancel và `CALENDAR_UNAVAILABLE` không làm mất bản nháp.
+
+Cơ chế bổ sung occurrence khi cửa sổ trôi, inbox/outbox, worker lời nhắc và push thuộc các lát phát hành kế tiếp.

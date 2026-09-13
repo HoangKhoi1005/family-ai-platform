@@ -3,7 +3,7 @@
 - Cập nhật: 2026-09-13. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Nhánh `feat/family-calendar-foundation` đã có Calendar Core backend; timeline mobile, notifications, chat, moments và AI chưa có backend hoàn chỉnh.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core đang chờ merge ở PR #14; nhánh `feat/family-calendar-mobile` đã hoàn tất lát trải nghiệm mobile đầu tiên trên nền PR này. Notifications, chat, moments và AI chưa có backend hoàn chỉnh.
 
 ## Gói A — ổn định onboarding
 
@@ -54,7 +54,12 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Kiểm chứng mới nhất
 
-- Calendar Core local đạt **101/101 unit tests trong 21 file**. Full quality gate đạt đủ boundaries, tokens, lint, format, typecheck, Project Brain và production build. Hai integration suite PostgreSQL đạt cho schema/RLS và API CRUD/idempotency/revision/RSVP; lỗi converter được trả `503 CALENDAR_UNAVAILABLE`, pending/revoked/cross-family không đọc được timeline. Review độc lập không có lỗi Critical; bốn phát hiện Important về biên cuối tháng, range list, năm nguồn âm lịch và RLS RSVP đã được sửa và kiểm thử lại. GitHub CI sẽ được xác nhận sau khi push/mở PR.
+- Calendar Core local đạt **101/101 unit tests trong 21 file**. Full quality gate đạt đủ boundaries, tokens, lint, format, typecheck, Project Brain và production build. Hai integration suite PostgreSQL đạt cho schema/RLS và API CRUD/idempotency/revision/RSVP; lỗi converter được trả `503 CALENDAR_UNAVAILABLE`, pending/revoked/cross-family không đọc được timeline. Review độc lập không có lỗi Critical; bốn phát hiện Important về biên cuối tháng, range list, năm nguồn âm lịch và RLS RSVP đã được sửa và kiểm thử lại. PR #14 đang mở và hai GitHub checks trên head `f143c9c` đã đạt.
+
+- Calendar Mobile có client typed cho list/detail/create/update/cancel/RSVP, giữ timeline tốt gần nhất khi mất mạng và chặn response cũ ghi đè mutation mới. Home hiển thị tối đa ba ngày gần nhất; timeline giữ occurrence trong URL, dùng bottom sheet trên mobile và detail rail trên desktop.
+- Wizard ba bước hỗ trợ ngày dương, ngày âm Việt Nam, policy 29/2, tháng nhuận, ngày 30, giờ/nơi gặp/ghi chú/lời nhắc và xem trước occurrence đã xác minh. Creator/admin sửa hoặc hủy; conflict tải bản mới trước khi sửa tiếp. Lỗi `CALENDAR_UNAVAILABLE` không đóng form hoặc làm mất bản nháp.
+- **20/20 Calendar E2E** đạt trên Chromium desktop và Pixel 7 emulation, gồm create → reload → edit → cancel, RSVP, deep link, offline, revoke, conflict, âm lịch không hợp lệ, dịch vụ lịch lỗi, mutation/lỗi trả muộn khi đổi nhà, viewport 320/390/768/1280 và chữ 200%. Full `npm run check` đạt với **120/120 unit tests trong 23 file**, boundaries, tokens, lint, format, typecheck, Project Brain và production build của 8 workspace. Toàn bộ Playwright đạt **155 pass, 3 skip đúng theo project**; 40 onboarding E2E đạt lại sau khi cô lập endpoint Calendar mới trong fixture.
+- Sau gate trên, E2E mới đã tái hiện mutation RSVP của nhà cũ hoàn tất sau lúc đổi nhà: deep link occurrence cũ còn trong URL và generation của timeline mới có thể bị lệch. Guard theo family hiện hành và cleanup URL đã được thêm; production web build đạt. Cần chạy lại ca race, full gate và review độc lập trước commit vì lượt thực thi cuối bị chặn bởi hạn mức công cụ, nên nhánh này chưa được đánh dấu sẵn sàng merge.
 
 - Trên `feat/interactive-family-tree`, quality gate đạt: boundaries, design tokens, lint, Prettier, typecheck **12/12 task**, **73/73 unit tests** trong 17 file, Project Brain **64 Markdown files / 4 JSON assets / 24 seed cases**, và build **8/8 workspace** đều đạt.
 - Suite integration PostgreSQL/Mailpit đạt **19/19**. Toàn bộ `npm run test:e2e` đạt **135 test, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Browser tests chứng minh zoom, **Về tôi**, thu/mở nhánh, viewport 320px, kéo node không mở nhầm hồ sơ, graph error cục bộ, danh bạ fallback, workflow proposal/approval và các luồng onboarding không bị hồi quy. Pan/pinch vật lý vẫn cần thử trên điện thoại thật.
@@ -70,8 +75,8 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 ## Tiếp theo
 
 1. Chủ dự án thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
-2. Hoàn tất quality gate, review và PR cho Calendar Core theo [kế hoạch Ngày quan trọng](docs/superpowers/plans/2026-09-13-family-calendar-foundation.md).
-3. Nối timeline Ngày quan trọng vào Nhà mình và form mobile tạo/sửa/RSVP, sau đó làm inbox/outbox worker; push chỉ bật sau khi delivery không trùng và có thiết bị thật để thử app đóng.
+2. Merge PR #14 Calendar Core sau khi rà lại base `main`, rồi mở PR Calendar Mobile từ nhánh `feat/family-calendar-mobile` với bằng chứng visual và browser tests.
+3. Bắt đầu PR 3 của [kế hoạch Ngày quan trọng](docs/superpowers/plans/2026-09-13-family-calendar-foundation.md): schema notification/outbox, enqueue cùng transaction, worker dedupe/retry/revoke và inbox web. Push chỉ bật sau khi delivery không trùng và có thiết bị thật để thử app đóng.
 4. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật. Moments và Chat triển khai sau vertical slice calendar; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
 
 ## Calendar Core — đang triển khai
@@ -88,7 +93,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
+Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline và CRUD/RSVP nhưng chưa có inbox, worker lời nhắc hay push. Chưa có chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
 
 ## Cập nhật cây tương tác 2026-09-13
 
