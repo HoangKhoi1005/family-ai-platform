@@ -3,7 +3,8 @@
 import type { ReactNode } from 'react';
 import s from './connected.module.css';
 
-export type ConnectedTab = 'home' | 'moments' | 'directory' | 'chat' | 'profile' | 'admin';
+export type ConnectedTab =
+  'home' | 'calendar' | 'moments' | 'directory' | 'chat' | 'profile' | 'admin';
 
 const destinations = [
   { key: 'home', label: 'Nhà', accessibleName: 'Nhà mình', icon: 'home' },
@@ -54,7 +55,9 @@ export function ConnectedAppShell({
         <div className={s.productNavigationItems}>
           {destinations.map((destination) => {
             const active =
-              destination.key === tab || (destination.key === 'profile' && tab === 'admin');
+              destination.key === tab ||
+              (destination.key === 'home' && tab === 'calendar') ||
+              (destination.key === 'profile' && tab === 'admin');
             return (
               <button
                 key={destination.key}
