@@ -54,7 +54,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Kiểm chứng mới nhất
 
-- Calendar Core local đạt **99/99 unit tests trong 20 file**. Full quality gate đạt đủ boundaries, tokens, lint, format, typecheck, Project Brain và production build. Hai integration suite PostgreSQL đạt cho schema/RLS và API CRUD/idempotency/revision/RSVP; lỗi converter được trả `503 CALENDAR_UNAVAILABLE`, pending/revoked/cross-family không đọc được timeline. GitHub CI sẽ được xác nhận sau khi push/mở PR.
+- Calendar Core local đạt **101/101 unit tests trong 21 file**. Full quality gate đạt đủ boundaries, tokens, lint, format, typecheck, Project Brain và production build. Hai integration suite PostgreSQL đạt cho schema/RLS và API CRUD/idempotency/revision/RSVP; lỗi converter được trả `503 CALENDAR_UNAVAILABLE`, pending/revoked/cross-family không đọc được timeline. Review độc lập không có lỗi Critical; bốn phát hiện Important về biên cuối tháng, range list, năm nguồn âm lịch và RLS RSVP đã được sửa và kiểm thử lại. GitHub CI sẽ được xác nhận sau khi push/mở PR.
 
 - Trên `feat/interactive-family-tree`, quality gate đạt: boundaries, design tokens, lint, Prettier, typecheck **12/12 task**, **73/73 unit tests** trong 17 file, Project Brain **64 Markdown files / 4 JSON assets / 24 seed cases**, và build **8/8 workspace** đều đạt.
 - Suite integration PostgreSQL/Mailpit đạt **19/19**. Toàn bộ `npm run test:e2e` đạt **135 test, 3 skip đúng theo project** trên Chromium desktop và Pixel 7 emulation. Browser tests chứng minh zoom, **Về tôi**, thu/mở nhánh, viewport 320px, kéo node không mở nhầm hồ sơ, graph error cục bộ, danh bạ fallback, workflow proposal/approval và các luồng onboarding không bị hồi quy. Pan/pinch vật lý vẫn cần thử trên điện thoại thật.
@@ -84,6 +84,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Migration `0012_calendar_core.sql` đã tạo `events`, `event_occurrences`, `event_rsvps` với typed date parts, same-family composite FK, unique occurrence, revision/version/status và RLS. Integration test PostgreSQL chứng minh active/pending/revoked, cross-family, creator/admin, creator bị thu hồi, current revision và RSVP upsert/visibility; CI chạy riêng `test:calendar-schema`.
 - Occurrence service sinh lịch dương, 29/2 và âm lịch Việt Nam trong cửa sổ 30 ngày trước/18 tháng sau; giờ địa phương được đổi sang UTC với timezone pilot đã khóa. CRUD/list/detail/cancel/RSVP routes đã nối vào Fastify, lấy actor/family phía server, dùng creator/admin guard, optimistic version, revision và audit.
 - Migration `0013_calendar_idempotency.sql` giữ khóa retry theo nhà và membership. Cùng khóa/cùng body trả Event cũ; dùng lại khóa với body khác trả conflict. Integration API thật kiểm create/reload, pagination, detail, update, cancel bởi admin, RSVP retry, cô lập tenant và rollback khi converter không sẵn sàng.
+- Migration `0014_calendar_rsvp_policy.sql` khóa RSVP vào route purpose và occurrence thuộc revision Event hiện hành. Cửa sổ 18 tháng đã clamp đúng ngày cuối tháng; API list cho range tối đa 600 ngày để bao trọn 30 ngày quá khứ cộng 18 tháng tương lai. Năm nguồn âm lịch nếu được cung cấp phải tự chứa ngày/tháng nhuận đã chọn.
 
 ## Giới hạn
 

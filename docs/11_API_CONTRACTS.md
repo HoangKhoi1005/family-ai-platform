@@ -27,7 +27,7 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                  |
 | POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ     |
 | POST /memberships/{id}/revoke             | version                                                          | Admin; chặn self-revoke admin cuối                        |
-| GET /events                               | from, to, cursor, limit                                          | Occurrence theo range tối đa 550 ngày                     |
+| GET /events                               | from, to, cursor, limit                                          | Occurrence theo range tối đa 600 ngày                     |
 | POST /events                              | title, calendar, recurrence, timezone, date_parts, lunar_policy? | Active member; validate lịch, không LLM                   |
 | PATCH /events/{id}                        | event hoàn chỉnh, version                                        | Creator/admin; tăng revision, sinh lại occurrence         |
 | POST /events/{id}/cancel                  | version                                                          | Creator/admin; hủy occurrences/jobs tương lai             |

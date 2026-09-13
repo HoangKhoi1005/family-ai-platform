@@ -53,6 +53,8 @@ RLS cho active member đọc Event/Occurrence cùng nhà. Insert Event phải d�
 
 Migration `0013_calendar_idempotency.sql` lưu khóa retry của thao tác tạo Event theo `(family_id, actor_membership_id, idempotency_key)`, kèm SHA-256 của body và composite FK tới Event cùng nhà. Cùng khóa/cùng body trả Event đã tạo; cùng khóa/body khác trả conflict. Runtime chỉ đọc/ghi khóa của chính active membership trong context `calendar_write`.
 
+Migration `0014_calendar_rsvp_policy.sql` yêu cầu context `calendar_write` cho RSVP và kiểm lại occurrence active thuộc revision hiện hành của Event active ngay trong RLS. HTTP precheck không thay thế hàng rào này.
+
 ## Quan hệ và đề xuất thay đổi
 
 Migration `0010_relationships.sql` đã triển khai `relationships` và `change_requests` trong nhánh `feat/family-relationships`. Parent-child có hướng từ cha/mẹ đến con và subtype biological/adoptive/unspecified. Partnership chuẩn hóa hai UUID, có subtype married/partner, giữ các giai đoạn đã kết thúc và chỉ cho một giai đoạn đang hiệu lực của cùng cặp.

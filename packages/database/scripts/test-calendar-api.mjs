@@ -197,6 +197,7 @@ try {
     recurrence: 'yearly',
     timezone: 'Asia/Ho_Chi_Minh',
     date_parts: { year: null, month, day },
+    ...(month === 2 && day === 29 ? { feb29_policy: 'feb28' } : {}),
     all_day: true,
     reminder_offsets: ['seven_days', 'one_day'],
   };
@@ -263,6 +264,17 @@ try {
     });
     assert.equal(hidden.statusCode, 404, hidden.body);
   }
+
+  const fullWindow = await request(ids.member, {
+    method: 'GET',
+    url: `/api/v1/families/${ids.familyA}/events?from=${shiftDays(today, -30)}&to=${shiftDays(today, 550)}`,
+  });
+  assert.equal(fullWindow.statusCode, 200, fullWindow.body);
+  const oversizedWindow = await request(ids.member, {
+    method: 'GET',
+    url: `/api/v1/families/${ids.familyA}/events?from=${today}&to=${shiftDays(today, 601)}`,
+  });
+  assert.equal(oversizedWindow.statusCode, 400, oversizedWindow.body);
 
   const list = await request(ids.member, {
     method: 'GET',
@@ -333,6 +345,8 @@ try {
   assert.equal(cancel.json().event.status, 'cancelled');
   assert.ok(cancel.json().occurrences.every((item) => item.status === 'cancelled'));
 
+  const lunarEventInput = { ...eventInput };
+  delete lunarEventInput.feb29_policy;
   const unavailableResponse = await unavailableApp.inject({
     method: 'POST',
     url: `/api/v1/families/${ids.familyA}/events`,
@@ -343,7 +357,7 @@ try {
       'idempotency-key': 'calendar-api-unavailable',
     },
     payload: {
-      ...eventInput,
+      ...lunarEventInput,
       title: 'Ngày âm lỗi nguồn',
       calendar_type: 'lunar_vietnamese',
       date_parts: { year: null, month: 1, day: 1 },

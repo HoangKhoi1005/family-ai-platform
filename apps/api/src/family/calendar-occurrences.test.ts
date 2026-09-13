@@ -65,6 +65,21 @@ describe('generateOccurrences', () => {
     );
   });
 
+  it('rejects a supplied lunar source year when its selected leap month does not exist', () => {
+    expect(() =>
+      generateOccurrences(
+        {
+          ...base,
+          calendar_type: 'lunar_vietnamese',
+          date_parts: { year: 2024, month: 6, day: 1 },
+          lunar_policy: { month_mode: 'leap_only', missing_day: 'skip' },
+        },
+        { from: '2025-01-01', to: '2025-12-31' },
+        createVietnameseCalendarConverter(),
+      ),
+    ).toThrow(/source year/i);
+  });
+
   it('converts a local timed event to UTC and applies duration', () => {
     const occurrences = generateOccurrences(
       {

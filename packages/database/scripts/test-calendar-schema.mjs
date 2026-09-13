@@ -333,7 +333,18 @@ try {
   );
   assert.equal(adminUpdate.rowCount, 1);
 
-  const ownRsvp = await withActorTransaction(runtimePool, ids.memberA, (client) =>
+  await mustFail(
+    () =>
+      withActorTransaction(runtimePool, ids.memberA, (client) =>
+        client.query(
+          `INSERT INTO event_rsvps(family_id,occurrence_id,membership_id,response)
+           VALUES ($1,$2,$3,'yes')`,
+          [ids.familyA, ids.occurrenceA, ids.memberMembershipA],
+        ),
+      ),
+    '42501',
+  );
+  const ownRsvp = await asCalendarActor(ids.memberA, (client) =>
     client.query(
       `INSERT INTO event_rsvps(family_id,occurrence_id,membership_id,response)
        VALUES ($1,$2,$3,'yes') RETURNING response`,
@@ -341,7 +352,7 @@ try {
     ),
   );
   assert.equal(ownRsvp.rows[0].response, 'yes');
-  const updatedRsvp = await withActorTransaction(runtimePool, ids.memberA, (client) =>
+  const updatedRsvp = await asCalendarActor(ids.memberA, (client) =>
     client.query(
       `INSERT INTO event_rsvps(family_id,occurrence_id,membership_id,response)
        VALUES ($1,$2,$3,'maybe')
@@ -354,7 +365,7 @@ try {
   assert.equal(updatedRsvp.rows[0].response, 'maybe');
   await mustFail(
     () =>
-      withActorTransaction(runtimePool, ids.memberA, (client) =>
+      asCalendarActor(ids.memberA, (client) =>
         client.query(
           `INSERT INTO event_rsvps(family_id,occurrence_id,membership_id,response)
            VALUES ($1,$2,$3,'yes')`,
@@ -379,6 +390,19 @@ try {
     client.query('SELECT membership_id FROM event_rsvps WHERE occurrence_id=$1', [ids.occurrenceA]),
   );
   assert.equal(revokedRsvp.rowCount, 0);
+
+  await owner.query('UPDATE events SET revision=revision+1 WHERE id=$1', [ids.eventA]);
+  await mustFail(
+    () =>
+      asCalendarActor(ids.adminA, (client) =>
+        client.query(
+          `INSERT INTO event_rsvps(family_id,occurrence_id,membership_id,response)
+           VALUES ($1,$2,$3,'yes')`,
+          [ids.familyA, ids.occurrenceA, ids.adminMembershipA],
+        ),
+      ),
+    '42501',
+  );
 
   await owner.query("UPDATE family_memberships SET status='revoked' WHERE id=$1", [
     ids.creatorMembershipA,

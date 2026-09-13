@@ -1,5 +1,6 @@
 import type { CreateEventInput, February29Policy } from '@family/contracts';
 import {
+  CalendarUnavailableError,
   createVietnameseCalendarConverter,
   resolveLunarYearlyDates,
   type CalendarConverter,
@@ -113,6 +114,22 @@ export function generateOccurrences(
     }
   } else {
     conversionVersion = converter.version;
+    let sourceDates: GregorianDate[] | undefined;
+    if (input.date_parts.year !== null) {
+      sourceDates = resolveLunarYearlyDates(converter, {
+        year: input.date_parts.year,
+        month: input.date_parts.month,
+        day: input.date_parts.day,
+        monthMode: input.lunar_policy.month_mode,
+        missingDay: input.lunar_policy.missing_day,
+      });
+      if (sourceDates.length === 0) {
+        throw new CalendarUnavailableError(
+          'Vietnamese lunar source year does not contain the selected date.',
+          'invalid_date',
+        );
+      }
+    }
     const firstLunarYear =
       input.recurrence === 'none'
         ? input.date_parts.year!
@@ -121,7 +138,14 @@ export function generateOccurrences(
       input.recurrence === 'none'
         ? input.date_parts.year!
         : Math.min(converter.supportedYears.last, to.year + 1);
-    for (let year = firstLunarYear; year <= lastLunarYear; year += 1) {
+    if (input.recurrence === 'none') {
+      dates.push(...sourceDates!);
+    }
+    for (
+      let year = firstLunarYear;
+      input.recurrence === 'yearly' && year <= lastLunarYear;
+      year += 1
+    ) {
       dates.push(
         ...resolveLunarYearlyDates(converter, {
           year,

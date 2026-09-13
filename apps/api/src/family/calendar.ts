@@ -21,7 +21,7 @@ import {
 import { generateOccurrences, type GeneratedOccurrence } from './calendar-occurrences.js';
 
 const DAY_MS = 86_400_000;
-const MAX_LIST_DAYS = 550;
+const MAX_LIST_DAYS = 600;
 
 interface EventRow {
   id: string;
@@ -205,18 +205,27 @@ function shiftDays(value: string, days: number): string {
 }
 
 function shiftMonths(value: string, months: number): string {
-  const date = new Date(`${value}T00:00:00.000Z`);
-  date.setUTCMonth(date.getUTCMonth() + months);
-  return date.toISOString().slice(0, 10);
+  const [year, month, day] = value.split('-').map(Number);
+  const targetIndex = month! - 1 + months;
+  const targetYear = year! + Math.floor(targetIndex / 12);
+  const targetMonthIndex = ((targetIndex % 12) + 12) % 12;
+  const lastTargetDay = new Date(Date.UTC(targetYear, targetMonthIndex + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(targetYear, targetMonthIndex, Math.min(day!, lastTargetDay)))
+    .toISOString()
+    .slice(0, 10);
 }
 
-function generationWindow(today = vietnamToday()): { from: string; to: string } {
+export function calendarGenerationWindow(today = vietnamToday()): { from: string; to: string } {
   return { from: shiftDays(today, -30), to: shiftMonths(today, 18) };
 }
 
 function mapCalendarError(error: unknown): never {
   if (error instanceof CalendarUnavailableError) {
-    throw new FamilyHttpError(503, 'CALENDAR_UNAVAILABLE', error.message);
+    throw new FamilyHttpError(
+      503,
+      'CALENDAR_UNAVAILABLE',
+      'Không thể xác nhận ngày âm lúc này. Vui lòng thử lại.',
+    );
   }
   throw error;
 }
@@ -336,7 +345,11 @@ export async function createCalendarEvent(
 
   let occurrences: GeneratedOccurrence[];
   try {
-    occurrences = generateOccurrences(event, generationWindow(input.today), input.converter);
+    occurrences = generateOccurrences(
+      event,
+      calendarGenerationWindow(input.today),
+      input.converter,
+    );
   } catch (error) {
     mapCalendarError(error);
   }
@@ -529,7 +542,11 @@ export async function updateCalendarEvent(
   const event = normalizeEvent(input.event);
   let occurrences: GeneratedOccurrence[];
   try {
-    occurrences = generateOccurrences(event, generationWindow(input.today), input.converter);
+    occurrences = generateOccurrences(
+      event,
+      calendarGenerationWindow(input.today),
+      input.converter,
+    );
   } catch (error) {
     mapCalendarError(error);
   }
@@ -620,6 +637,7 @@ export async function upsertCalendarRsvp(
     response: EventRsvpResponse;
   },
 ): Promise<EventRsvpDto> {
+  await setRouteContext(client, { purpose: 'calendar_write' });
   const membership = await requireFamily(client, input.actorId, input.familyId);
   const occurrence = await client.query<{ id: string }>(
     `SELECT o.id FROM event_occurrences o
