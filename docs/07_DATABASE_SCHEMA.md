@@ -51,6 +51,8 @@ Migration `0012_calendar_core.sql` lưu các phần ngày trong cột có kiểu
 
 RLS cho active member đọc Event/Occurrence cùng nhà. Insert Event phải dùng membership của chính actor trong context `calendar_write`; chỉ creator còn active hoặc admin active được sửa/hủy. Occurrence chỉ được ghi cho revision Event hiện hành; admin vẫn có thể xử lý Event do creator đã bị thu hồi. RSVP dùng membership của chính actor, chỉ cho occurrence active và upsert trên primary key. Người dùng thường chỉ đọc RSVP của mình; admin chỉ đọc RSVP của membership còn active.
 
+Migration `0013_calendar_idempotency.sql` lưu khóa retry của thao tác tạo Event theo `(family_id, actor_membership_id, idempotency_key)`, kèm SHA-256 của body và composite FK tới Event cùng nhà. Cùng khóa/cùng body trả Event đã tạo; cùng khóa/body khác trả conflict. Runtime chỉ đọc/ghi khóa của chính active membership trong context `calendar_write`.
+
 ## Quan hệ và đề xuất thay đổi
 
 Migration `0010_relationships.sql` đã triển khai `relationships` và `change_requests` trong nhánh `feat/family-relationships`. Parent-child có hướng từ cha/mẹ đến con và subtype biological/adoptive/unspecified. Partnership chuẩn hóa hai UUID, có subtype married/partner, giữ các giai đoạn đã kết thúc và chỉ cho một giai đoạn đang hiệu lực của cùng cặp.

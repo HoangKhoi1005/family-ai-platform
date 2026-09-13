@@ -145,6 +145,9 @@ async function seed() {
 
 async function cleanup() {
   await owner.query('BEGIN');
+  await owner.query('DELETE FROM event_idempotency_keys WHERE family_id = ANY($1::uuid[])', [
+    [ids.familyA, ids.familyB],
+  ]);
   await owner.query('DELETE FROM event_rsvps WHERE family_id = ANY($1::uuid[])', [
     [ids.familyA, ids.familyB],
   ]);
@@ -174,12 +177,14 @@ try {
   const tables = await owner.query(
     `SELECT to_regclass('public.events') AS events,
             to_regclass('public.event_occurrences') AS event_occurrences,
-            to_regclass('public.event_rsvps') AS event_rsvps`,
+            to_regclass('public.event_rsvps') AS event_rsvps,
+            to_regclass('public.event_idempotency_keys') AS event_idempotency_keys`,
   );
   assert.deepEqual(tables.rows[0], {
     events: 'events',
     event_occurrences: 'event_occurrences',
     event_rsvps: 'event_rsvps',
+    event_idempotency_keys: 'event_idempotency_keys',
   });
 
   await seed();
@@ -273,6 +278,29 @@ try {
     ),
   );
   assert.equal(created.rowCount, 1);
+  const createdEventId = created.rows[0].id;
+  const idempotency = await asCalendarActor(ids.memberA, (client) =>
+    client.query(
+      `INSERT INTO event_idempotency_keys(
+         family_id,actor_membership_id,idempotency_key,request_hash,event_id
+       ) VALUES ($1,$2,'calendar-create-1',$3,$4)
+       RETURNING event_id`,
+      [ids.familyA, ids.memberMembershipA, 'a'.repeat(64), createdEventId],
+    ),
+  );
+  assert.equal(idempotency.rows[0].event_id, createdEventId);
+  await mustFail(
+    () =>
+      asCalendarActor(ids.memberA, (client) =>
+        client.query(
+          `INSERT INTO event_idempotency_keys(
+             family_id,actor_membership_id,idempotency_key,request_hash,event_id
+           ) VALUES ($1,$2,'calendar-create-1',$3,$4)`,
+          [ids.familyA, ids.memberMembershipA, 'b'.repeat(64), createdEventId],
+        ),
+      ),
+    '23505',
+  );
   await mustFail(
     () =>
       asCalendarActor(ids.memberA, (client) =>
