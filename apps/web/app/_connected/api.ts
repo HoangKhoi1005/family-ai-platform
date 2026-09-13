@@ -1,3 +1,13 @@
+import type {
+  CancelEventInput,
+  CreateEventInput,
+  EventDetailResponse,
+  EventOccurrenceListResponse,
+  EventRsvpDto,
+  UpdateEventInput,
+  UpsertEventRsvpInput,
+} from '@family/contracts';
+
 export class RequestError extends Error {
   constructor(
     public status: number,
@@ -6,9 +16,10 @@ export class RequestError extends Error {
     super(code);
   }
 }
-interface RequestOptions {
+export interface RequestOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
+  headers?: Record<string, string>;
 }
 export async function request<T>(
   path: string,
@@ -26,14 +37,17 @@ export async function request<T>(
     controller.abort();
   }, options.timeoutMs ?? 15000);
   try {
+    const headers = {
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    };
     const response = await fetch(path, {
       method: body === undefined ? 'GET' : method,
       credentials: 'same-origin',
       cache: 'no-store',
       signal: controller.signal,
-      ...(body === undefined
-        ? {}
-        : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+      ...(Object.keys(headers).length === 0 ? {} : { headers }),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const data = await response.json().catch(() => null);
     if (!response.ok)
@@ -49,11 +63,103 @@ export async function request<T>(
     options.signal?.removeEventListener('abort', abortFromCaller);
   }
 }
+
+type CalendarRequestOptions = Pick<RequestOptions, 'signal' | 'timeoutMs'>;
+
+function familyCalendarBase(familyId: string) {
+  return `/api/v1/families/${encodeURIComponent(familyId)}`;
+}
+
+export function listFamilyOccurrences(
+  familyId: string,
+  query: { from: string; to: string; cursor?: string; limit?: number },
+  options: CalendarRequestOptions = {},
+) {
+  const search = new URLSearchParams({ from: query.from, to: query.to });
+  if (query.cursor !== undefined) search.set('cursor', query.cursor);
+  if (query.limit !== undefined) search.set('limit', String(query.limit));
+  return request<EventOccurrenceListResponse>(
+    `${familyCalendarBase(familyId)}/events?${search.toString()}`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function getFamilyEvent(
+  familyId: string,
+  eventId: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<EventDetailResponse>(
+    `${familyCalendarBase(familyId)}/events/${encodeURIComponent(eventId)}`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function createFamilyEvent(
+  familyId: string,
+  event: CreateEventInput,
+  idempotencyKey: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<EventDetailResponse>(`${familyCalendarBase(familyId)}/events`, event, 'POST', {
+    ...options,
+    headers: { 'Idempotency-Key': idempotencyKey },
+  });
+}
+
+export function updateFamilyEvent(
+  familyId: string,
+  eventId: string,
+  input: UpdateEventInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<EventDetailResponse>(
+    `${familyCalendarBase(familyId)}/events/${encodeURIComponent(eventId)}`,
+    input,
+    'PATCH',
+    options,
+  );
+}
+
+export function cancelFamilyEvent(
+  familyId: string,
+  eventId: string,
+  input: CancelEventInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<EventDetailResponse>(
+    `${familyCalendarBase(familyId)}/events/${encodeURIComponent(eventId)}/cancel`,
+    input,
+    'POST',
+    options,
+  );
+}
+
+export function upsertFamilyOccurrenceRsvp(
+  familyId: string,
+  occurrenceId: string,
+  input: UpsertEventRsvpInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<EventRsvpDto>(
+    `${familyCalendarBase(familyId)}/occurrences/${encodeURIComponent(occurrenceId)}/rsvp`,
+    input,
+    'PUT',
+    options,
+  );
+}
+
 export function explain(error: unknown): string {
   if (!(error instanceof RequestError)) return 'Chưa kết nối được. Kiểm tra mạng và thử lại nhé.';
   if (error.code === 'REQUEST_TIMEOUT') return 'Kết nối mất quá lâu. Kiểm tra mạng và thử lại nhé.';
   if (error.code === 'NETWORK_ERROR') return 'Chưa kết nối được. Kiểm tra mạng và thử lại nhé.';
   if (error.code === 'REQUEST_ABORTED') return 'Yêu cầu đã được dừng. Vui lòng thử lại.';
+  if (error.code === 'CALENDAR_UNAVAILABLE')
+    return 'Chưa thể xác nhận ngày này. Kiểm tra lại ngày và thử sau nhé.';
   if (error.code === 'EMAIL_NOT_VERIFIED')
     return 'Email chưa được xác minh. Mở thư xác minh hoặc gửi lại thư bên dưới.';
   if (error.status === 401)
