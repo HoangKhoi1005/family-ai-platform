@@ -18,12 +18,16 @@ export function ConnectedAppShell({
   tab,
   houseName,
   viewerName,
+  unreadNotifications,
+  onOpenNotifications,
   onNavigate,
   children,
 }: {
   tab: ConnectedTab;
   houseName: string;
   viewerName: string;
+  unreadNotifications: number;
+  onOpenNotifications: () => void;
   onNavigate: (tab: ConnectedTab) => void;
   children: ReactNode;
 }) {
@@ -39,19 +43,23 @@ export function ConnectedAppShell({
             <strong>Nhà mình</strong>
           </span>
         </button>
-        <button
-          className={s.productViewer}
-          type="button"
-          onClick={() => onNavigate('profile')}
-          aria-label={`Mở hồ sơ của ${viewerName}`}
-        >
-          <ConnectedIdentity name={viewerName} />
-        </button>
+        <div className={s.productAppActions}>
+          <NotificationButton unread={unreadNotifications} onClick={onOpenNotifications} />
+          <button
+            className={s.productViewer}
+            type="button"
+            onClick={() => onNavigate('profile')}
+            aria-label={`Mở hồ sơ của ${viewerName}`}
+          >
+            <ConnectedIdentity name={viewerName} />
+          </button>
+        </div>
       </header>
       <nav className={s.productNavigation} aria-label="Điều hướng chính">
         <button className={s.productRailBrand} type="button" onClick={() => onNavigate('home')}>
           nhà mình<span>.</span>
         </button>
+        <NotificationButton unread={unreadNotifications} onClick={onOpenNotifications} rail />
         <div className={s.productNavigationItems}>
           {destinations.map((destination) => {
             const active =
@@ -76,6 +84,30 @@ export function ConnectedAppShell({
       </nav>
       <div className={s.productContent}>{children}</div>
     </>
+  );
+}
+
+function NotificationButton({
+  unread,
+  onClick,
+  rail = false,
+}: {
+  unread: number;
+  onClick: () => void;
+  rail?: boolean;
+}) {
+  return (
+    <button
+      className={rail ? s.productRailNotification : s.productNotification}
+      type="button"
+      onClick={onClick}
+      aria-label={unread > 0 ? `Thông báo, có ${unread} lời nhắc chưa đọc` : 'Thông báo'}
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8M10 21h4" />
+      </svg>
+      {unread > 0 && <span className={s.notificationDot} aria-hidden="true" />}
+    </button>
   );
 }
 

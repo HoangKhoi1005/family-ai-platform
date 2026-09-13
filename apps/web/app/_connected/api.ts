@@ -6,6 +6,9 @@ import type {
   EventRsvpDto,
   UpdateEventInput,
   UpsertEventRsvpInput,
+  NotificationListResponse,
+  NotificationPreferencesDto,
+  UpdateNotificationPreferencesInput,
 } from '@family/contracts';
 
 export class RequestError extends Error {
@@ -149,6 +152,62 @@ export function upsertFamilyOccurrenceRsvp(
     `${familyCalendarBase(familyId)}/occurrences/${encodeURIComponent(occurrenceId)}/rsvp`,
     input,
     'PUT',
+    options,
+  );
+}
+
+export function listFamilyNotifications(
+  familyId: string,
+  query: { cursor?: string; limit?: number; unreadOnly?: boolean } = {},
+  options: CalendarRequestOptions = {},
+) {
+  const search = new URLSearchParams();
+  if (query.cursor !== undefined) search.set('cursor', query.cursor);
+  if (query.limit !== undefined) search.set('limit', String(query.limit));
+  if (query.unreadOnly !== undefined) search.set('unread_only', String(query.unreadOnly));
+  const suffix = search.size > 0 ? `?${search.toString()}` : '';
+  return request<NotificationListResponse>(
+    `${familyCalendarBase(familyId)}/notifications${suffix}`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function markFamilyNotificationRead(
+  familyId: string,
+  notificationId: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<{ id: string; read_at: string }>(
+    `${familyCalendarBase(familyId)}/notifications/${encodeURIComponent(notificationId)}/read`,
+    {},
+    'POST',
+    options,
+  );
+}
+
+export function getFamilyNotificationPreferences(
+  familyId: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<NotificationPreferencesDto>(
+    `${familyCalendarBase(familyId)}/notification-preferences`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function updateFamilyNotificationPreferences(
+  familyId: string,
+  input: UpdateNotificationPreferencesInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<NotificationPreferencesDto>(
+    `${familyCalendarBase(familyId)}/notification-preferences`,
+    input,
+    'PATCH',
     options,
   );
 }

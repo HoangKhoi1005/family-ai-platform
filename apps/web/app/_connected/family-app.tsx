@@ -1,5 +1,11 @@
 'use client';
-import type { EventRsvpResponse } from '@family/contracts';
+import type {
+  EventReminderOffset,
+  EventRsvpResponse,
+  NotificationDto,
+  NotificationListResponse,
+  NotificationPreferencesDto,
+} from '@family/contracts';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -7,13 +13,17 @@ import {
   captureInvite,
   clearInvite,
   createFamilyEvent,
+  getFamilyNotificationPreferences,
   listFamilyOccurrences,
+  listFamilyNotifications,
+  markFamilyNotificationRead,
   pendingInvite,
   rememberInvite,
   request,
   explain,
   RequestError,
   updateFamilyEvent,
+  updateFamilyNotificationPreferences,
   upsertFamilyOccurrenceRsvp,
 } from './api';
 import type { Me, Onboarding, Member } from './types';
@@ -28,6 +38,7 @@ import {
   createCalendarTimelineState,
 } from './calendar-state';
 import { CalendarHomeSection, FamilyCalendarTimeline } from './family-calendar';
+import { NotificationInbox } from './notification-inbox';
 import s from './connected.module.css';
 
 export function FamilyApp() {
@@ -53,9 +64,20 @@ export function FamilyApp() {
   );
   const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string | null>(null);
   const [calendarCreateRequested, setCalendarCreateRequested] = useState(false);
+  const [notificationInbox, setNotificationInbox] = useState<NotificationListResponse>({
+    notifications: [],
+    unread_count: 0,
+    next_cursor: null,
+  });
+  const [notificationPreferences, setNotificationPreferences] =
+    useState<NotificationPreferencesDto | null>(null);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationError, setNotificationError] = useState('');
   const sequence = useRef(0);
   const calendarSequence = useRef(0);
   const calendarGeneration = useRef(0);
+  const notificationSequence = useRef(0);
   const familyIdRef = useRef('');
   const clearFamily = useCallback(() => {
     calendarSequence.current++;
@@ -73,6 +95,12 @@ export function FamilyApp() {
     dispatchCalendar({ type: 'cleared' });
     setSelectedOccurrenceId(null);
     setCalendarCreateRequested(false);
+    notificationSequence.current++;
+    setNotificationInbox({ notifications: [], unread_count: 0, next_cursor: null });
+    setNotificationPreferences(null);
+    setNotificationOpen(false);
+    setNotificationLoading(false);
+    setNotificationError('');
     setTab('home');
     setProfileVisited(false);
     setRevision((value) => value + 1);
@@ -97,6 +125,37 @@ export function FamilyApp() {
       if (familyIdRef.current === failedFamilyId) fail(error);
     },
     [fail],
+  );
+  const refreshNotifications = useCallback(
+    async (requestedFamilyId?: string) => {
+      const targetFamilyId = requestedFamilyId ?? familyIdRef.current;
+      if (!targetFamilyId) return;
+      const requestId = ++notificationSequence.current;
+      setNotificationLoading(true);
+      try {
+        const [inbox, preferences] = await Promise.all([
+          listFamilyNotifications(targetFamilyId, { limit: 40 }),
+          getFamilyNotificationPreferences(targetFamilyId),
+        ]);
+        if (requestId !== notificationSequence.current || familyIdRef.current !== targetFamilyId)
+          return;
+        setNotificationInbox(inbox);
+        setNotificationPreferences(preferences);
+        setNotificationError('');
+      } catch (error) {
+        if (requestId !== notificationSequence.current || familyIdRef.current !== targetFamilyId)
+          return;
+        if (error instanceof RequestError && error.status === 401) fail(error);
+        else if (error instanceof RequestError && [403, 404].includes(error.status)) {
+          sequence.current++;
+          clearFamily();
+          setError(explain(error));
+        } else setNotificationError(explain(error));
+      } finally {
+        if (requestId === notificationSequence.current) setNotificationLoading(false);
+      }
+    },
+    [clearFamily, fail],
   );
   const refreshCalendar = useCallback(
     async (requestedFamilyId?: string) => {
@@ -174,6 +233,7 @@ export function FamilyApp() {
       setMe(next);
       setError('');
       void refreshCalendar(active.family_id);
+      void refreshNotifications(active.family_id);
     } catch (error) {
       if (run === sequence.current) {
         if (error instanceof RequestError && error.status === 401) {
@@ -189,11 +249,12 @@ export function FamilyApp() {
     } finally {
       if (run === sequence.current) setLoading(false);
     }
-  }, [clearFamily, fail, refreshCalendar]);
+  }, [clearFamily, fail, refreshCalendar, refreshNotifications]);
 
   useEffect(() => {
     const requestSequence = sequence;
     const calendarRequestSequence = calendarSequence;
+    const notificationRequestSequence = notificationSequence;
     captureInvite();
     // The pending invite is external per-tab browser state, unavailable during SSR.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -230,6 +291,7 @@ export function FamilyApp() {
     return () => {
       requestSequence.current++;
       calendarRequestSequence.current++;
+      notificationRequestSequence.current++;
       clearInterval(timer);
       window.removeEventListener('focus', refocus);
       window.removeEventListener('popstate', syncCalendarLocation);
@@ -348,6 +410,92 @@ export function FamilyApp() {
     });
   }
 
+  async function openNotification(notification: NotificationDto) {
+    const targetFamilyId = familyId;
+    try {
+      const read = await markFamilyNotificationRead(targetFamilyId, notification.id);
+      if (familyIdRef.current !== targetFamilyId) return;
+      setNotificationInbox((current) => ({
+        ...current,
+        unread_count: Math.max(0, current.unread_count - (notification.read_at ? 0 : 1)),
+        notifications: current.notifications.map((item) =>
+          item.id === notification.id ? { ...item, read_at: read.read_at } : item,
+        ),
+      }));
+      setNotificationOpen(false);
+      openCalendar(notification.occurrence_id);
+      void refreshCalendar(targetFamilyId);
+    } catch (error) {
+      if (error instanceof RequestError && error.status === 401) fail(error);
+      else if (error instanceof RequestError && [403, 404].includes(error.status)) {
+        sequence.current++;
+        clearFamily();
+        setError(explain(error));
+      } else setNotificationError(explain(error));
+    }
+  }
+
+  async function loadMoreNotifications() {
+    const targetFamilyId = familyId;
+    const cursor = notificationInbox.next_cursor;
+    if (!cursor) return;
+    const requestId = ++notificationSequence.current;
+    setNotificationLoading(true);
+    try {
+      const next = await listFamilyNotifications(targetFamilyId, { cursor, limit: 40 });
+      if (requestId !== notificationSequence.current || familyIdRef.current !== targetFamilyId)
+        return;
+      setNotificationInbox((current) => {
+        const seen = new Set(current.notifications.map((item) => item.id));
+        return {
+          notifications: [
+            ...current.notifications,
+            ...next.notifications.filter((item) => !seen.has(item.id)),
+          ],
+          unread_count: next.unread_count,
+          next_cursor: next.next_cursor,
+        };
+      });
+      setNotificationError('');
+    } catch (error) {
+      if (error instanceof RequestError && error.status === 401) fail(error);
+      else if (error instanceof RequestError && [403, 404].includes(error.status)) {
+        sequence.current++;
+        clearFamily();
+        setError(explain(error));
+      } else setNotificationError(explain(error));
+    } finally {
+      if (requestId === notificationSequence.current) setNotificationLoading(false);
+    }
+  }
+
+  async function saveNotificationPreferences(reminderOffsets: EventReminderOffset[]) {
+    const targetFamilyId = familyId;
+    const current = notificationPreferences;
+    if (!current) return;
+    try {
+      const updated = await updateFamilyNotificationPreferences(targetFamilyId, {
+        reminder_offsets: reminderOffsets,
+        quiet_hours: current.quiet_hours,
+        push_enabled: false,
+        version: current.version,
+      });
+      if (familyIdRef.current !== targetFamilyId) return;
+      setNotificationPreferences(updated);
+      setNotificationError('');
+    } catch (error) {
+      if (error instanceof RequestError && error.status === 401) fail(error);
+      else if (error instanceof RequestError && [403, 404].includes(error.status)) {
+        sequence.current++;
+        clearFamily();
+        setError(explain(error));
+      } else {
+        setNotificationError(explain(error));
+        throw error;
+      }
+    }
+  }
+
   async function createCalendarEvent(
     event: Parameters<typeof createFamilyEvent>[1],
     idempotencyKey: string,
@@ -390,6 +538,11 @@ export function FamilyApp() {
           tab={tab}
           houseName={active.name ?? 'Nhà mình'}
           viewerName={viewerName}
+          unreadNotifications={notificationInbox.unread_count}
+          onOpenNotifications={() => {
+            setNotificationOpen(true);
+            void refreshNotifications();
+          }}
           onNavigate={navigate}
         >
           {error && (
@@ -570,6 +723,19 @@ export function FamilyApp() {
             </section>
           )}
         </ConnectedAppShell>
+        <NotificationInbox
+          open={notificationOpen}
+          loading={notificationLoading}
+          notifications={notificationInbox.notifications}
+          hasMore={notificationInbox.next_cursor !== null}
+          preferences={notificationPreferences}
+          error={notificationError}
+          onClose={() => setNotificationOpen(false)}
+          onRefresh={() => void refreshNotifications()}
+          onLoadMore={() => void loadMoreNotifications()}
+          onOpenNotification={(notification) => void openNotification(notification)}
+          onSavePreferences={saveNotificationPreferences}
+        />
       </main>
     );
   }

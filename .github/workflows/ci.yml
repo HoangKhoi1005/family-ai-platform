@@ -81,6 +81,7 @@ jobs:
       - run: npm run test:calendar-api
       - run: npm run test:notification-schema
       - run: npm run test:notification-worker
+      - run: npm run test:notification-api
       - run: npm run test:auth
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

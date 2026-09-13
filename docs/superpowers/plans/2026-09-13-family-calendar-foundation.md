@@ -9,7 +9,7 @@
 **Baseline:** PAD-004, PAD-005, PAD-008, PAD-011, PAD-014, PAD-020, PAD-022
 **Stack:** TypeScript, Fastify, PostgreSQL, Next.js, worker hiện có; không thêm microservice.
 
-**Trạng thái 2026-09-14:** Calendar Core và Mobile Calendar đã merge vào `main` qua PR #14–#15; notification schema/contracts đã merge qua PR #16 tại `76e976c`, CI đạt. Task 9 Event-to-outbox và Task 10 worker inbox đã triển khai local trên `feat/notification-event-outbox`; inbox web theo sau. PR 4 chưa bắt đầu.
+**Trạng thái 2026-09-14:** Calendar Core và Mobile Calendar đã merge vào `main` qua PR #14–#15; notification schema/contracts đã merge qua PR #16; Task 9 Event-to-outbox và Task 10 worker inbox đã merge qua PR #17 tại `b0d939d`, CI đạt. Task 11 API/inbox mobile đã hoàn thiện và qua full quality, integration, E2E cùng visual gate trên `feat/notification-inbox-mobile`. PR 4 chưa bắt đầu.
 
 ## Nguyên tắc thực hiện
 

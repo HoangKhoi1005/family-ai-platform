@@ -19,6 +19,8 @@ import {
   familyOccurrenceParamsSchema,
   updateEventBodySchema,
   upsertEventRsvpBodySchema,
+  notificationListQuerySchema,
+  updateNotificationPreferencesBodySchema,
   type CancelEventInput,
   type CreateEventInput,
   type CreateRelationshipChangeRequestInput,
@@ -27,6 +29,7 @@ import {
   type RelationshipDecisionInput,
   type UpdateEventInput,
   type UpdateMemberInput,
+  type UpdateNotificationPreferencesInput,
 } from '@family/contracts';
 import { withActorTransaction } from '@family/database';
 import type { Auth } from '../auth/auth.js';
@@ -71,9 +74,25 @@ import {
   updateCalendarEvent,
   upsertCalendarRsvp,
 } from './calendar.js';
+import {
+  getNotificationPreferences,
+  listNotifications,
+  markNotificationRead,
+  updateNotificationPreferences,
+} from './notifications.js';
 
 interface FamilyParams {
   familyId: string;
+}
+
+interface NotificationParams extends FamilyParams {
+  notificationId: string;
+}
+
+interface NotificationListQuery {
+  cursor?: string;
+  limit?: number;
+  unread_only?: boolean;
 }
 
 interface InvitationParams extends FamilyParams {
@@ -394,6 +413,12 @@ const optionalVersionBody = {
   type: 'object',
   additionalProperties: false,
   properties: { version: { type: 'integer', minimum: 1 } },
+} as const;
+const familyNotificationParamsSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['familyId', 'notificationId'],
+  properties: { familyId: uuid, notificationId: uuid },
 } as const;
 
 export interface FamilyRouteOptions {
@@ -1199,6 +1224,107 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
           }),
         );
         return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams; Querystring: NotificationListQuery }>(
+    '/api/v1/families/:familyId/notifications',
+    { schema: { params: familyParams, querystring: notificationListQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          listNotifications(client, {
+            familyId,
+            actorId: actor.userId,
+            limit: request.query.limit ?? 20,
+            ...(request.query.cursor !== undefined ? { cursor: request.query.cursor } : {}),
+            unreadOnly: request.query.unread_only ?? false,
+          }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: NotificationParams; Body: Record<string, never> }>(
+    '/api/v1/families/:familyId/notifications/:notificationId/read',
+    {
+      schema: {
+        params: familyNotificationParamsSchema,
+        body: { type: 'object', additionalProperties: false },
+      },
+      preValidation: rejectUnknownBodyKeys([]),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, notificationId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(notificationId, 'notificationId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'notification.read');
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            markNotificationRead(client, { familyId, notificationId, actorId: actor.userId }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams }>(
+    '/api/v1/families/:familyId/notification-preferences',
+    { schema: { params: familyParams } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            getNotificationPreferences(client, { familyId, actorId: actor.userId }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.patch<{ Params: FamilyParams; Body: UpdateNotificationPreferencesInput }>(
+    '/api/v1/families/:familyId/notification-preferences',
+    {
+      schema: { params: familyParams, body: updateNotificationPreferencesBodySchema },
+      preValidation: rejectUnknownBodyKeys([
+        'reminder_offsets',
+        'quiet_hours',
+        'push_enabled',
+        'version',
+      ]),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'notification.preferences');
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            updateNotificationPreferences(client, {
+              familyId,
+              actorId: actor.userId,
+              input: request.body,
+            }),
+          ),
+        );
       } catch (error) {
         return replyError(reply, request, error);
       }
