@@ -7,15 +7,20 @@ import {
   getFamilyEvent,
   inviteTokenFrom,
   listFamilyOccurrences,
+  listFamilyNotifications,
+  getFamilyNotificationPreferences,
+  markFamilyNotificationRead,
   RequestError,
   request,
   updateFamilyEvent,
   upsertFamilyOccurrenceRsvp,
+  updateFamilyNotificationPreferences,
 } from './api';
 
 const familyId = '10000000-0000-4000-8000-000000000001';
 const eventId = '20000000-0000-4000-8000-000000000002';
 const occurrenceId = '30000000-0000-4000-8000-000000000003';
+const notificationId = '40000000-0000-4000-8000-000000000004';
 const event: CreateEventInput = {
   kind: 'gathering',
   title: 'Bữa cơm nhà',
@@ -192,6 +197,69 @@ describe('family calendar API', () => {
     expect(fetch).toHaveBeenCalledWith(
       `/api/v1/families/${familyId}/occurrences/${occurrenceId}/rsvp`,
       expect.objectContaining({ method: 'PUT', body: JSON.stringify({ response: 'yes' }) }),
+    );
+  });
+});
+
+describe('family notification API', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('loads the inbox and preserves its opaque cursor', async () => {
+    const fetch = vi.fn(() =>
+      jsonResponse({ notifications: [], unread_count: 0, next_cursor: null }),
+    );
+    vi.stubGlobal('fetch', fetch);
+
+    await listFamilyNotifications(familyId, {
+      cursor: 'created+/= cursor',
+      limit: 12,
+      unreadOnly: true,
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/v1/families/${familyId}/notifications?cursor=created%2B%2F%3D+cursor&limit=12&unread_only=true`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('marks one notification read through the idempotent action route', async () => {
+    const fetch = vi.fn(() => jsonResponse({ id: notificationId, read_at: '2026-09-14' }));
+    vi.stubGlobal('fetch', fetch);
+
+    await markFamilyNotificationRead(familyId, notificationId);
+
+    expect(fetch).toHaveBeenCalledWith(
+      `/api/v1/families/${familyId}/notifications/${notificationId}/read`,
+      expect.objectContaining({ method: 'POST', body: '{}' }),
+    );
+  });
+
+  it('loads and updates the current member preferences', async () => {
+    const preferences = {
+      reminder_offsets: ['one_day'] as Array<'one_day'>,
+      quiet_hours: {
+        starts_at: '21:00',
+        ends_at: '07:00',
+        timezone: 'Asia/Ho_Chi_Minh' as const,
+      },
+      push_enabled: false,
+      version: 2,
+    };
+    const fetch = vi.fn(() => jsonResponse({ ...preferences, updated_at: '2026-09-14' }));
+    vi.stubGlobal('fetch', fetch);
+
+    await getFamilyNotificationPreferences(familyId);
+    await updateFamilyNotificationPreferences(familyId, preferences);
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      `/api/v1/families/${familyId}/notification-preferences`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      `/api/v1/families/${familyId}/notification-preferences`,
+      expect.objectContaining({ method: 'PATCH', body: JSON.stringify(preferences) }),
     );
   });
 });

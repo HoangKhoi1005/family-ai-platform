@@ -4,6 +4,11 @@ async function mockActiveFamily(
   page: Page,
   role: 'member' | 'admin' = 'member',
   calendarOccurrences: unknown[] = [],
+  notificationResponse: Record<string, unknown> = {
+    notifications: [],
+    unread_count: 0,
+    next_cursor: null,
+  },
 ) {
   await page.route('**/api/v1/me', (route) =>
     route.fulfill({
@@ -162,6 +167,25 @@ async function mockActiveFamily(
   await page.route('**/api/v1/families/family-1/events?*', (route) =>
     route.fulfill({ json: { occurrences: calendarOccurrences, next_cursor: null } }),
   );
+  await page.route('**/api/v1/families/family-1/notifications?*', (route) =>
+    route.fulfill({ json: notificationResponse }),
+  );
+  await page.route('**/api/v1/families/family-1/notification-preferences', (route) => {
+    const body = route.request().postDataJSON() as Record<string, unknown> | null;
+    route.fulfill({
+      json: {
+        reminder_offsets: body?.reminder_offsets ?? ['seven_days', 'one_day', 'same_day'],
+        quiet_hours: body?.quiet_hours ?? {
+          starts_at: '21:00',
+          ends_at: '07:00',
+          timezone: 'Asia/Ho_Chi_Minh',
+        },
+        push_enabled: false,
+        version: body ? Number(body.version) + 1 : 0,
+        updated_at: body ? '2026-09-14T03:00:00.000Z' : null,
+      },
+    });
+  });
 }
 
 const calendarOccurrences = [
@@ -242,6 +266,185 @@ const calendarOccurrences = [
     },
   },
 ];
+
+const notification = {
+  id: '40000000-0000-4000-8000-000000000001',
+  kind: 'event_reminder',
+  channel: 'in_app',
+  event_id: '20000000-0000-4000-8000-000000000001',
+  occurrence_id: '30000000-0000-4000-8000-000000000001',
+  event_revision: 1,
+  reminder_offset: 'one_day',
+  created_at: '2026-09-14T01:00:00.000Z',
+  read_at: null as string | null,
+};
+
+test('notification inbox marks a reminder read and opens its calendar occurrence', async ({
+  page,
+}) => {
+  const notificationRow = { ...notification };
+  const inbox = { notifications: [notificationRow], unread_count: 1, next_cursor: null };
+  await mockActiveFamily(page, 'member', calendarOccurrences, inbox);
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000001',
+    (route) =>
+      route.fulfill({
+        json: {
+          event: {
+            kind: 'death_anniversary',
+            title: 'Ngày giỗ cụ Nguyễn Văn Bình',
+            calendar_type: 'lunar_vietnamese',
+            recurrence: 'yearly',
+            timezone: 'Asia/Ho_Chi_Minh',
+            date_parts: { year: null, month: 8, day: 5 },
+            lunar_policy: { month_mode: 'regular', missing_day: 'last_day' },
+            all_day: true,
+            reminder_offsets: ['seven_days', 'one_day'],
+            id: notification.event_id,
+            status: 'active',
+            revision: 1,
+            version: 1,
+            can_edit: false,
+            created_at: '2026-09-01T00:00:00.000Z',
+            updated_at: '2026-09-01T00:00:00.000Z',
+          },
+          occurrences: [calendarOccurrences[0]],
+        },
+      }),
+  );
+  await page.route(
+    '**/api/v1/families/family-1/notifications/40000000-0000-4000-8000-000000000001/read',
+    (route) => {
+      notificationRow.read_at = '2026-09-14T02:00:00.000Z';
+      inbox.unread_count = 0;
+      route.fulfill({ json: { id: notificationRow.id, read_at: notificationRow.read_at } });
+    },
+  );
+
+  await page.goto('/app');
+  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+  await expect(page.getByRole('dialog', { name: 'Thông báo' })).toBeVisible();
+  await page.getByText('Nhà mình có một ngày quan trọng sắp tới.').click();
+
+  await expect(page).toHaveURL(/view=calendar.*occurrence=30000000-0000-4000-8000-000000000001/);
+  await expect(page.getByRole('heading', { name: 'Ngày giỗ cụ Nguyễn Văn Bình' })).toBeVisible();
+  await expect(page.locator('button[aria-label="Thông báo"]:visible')).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator('button[aria-label="Thông báo"]:visible')).toBeVisible();
+});
+
+test('notification inbox stays usable on a narrow phone with large text', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await mockActiveFamily(page, 'member', calendarOccurrences, {
+    notifications: [{ ...notification }],
+    unread_count: 1,
+    next_cursor: null,
+  });
+  await page.goto('/app');
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+
+  const dialog = page.getByRole('dialog', { name: 'Thông báo' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Đóng thông báo' })).toBeVisible();
+  await expect(dialog.getByText('Nhà mình có một ngày quan trọng sắp tới.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('notification preferences save only the three in-app reminder offsets', async ({ page }) => {
+  await mockActiveFamily(page, 'member', calendarOccurrences);
+  let savedBody: Record<string, unknown> | null = null;
+  await page.route('**/api/v1/families/family-1/notification-preferences', (route) => {
+    if (route.request().method() === 'PATCH') savedBody = route.request().postDataJSON();
+    const body = savedBody;
+    route.fulfill({
+      json: {
+        reminder_offsets: body?.reminder_offsets ?? ['seven_days', 'one_day', 'same_day'],
+        quiet_hours: {
+          starts_at: '21:00',
+          ends_at: '07:00',
+          timezone: 'Asia/Ho_Chi_Minh',
+        },
+        push_enabled: false,
+        version: body ? 1 : 0,
+        updated_at: body ? '2026-09-14T03:00:00.000Z' : null,
+      },
+    });
+  });
+
+  await page.goto('/app');
+  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+  await page.getByRole('button', { name: 'Chọn mốc nhắc' }).click();
+  await page.getByLabel('Trước 7 ngày').uncheck();
+  await page.getByLabel('Trong ngày').uncheck();
+  await page.getByRole('button', { name: 'Lưu mốc nhắc' }).click();
+
+  await expect
+    .poll(() => savedBody)
+    .toMatchObject({
+      reminder_offsets: ['one_day'],
+      push_enabled: false,
+      version: 0,
+    });
+  await expect(page.getByRole('button', { name: 'Chọn mốc nhắc' })).toBeVisible();
+});
+
+test('notification inbox keeps its last good reminders when refresh loses the network', async ({
+  page,
+}) => {
+  await mockActiveFamily(page, 'member', calendarOccurrences, {
+    notifications: [{ ...notification }],
+    unread_count: 1,
+    next_cursor: null,
+  });
+  let requests = 0;
+  await page.route('**/api/v1/families/family-1/notifications?*', (route) => {
+    requests++;
+    if (requests === 1) {
+      return route.fulfill({
+        json: { notifications: [{ ...notification }], unread_count: 1, next_cursor: null },
+      });
+    }
+    return route.abort('internetdisconnected');
+  });
+
+  await page.goto('/app');
+  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+
+  await expect(page.getByText('Nhà mình có một ngày quan trọng sắp tới.')).toBeVisible();
+  await expect(page.getByText('Những lời nhắc đã tải vẫn được giữ lại.')).toBeVisible();
+});
+
+test('notification refresh removes cached family data after access is revoked', async ({
+  page,
+}) => {
+  await mockActiveFamily(page, 'member', calendarOccurrences, {
+    notifications: [{ ...notification }],
+    unread_count: 1,
+    next_cursor: null,
+  });
+  let requests = 0;
+  await page.route('**/api/v1/families/family-1/notifications?*', (route) => {
+    requests++;
+    if (requests === 1) {
+      return route.fulfill({
+        json: { notifications: [{ ...notification }], unread_count: 1, next_cursor: null },
+      });
+    }
+    return route.fulfill({
+      status: 404,
+      json: { error: { code: 'NOT_FOUND', message: 'Not found', request_id: 'test' } },
+    });
+  });
+
+  await page.goto('/app');
+  await expect(page.locator('button[aria-label^="Thông báo"]:visible')).toBeVisible();
+  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+
+  await expect(page.getByRole('heading', { name: 'Một lời mời là đủ để về nhà.' })).toBeVisible();
+  await expect(page.getByText('Nhà mình có một ngày quan trọng sắp tới.')).toHaveCount(0);
+});
 
 test('active member gets the five-destination mobile shell without preview data', async ({
   page,
