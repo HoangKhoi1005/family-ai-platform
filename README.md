@@ -2,7 +2,7 @@
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ và cây gia phả tương tác nối API/PostgreSQL thật. Thành viên có thể đề xuất thêm/sửa/gỡ quan hệ để quản trị viên duyệt. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Lịch/nhắc, Khoảnh khắc, Chat và AI chưa có backend; dự án chưa phải MVP đầy đủ.
+Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác và Calendar Core nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, tạo/sửa/hủy ngày quan trọng và RSVP theo quyền. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Timeline lịch trên web, nhắc ngày, Khoảnh khắc, Chat và AI chưa hoàn thiện; dự án chưa phải MVP đầy đủ.
 
 ## Chạy local
 
@@ -53,6 +53,7 @@ Không tạo mobile app giả; khi đến phase native, thêm `apps/mobile` và 
 | `npm test`                     | Vitest cho config, policy và API qua inject                                         |
 | `npm run test:db`              | PostgreSQL integration, rollback dữ liệu giả sau kiểm thử                           |
 | `npm run test:calendar-schema` | Constraint, tenant RLS, creator/admin và RSVP của Calendar Core                     |
+| `npm run test:calendar-api`    | CRUD, idempotency, revision, tenant access và RSVP qua Fastify/PostgreSQL thật      |
 | `npm run test:e2e`             | Playwright khởi động bản web đã build; cần Chromium                                 |
 | `npm run format`               | Định dạng các file được quản lý                                                     |
 | `npm run tokens:generate`      | Sinh CSS từ `design/tokens.json`                                                    |

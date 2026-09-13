@@ -27,24 +27,26 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                  |
 | POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ     |
 | POST /memberships/{id}/revoke             | version                                                          | Admin; chặn self-revoke admin cuối                        |
-| GET /events                               | from, to, cursor                                                 | Occurrence theo range có giới hạn tối đa 1 năm            |
+| GET /events                               | from, to, cursor, limit                                          | Occurrence theo range tối đa 550 ngày                     |
 | POST /events                              | title, calendar, recurrence, timezone, date_parts, lunar_policy? | Active member; validate lịch, không LLM                   |
-| PATCH /events/{id}                        | changes, version                                                 | Creator/admin; tăng revision, tính lại jobs               |
+| PATCH /events/{id}                        | event hoàn chỉnh, version                                        | Creator/admin; tăng revision, sinh lại occurrence         |
 | POST /events/{id}/cancel                  | version                                                          | Creator/admin; hủy occurrences/jobs tương lai             |
 | PUT /occurrences/{id}/rsvp                | response yes/no/maybe                                            | Upsert của actor, không gửi membership_id giả             |
 | GET /threads/{id}/messages                | before_seq?, limit                                               | Chỉ thread được phép, thứ tự server_seq                   |
 | POST /threads/{id}/messages               | client_message_id, body?, media_id?, reply_to_id?                | Commit rồi realtime; retry cùng key trả cùng message      |
 | DELETE /threads/{id}/messages/{messageId} | —                                                                | Author/admin; tombstone, audit moderation                 |
 | GET /moments                              | cursor, limit                                                    | Feed audience=family, active membership                   |
-| POST /moments                             | client_request_id, media_id, caption, audience=family            | Author; media ready và đúng owner/family                  |
-| DELETE /moments/{id}                      | —                                                                | Author/admin; media cleanup, không còn trong feed         |
-| PUT /moments/{id}/reaction                | reaction hoặc null                                               | Upsert/remove của actor                                   |
-| POST /media/uploads                       | mime, bytes, purpose                                             | Kiểm quota, trả upload grant ngắn hạn và media_id         |
-| POST /media/{id}/complete                 | —                                                                | Server xác minh object thực trước ready                   |
-| GET /media/{id}/content                   | —                                                                | Quyền parent, gateway hoặc URL TTL giới hạn               |
-| GET /notifications                        | cursor                                                           | Chỉ recipient hiện tại                                    |
-| PATCH /notification-preferences           | offsets, quiet_hours, push_enabled                               | Actor, không sửa người khác                               |
-| POST /ai/query                            | question, conversation_id?                                       | Giai đoạn 2; status, answer, sources, request_id          |
+
+`POST /events` bắt buộc header `Idempotency-Key` dài 8–128 ký tự an toàn. Server gắn khóa với active membership và hash body đã chuẩn hóa; retry cùng nội dung không tạo Event/Occurrence thứ hai. Body không nhận `family_id`, `creator_membership_id`, actor hoặc membership RSVP. Lỗi converter trả `503 CALENDAR_UNAVAILABLE` và transaction không ghi Event dở dang.
+| POST /moments | client_request_id, media_id, caption, audience=family | Author; media ready và đúng owner/family |
+| DELETE /moments/{id} | — | Author/admin; media cleanup, không còn trong feed |
+| PUT /moments/{id}/reaction | reaction hoặc null | Upsert/remove của actor |
+| POST /media/uploads | mime, bytes, purpose | Kiểm quota, trả upload grant ngắn hạn và media_id |
+| POST /media/{id}/complete | — | Server xác minh object thực trước ready |
+| GET /media/{id}/content | — | Quyền parent, gateway hoặc URL TTL giới hạn |
+| GET /notifications | cursor | Chỉ recipient hiện tại |
+| PATCH /notification-preferences | offsets, quiet_hours, push_enabled | Actor, không sửa người khác |
+| POST /ai/query | question, conversation_id? | Giai đoạn 2; status, answer, sources, request_id |
 
 Routes global: `POST /api/v1/invitations/accept` nhận token và credential, tạo pending membership; không trả dữ liệu nhà trước duyệt. `POST/DELETE /api/v1/me/push-subscriptions` chỉ thiết bị của actor. Auth routes dùng Better Auth theo ADR-002; push-subscriptions chưa triển khai.
 

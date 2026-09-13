@@ -24,3 +24,5 @@ Mỗi occurrence có RSVP của người dùng hiện tại; sửa/hủy sự ki
 Bộ expected dates kỹ thuật đã được thêm tại [`packages/domain/test-data/vietnamese-lunar-reference.json`](../../packages/domain/test-data/vietnamese-lunar-reference.json), gồm giao năm và tháng nhuận từ các implementation công bố riêng. Các nguồn này chủ yếu cùng dòng thuật toán Hồ Ngọc Đức, nên trước pilot thật vẫn phải đối chiếu ngày gia đình dùng với một lịch Việt Nam đáng tin cậy; không đánh dấu toàn bộ feature xong chỉ dựa vào package.
 
 Contract máy đọc cho Event/Occurrence/RSVP nằm tại [`packages/contracts/src/calendar.ts`](../../packages/contracts/src/calendar.ts). Pilot chấp nhận timezone `Asia/Ho_Chi_Minh`; mở thêm timezone phải đi cùng kiểm thử occurrence/DST thay vì chỉ nới schema.
+
+Calendar Core hiện có CRUD/RSVP API thật, occurrence cửa sổ 30 ngày trước đến 18 tháng sau, optimistic version, revision, audit và khóa idempotency bền trong PostgreSQL. Timeline mobile, cơ chế bổ sung occurrence khi cửa sổ trôi, inbox/outbox và push thuộc các lát phát hành kế tiếp.
