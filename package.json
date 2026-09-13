@@ -40,6 +40,7 @@
     "test:relationships": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-relationships.mjs",
     "test:calendar-schema": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-calendar-schema.mjs",
     "test:calendar-api": "npm run build --workspace @family/api && node --env-file=.env packages/database/scripts/test-calendar-api.mjs",
+    "test:notification-schema": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-notification-schema.mjs",
     "db:bootstrap-family": "node --env-file=.env packages/database/scripts/bootstrap-family.mjs"
   },
   "devDependencies": {
