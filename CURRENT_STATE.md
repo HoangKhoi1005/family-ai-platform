@@ -77,7 +77,8 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Đã chọn `@dqcai/vn-lunar@1.0.1` sau khi kiểm tra source/giấy phép, chạy probe Node 24 và so sánh hai chiều với bộ ngày công bố riêng. Quyết định và giới hạn được ghi tại [ADR-003](docs/decisions/ADR-003-vietnamese-lunar-calendar.md).
 - `@family/domain` đã có `CalendarConverter` cô lập provider, lỗi `CALENDAR_UNAVAILABLE`, kiểm tra round-trip và range 1200–2199. Không chấp nhận ngày dương sai, ngày âm không tồn tại hoặc cờ tháng nhuận không có thật.
 - Bộ golden fixture bao phủ Tết 2024, tháng 6 thường/nhuận 2025, ngày trong tháng nhuận và Tết 2026. Quy tắc `regular`, `leap_only`, `both`, `last_day`, `skip` và không nuốt lỗi provider có 12 unit tests đạt trên Node 24.18.
-- Dữ liệu tham chiếu công khai chủ yếu cùng dòng thuật toán Hồ Ngọc Đức; trước pilot thật vẫn phải đối chiếu các ngày gia đình dùng với lịch Việt Nam đáng tin cậy. Bước code kế tiếp là contract Event/Occurrence/RSVP, sau đó migration tenant/RLS.
+- Dữ liệu tham chiếu công khai chủ yếu cùng dòng thuật toán Hồ Ngọc Đức; trước pilot thật vẫn phải đối chiếu các ngày gia đình dùng với lịch Việt Nam đáng tin cậy.
+- Contract máy đọc Event/Occurrence/RSVP đã được thêm với union dương/âm, policy bắt buộc, kiểm tra ngày dương, whole-state update có optimistic version, cancel và RSVP tối thiểu. 10 contract tests Fastify/Ajv đạt; body không nhận `family_id`, actor, creator hay RSVP membership. Bước code kế tiếp là migration tenant/RLS `0012`.
 
 ## Giới hạn
 

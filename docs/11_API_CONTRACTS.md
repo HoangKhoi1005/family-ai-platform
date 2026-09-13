@@ -2,7 +2,7 @@
 
 Đợt nối UI 2026-09-09: thêm `GET /api/v1/families/{familyId}/onboarding`, trả `{ member_id: string | null, claims: [{ id, version }] }` của chính actor active. Không trả contacts hoặc claim của người khác. Guest trả 401; pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên. Xem [luồng đã nối](CONNECTED_ONBOARDING.md). Danh bạ/hồ sơ API đã được merge vào `main` tại `c07a225`.
 
-Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ và quan hệ gia phả. Các routes lịch, chat, moments, media, notifications và AI vẫn là thiết kế. Hợp đồng máy đọc hiện có trong `packages/contracts/src`; không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ và quan hệ gia phả. Contract máy đọc Event/Occurrence/RSVP đã có trong `packages/contracts/src/calendar.ts`; routes và persistence lịch vẫn đang triển khai. Chat, moments, media, notifications và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
@@ -64,6 +64,8 @@ Các route sau prefix family đã triển khai: `POST /member-claims` (admin, me
   "lunar_policy": { "month_mode": "regular", "missing_day": "last_day" }
 }
 ```
+
+Create contract dùng `calendar_type`, `all_day`, `reminder_offsets` và union theo lịch. Sửa nhận `{ version, event }`, trong đó `event` là trạng thái mong muốn đầy đủ để tránh một partial payload tạo tổ hợp policy không hợp lệ. Hủy chỉ nhận `version`; RSVP chỉ nhận `response`, không nhận `membership_id`. Pilot khóa timezone `Asia/Ho_Chi_Minh`; server vẫn phải validate range, thứ tự `from/to`, cửa sổ tối đa và ngày âm bằng converter trước khi ghi.
 
 Quy tắc month_mode ở [notifications](12_NOTIFICATION_RULES.md). Trường title không dùng làm khóa sự kiện.
 

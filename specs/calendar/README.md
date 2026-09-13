@@ -21,4 +21,6 @@ Mỗi occurrence có RSVP của người dùng hiện tại; sửa/hủy sự ki
 - **CAL-09** Given RSVP gửi lại, Then upsert cùng actor/occurrence, không nhân đôi người tham dự.
 - **CAL-10** Given service lịch ngoài range/lỗi, Then báo không thể xác nhận ngày, không nhờ AI tính thay.
 
-Chưa có bộ expected dates âm lịch được chứng thực; task calendar phải bổ sung nguồn độc lập và test trước khi đánh dấu feature xong.
+Bộ expected dates kỹ thuật đã được thêm tại [`packages/domain/test-data/vietnamese-lunar-reference.json`](../../packages/domain/test-data/vietnamese-lunar-reference.json), gồm giao năm và tháng nhuận từ các implementation công bố riêng. Các nguồn này chủ yếu cùng dòng thuật toán Hồ Ngọc Đức, nên trước pilot thật vẫn phải đối chiếu ngày gia đình dùng với một lịch Việt Nam đáng tin cậy; không đánh dấu toàn bộ feature xong chỉ dựa vào package.
+
+Contract máy đọc cho Event/Occurrence/RSVP nằm tại [`packages/contracts/src/calendar.ts`](../../packages/contracts/src/calendar.ts). Pilot chấp nhận timezone `Asia/Ho_Chi_Minh`; mở thêm timezone phải đi cùng kiểm thử occurrence/DST thay vì chỉ nới schema.
