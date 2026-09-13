@@ -72,6 +72,13 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 3. Nối timeline Ngày quan trọng vào Nhà mình, sau đó làm inbox/outbox worker; push chỉ bật sau khi delivery không trùng và có thiết bị thật để thử app đóng.
 4. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật. Moments và Chat triển khai sau vertical slice calendar; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
 
+## Calendar Core — đang triển khai
+
+- Đã chọn `@dqcai/vn-lunar@1.0.1` sau khi kiểm tra source/giấy phép, chạy probe Node 24 và so sánh hai chiều với bộ ngày công bố riêng. Quyết định và giới hạn được ghi tại [ADR-003](docs/decisions/ADR-003-vietnamese-lunar-calendar.md).
+- `@family/domain` đã có `CalendarConverter` cô lập provider, lỗi `CALENDAR_UNAVAILABLE`, kiểm tra round-trip và range 1200–2199. Không chấp nhận ngày dương sai, ngày âm không tồn tại hoặc cờ tháng nhuận không có thật.
+- Bộ golden fixture bao phủ Tết 2024, tháng 6 thường/nhuận 2025, ngày trong tháng nhuận và Tết 2026. Quy tắc `regular`, `leap_only`, `both`, `last_day`, `skip` và không nuốt lỗi provider có 12 unit tests đạt trên Node 24.18.
+- Dữ liệu tham chiếu công khai chủ yếu cùng dòng thuật toán Hồ Ngọc Đức; trước pilot thật vẫn phải đối chiếu các ngày gia đình dùng với lịch Việt Nam đáng tin cậy. Bước code kế tiếp là contract Event/Occurrence/RSVP, sau đó migration tenant/RLS.
+
 ## Giới hạn
 
 Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Chưa có thông báo, chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.

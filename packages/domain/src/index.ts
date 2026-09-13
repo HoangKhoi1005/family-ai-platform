@@ -18,3 +18,5 @@ export function canReadContact(membership: Membership | null, contact: Contact):
     return false;
   return contact.visibility === 'family' || membership.memberId === contact.memberId;
 }
+
+export * from './calendar.js';
