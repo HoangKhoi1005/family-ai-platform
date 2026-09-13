@@ -2,7 +2,7 @@
 
 Đợt nối UI 2026-09-09: thêm `GET /api/v1/families/{familyId}/onboarding`, trả `{ member_id: string | null, claims: [{ id, version }] }` của chính actor active. Không trả contacts hoặc claim của người khác. Guest trả 401; pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên. Xem [luồng đã nối](CONNECTED_ONBOARDING.md). Danh bạ/hồ sơ API đã được merge vào `main` tại `c07a225`.
 
-Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ, quan hệ gia phả và Event/Occurrence/RSVP. Contract notification preferences/inbox đã có trong `packages/contracts/src/notifications.ts`; routes notification được triển khai ở lát inbox sau schema delivery. Chat, moments, media và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ, quan hệ gia phả, Event/Occurrence/RSVP và notification inbox/preferences. Chat, moments, media và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
@@ -44,8 +44,10 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 | POST /media/uploads | mime, bytes, purpose | Kiểm quota, trả upload grant ngắn hạn và media_id |
 | POST /media/{id}/complete | — | Server xác minh object thực trước ready |
 | GET /media/{id}/content | — | Quyền parent, gateway hoặc URL TTL giới hạn |
-| GET /notifications | cursor | Chỉ recipient hiện tại |
-| PUT /notification-preferences | reminder_offsets, quiet_hours, push_enabled, version | Actor, không sửa người khác |
+| GET /notifications | cursor, limit, unread_only | Chỉ active recipient hiện tại; cursor giữ family scope |
+| POST /notifications/{id}/read | body rỗng | Idempotent, giữ thời điểm đọc đầu tiên |
+| GET /notification-preferences | — | Trả mặc định version 0 nếu actor chưa lưu cấu hình |
+| PATCH /notification-preferences | reminder_offsets, quiet_hours, push_enabled=false, version | Actor, không sửa người khác; tạo version 1 từ mặc định 0 |
 | POST /ai/query | question, conversation_id? | Giai đoạn 2; status, answer, sources, request_id |
 
 Routes global: `POST /api/v1/invitations/accept` nhận token và credential, tạo pending membership; không trả dữ liệu nhà trước duyệt. `POST/DELETE /api/v1/me/push-subscriptions` chỉ thiết bị của actor. Auth routes dùng Better Auth theo ADR-002; push-subscriptions chưa triển khai.

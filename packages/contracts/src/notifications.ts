@@ -14,7 +14,7 @@ export interface NotificationPreferencesDto {
   quiet_hours: NotificationQuietHours;
   push_enabled: boolean;
   version: number;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 export interface UpdateNotificationPreferencesInput {
@@ -68,7 +68,7 @@ export const updateNotificationPreferencesBodySchema = {
       },
     },
     push_enabled: { type: 'boolean' },
-    version: { type: 'integer', minimum: 1 },
+    version: { type: 'integer', minimum: 0 },
   },
 } as const;
 

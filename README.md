@@ -53,6 +53,7 @@ Không tạo mobile app giả; khi đến phase native, thêm `apps/mobile` và 
 | `npm run test:calendar-api`        | CRUD, revision, RSVP và Event-to-outbox transaction qua Fastify/PostgreSQL thật     |
 | `npm run test:notification-schema` | Inbox privacy, recipient fanout, giờ nhắc, dedupe và lease của notification/outbox  |
 | `npm run test:notification-worker` | Credential, quiet hours, revoke, retry và inbox dedupe của worker PostgreSQL        |
+| `npm run test:notification-api`    | Inbox, mark-read idempotent, preferences và tenant access qua Fastify/PostgreSQL    |
 | `npm run test:e2e`                 | Playwright khởi động bản web đã build; cần Chromium                                 |
 | `npm run format`                   | Định dạng các file được quản lý                                                     |
 | `npm run tokens:generate`          | Sinh CSS từ `design/tokens.json`                                                    |
