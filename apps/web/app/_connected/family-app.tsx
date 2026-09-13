@@ -1,14 +1,20 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { EventRsvpResponse } from '@family/contracts';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  cancelFamilyEvent,
   captureInvite,
   clearInvite,
+  createFamilyEvent,
+  listFamilyOccurrences,
   pendingInvite,
   rememberInvite,
   request,
   explain,
   RequestError,
+  updateFamilyEvent,
+  upsertFamilyOccurrenceRsvp,
 } from './api';
 import type { Me, Onboarding, Member } from './types';
 import { ProfilePanel } from './profile-panel';
@@ -16,6 +22,12 @@ import { AdminPanel } from './admin-panel';
 import { ConnectedAppShell, ConnectedIdentity, type ConnectedTab } from './connected-app-shell';
 import { RelationshipTree } from './relationship-tree';
 import { JoinHouse } from './join-house';
+import {
+  calendarTimelineRange,
+  calendarTimelineReducer,
+  createCalendarTimelineState,
+} from './calendar-state';
+import { CalendarHomeSection, FamilyCalendarTimeline } from './family-calendar';
 import s from './connected.module.css';
 
 export function FamilyApp() {
@@ -34,13 +46,33 @@ export function FamilyApp() {
   const [revision, setRevision] = useState(0);
   const [directoryRevision, setDirectoryRevision] = useState(0);
   const [profileRevision, setProfileRevision] = useState(0);
+  const [calendar, dispatchCalendar] = useReducer(
+    calendarTimelineReducer,
+    undefined,
+    createCalendarTimelineState,
+  );
+  const [selectedOccurrenceId, setSelectedOccurrenceId] = useState<string | null>(null);
+  const [calendarCreateRequested, setCalendarCreateRequested] = useState(false);
   const sequence = useRef(0);
+  const calendarSequence = useRef(0);
+  const calendarGeneration = useRef(0);
   const familyIdRef = useRef('');
   const clearFamily = useCallback(() => {
+    calendarSequence.current++;
+    calendarGeneration.current = 0;
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('view') || url.searchParams.has('occurrence')) {
+      url.searchParams.delete('view');
+      url.searchParams.delete('occurrence');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
     familyIdRef.current = '';
     setFamilyId('');
     setOnboarding(null);
     setMembers([]);
+    dispatchCalendar({ type: 'cleared' });
+    setSelectedOccurrenceId(null);
+    setCalendarCreateRequested(false);
     setTab('home');
     setProfileVisited(false);
     setRevision((value) => value + 1);
@@ -60,6 +92,55 @@ export function FamilyApp() {
     },
     [clearFamily],
   );
+  const failCalendar = useCallback(
+    (failedFamilyId: string, error: unknown) => {
+      if (familyIdRef.current === failedFamilyId) fail(error);
+    },
+    [fail],
+  );
+  const refreshCalendar = useCallback(
+    async (requestedFamilyId?: string) => {
+      const targetFamilyId = requestedFamilyId ?? familyIdRef.current;
+      if (!targetFamilyId) return;
+      const requestId = ++calendarSequence.current;
+      const generation = calendarGeneration.current;
+      dispatchCalendar({ type: 'load-started', familyId: targetFamilyId, requestId });
+      try {
+        const range = calendarTimelineRange();
+        const result = await listFamilyOccurrences(targetFamilyId, { ...range, limit: 100 });
+        dispatchCalendar({
+          type: 'load-succeeded',
+          familyId: targetFamilyId,
+          requestId,
+          generation,
+          occurrences: result.occurrences,
+          nextCursor: result.next_cursor,
+        });
+      } catch (error) {
+        if (requestId !== calendarSequence.current) return;
+        const accessRevoked =
+          error instanceof RequestError && [401, 403, 404].includes(error.status);
+        dispatchCalendar({
+          type: 'load-failed',
+          familyId: targetFamilyId,
+          requestId,
+          code: error instanceof RequestError ? error.code : 'REQUEST_FAILED',
+          accessRevoked,
+        });
+        if (accessRevoked) {
+          if (error instanceof RequestError && error.status === 401) {
+            fail(error);
+          } else {
+            sequence.current++;
+            clearFamily();
+            setError(explain(error));
+          }
+        }
+      }
+    },
+    [clearFamily, fail],
+  );
+
   const refresh = useCallback(async () => {
     const run = ++sequence.current;
     let next: Me | null = null;
@@ -92,6 +173,7 @@ export function FamilyApp() {
       setMembers(list.members);
       setMe(next);
       setError('');
+      void refreshCalendar(active.family_id);
     } catch (error) {
       if (run === sequence.current) {
         if (error instanceof RequestError && error.status === 401) {
@@ -107,13 +189,27 @@ export function FamilyApp() {
     } finally {
       if (run === sequence.current) setLoading(false);
     }
-  }, [clearFamily, fail]);
+  }, [clearFamily, fail, refreshCalendar]);
+
   useEffect(() => {
     const requestSequence = sequence;
+    const calendarRequestSequence = calendarSequence;
     captureInvite();
     // The pending invite is external per-tab browser state, unavailable during SSR.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInvite(pendingInvite());
+    const syncCalendarLocation = () => {
+      const params = new URLSearchParams(window.location.search);
+      const occurrenceId = params.get('occurrence');
+      if (params.get('view') === 'calendar' || occurrenceId) {
+        setTab('calendar');
+        setSelectedOccurrenceId(occurrenceId);
+      } else {
+        setSelectedOccurrenceId(null);
+        setTab((current) => (current === 'calendar' ? 'home' : current));
+      }
+    };
+    syncCalendarLocation();
     void refresh();
     const check = () => {
       if (document.visibilityState === 'visible') {
@@ -130,10 +226,13 @@ export function FamilyApp() {
     };
     const timer = setInterval(check, 15000);
     window.addEventListener('focus', refocus);
+    window.addEventListener('popstate', syncCalendarLocation);
     return () => {
       requestSequence.current++;
+      calendarRequestSequence.current++;
       clearInterval(timer);
       window.removeEventListener('focus', refocus);
+      window.removeEventListener('popstate', syncCalendarLocation);
     };
   }, [refresh]);
   async function logout() {
@@ -183,9 +282,105 @@ export function FamilyApp() {
   const base = '/api/v1/families/' + familyId;
   const navigate = (destination: ConnectedTab) => {
     if (destination === 'profile') setProfileVisited(true);
+    if (destination !== 'calendar') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('view') || url.searchParams.has('occurrence')) {
+        url.searchParams.delete('view');
+        url.searchParams.delete('occurrence');
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+      }
+      setSelectedOccurrenceId(null);
+    }
     setTab(destination);
     setError('');
   };
+
+  function openCalendar(occurrenceId?: string) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'calendar');
+    if (occurrenceId) url.searchParams.set('occurrence', occurrenceId);
+    else url.searchParams.delete('occurrence');
+    const nextUrl = url.pathname + url.search + url.hash;
+    const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+    if (nextUrl !== currentUrl) window.history.pushState({ calendarView: true }, '', nextUrl);
+    setSelectedOccurrenceId(occurrenceId ?? null);
+    setTab('calendar');
+    setError('');
+  }
+
+  function startCreatingCalendarEvent() {
+    openCalendar();
+    setCalendarCreateRequested(true);
+  }
+
+  function selectCalendarOccurrence(occurrenceId: string | null) {
+    if (!occurrenceId && window.history.state?.calendarOccurrence) {
+      setSelectedOccurrenceId(null);
+      window.history.back();
+      return;
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'calendar');
+    if (occurrenceId) url.searchParams.set('occurrence', occurrenceId);
+    else url.searchParams.delete('occurrence');
+    const nextUrl = url.pathname + url.search + url.hash;
+    const currentUrl = window.location.pathname + window.location.search + window.location.hash;
+    if (nextUrl !== currentUrl) {
+      if (occurrenceId) {
+        window.history.pushState({ calendarOccurrence: true }, '', nextUrl);
+      } else {
+        window.history.replaceState({ calendarView: true }, '', nextUrl);
+      }
+    }
+    setSelectedOccurrenceId(occurrenceId);
+  }
+
+  async function respondToOccurrence(occurrenceId: string, response: EventRsvpResponse) {
+    const targetFamilyId = familyId;
+    const result = await upsertFamilyOccurrenceRsvp(targetFamilyId, occurrenceId, { response });
+    if (familyIdRef.current !== targetFamilyId) return;
+    calendarGeneration.current++;
+    dispatchCalendar({
+      type: 'rsvp-succeeded',
+      familyId: targetFamilyId,
+      occurrenceId: result.occurrence_id,
+      response: result.response,
+    });
+  }
+
+  async function createCalendarEvent(
+    event: Parameters<typeof createFamilyEvent>[1],
+    idempotencyKey: string,
+  ) {
+    const targetFamilyId = familyId;
+    const detail = await createFamilyEvent(targetFamilyId, event, idempotencyKey);
+    if (familyIdRef.current !== targetFamilyId) return detail;
+    calendarGeneration.current++;
+    dispatchCalendar({ type: 'event-succeeded', familyId: targetFamilyId, detail });
+    return detail;
+  }
+
+  async function updateCalendarEvent(
+    eventId: string,
+    version: number,
+    event: Parameters<typeof updateFamilyEvent>[2]['event'],
+  ) {
+    const targetFamilyId = familyId;
+    const detail = await updateFamilyEvent(targetFamilyId, eventId, { version, event });
+    if (familyIdRef.current !== targetFamilyId) return detail;
+    calendarGeneration.current++;
+    dispatchCalendar({ type: 'event-succeeded', familyId: targetFamilyId, detail });
+    return detail;
+  }
+
+  async function cancelCalendarEvent(eventId: string, version: number) {
+    const targetFamilyId = familyId;
+    const detail = await cancelFamilyEvent(targetFamilyId, eventId, { version });
+    if (familyIdRef.current !== targetFamilyId) return detail;
+    calendarGeneration.current++;
+    dispatchCalendar({ type: 'event-succeeded', familyId: targetFamilyId, detail });
+    return detail;
+  }
 
   if (!loading && me && active && onboarding) {
     const viewerName = own?.familiar_name ?? own?.display_name ?? me.user.name;
@@ -242,6 +437,13 @@ export function FamilyApp() {
                   Mở danh bạ <span aria-hidden="true">→</span>
                 </button>
               </div>
+              <CalendarHomeSection
+                timeline={calendar}
+                members={members}
+                onOpen={openCalendar}
+                onCreate={startCreatingCalendarEvent}
+                onRefresh={() => void refreshCalendar()}
+              />
               {!onboarding.member_id && (
                 <section className={s.ownershipPrompt}>
                   <p className={s.eyebrow}>HỒ SƠ CỦA BẠN</p>
@@ -275,6 +477,24 @@ export function FamilyApp() {
                 </button>
               </section>
             </section>
+          )}
+          {tab === 'calendar' && (
+            <FamilyCalendarTimeline
+              familyId={familyId}
+              timeline={calendar}
+              members={members}
+              selectedOccurrenceId={selectedOccurrenceId}
+              onBack={() => navigate('home')}
+              onSelectOccurrence={selectCalendarOccurrence}
+              onRefresh={() => void refreshCalendar()}
+              onRsvp={respondToOccurrence}
+              createRequested={calendarCreateRequested}
+              onCreateRequestClose={() => setCalendarCreateRequested(false)}
+              onCreateEvent={createCalendarEvent}
+              onUpdateEvent={updateCalendarEvent}
+              onCancelEvent={cancelCalendarEvent}
+              onError={failCalendar}
+            />
           )}
           {tab === 'moments' && (
             <UnavailableDestination

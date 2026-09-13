@@ -19,6 +19,9 @@ const ACTIONS = new Set([
   'relationship.created',
   'relationship.updated',
   'relationship.removed',
+  'event.created',
+  'event.updated',
+  'event.cancelled',
 ]);
 
 export type AuditAction =
@@ -39,7 +42,10 @@ export type AuditAction =
   | 'relationship.change_rejected'
   | 'relationship.created'
   | 'relationship.updated'
-  | 'relationship.removed';
+  | 'relationship.removed'
+  | 'event.created'
+  | 'event.updated'
+  | 'event.cancelled';
 
 export async function writeAudit(
   client: PoolClient,
@@ -48,7 +54,13 @@ export async function writeAudit(
     actorId: string;
     action: AuditAction;
     targetType:
-      'invitation' | 'membership' | 'claim' | 'member' | 'change_request' | 'relationship';
+      | 'invitation'
+      | 'membership'
+      | 'claim'
+      | 'member'
+      | 'change_request'
+      | 'relationship'
+      | 'event';
     targetId: string;
     changeSummary: string;
     version?: number;

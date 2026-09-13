@@ -17,3 +17,4 @@ export interface ApiError {
 export * from './onboarding.js';
 export * from './profile.js';
 export * from './relationships.js';
+export * from './calendar.js';

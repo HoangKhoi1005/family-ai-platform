@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Pool } from 'pg';
+import type { CalendarConverter } from '@family/domain';
 import {
   createRelationshipChangeRequestBodySchema,
   createMemberBodySchema,
@@ -11,9 +12,20 @@ import {
   relationshipGraphQuerySchema,
   relationshipVersionBodySchema,
   updateMemberBodySchema,
+  cancelEventBodySchema,
+  createEventBodySchema,
+  eventListQuerySchema,
+  familyEventParamsSchema,
+  familyOccurrenceParamsSchema,
+  updateEventBodySchema,
+  upsertEventRsvpBodySchema,
+  type CancelEventInput,
+  type CreateEventInput,
   type CreateRelationshipChangeRequestInput,
   type CreateMemberInput,
+  type EventRsvpResponse,
   type RelationshipDecisionInput,
+  type UpdateEventInput,
   type UpdateMemberInput,
 } from '@family/contracts';
 import { withActorTransaction } from '@family/database';
@@ -51,6 +63,14 @@ import {
   normalizeUpdateMemberInput,
   updateMember,
 } from './members.js';
+import {
+  cancelCalendarEvent,
+  createCalendarEvent,
+  getCalendarEvent,
+  listCalendarOccurrences,
+  updateCalendarEvent,
+  upsertCalendarRsvp,
+} from './calendar.js';
 
 interface FamilyParams {
   familyId: string;
@@ -127,6 +147,25 @@ interface MemberParams extends FamilyParams {
   memberId: string;
 }
 
+interface EventParams extends FamilyParams {
+  eventId: string;
+}
+
+interface OccurrenceParams extends FamilyParams {
+  occurrenceId: string;
+}
+
+interface EventListQuery {
+  from: string;
+  to: string;
+  cursor?: string;
+  limit?: number;
+}
+
+interface RsvpBody {
+  response: EventRsvpResponse;
+}
+
 type JsonObject = Record<string, unknown>;
 
 function isJsonObject(value: unknown): value is JsonObject {
@@ -138,9 +177,8 @@ function rejectUnknownBodyKeys(
   nestedArray?: { key: string; allowedKeys: readonly string[] },
 ) {
   return async (request: FastifyRequest): Promise<void> => {
-    // Fastify's default AJV compiler removes additional properties before a
-    // route handler sees them. Run this route-local preValidation guard first
-    // so unknown fields fail closed without changing Better Auth's schemas.
+    // Keep a route-local fail-closed guard as defense in depth alongside the
+    // global AJV additional-property rejection.
     const body = request.body;
     if (!isJsonObject(body)) return;
     if (Object.keys(body).some((key) => !allowedKeys.includes(key))) {
@@ -209,6 +247,72 @@ async function rejectRelationshipRequestUnknownKeys(request: FastifyRequest): Pr
   if (Object.keys(payload).some((key) => !payloadKeys.includes(key))) {
     throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
   }
+}
+
+const EVENT_INPUT_KEYS = [
+  'kind',
+  'title',
+  'note',
+  'location',
+  'member_id',
+  'calendar_type',
+  'recurrence',
+  'timezone',
+  'date_parts',
+  'lunar_policy',
+  'feb29_policy',
+  'all_day',
+  'starts_local_time',
+  'duration_minutes',
+  'reminder_offsets',
+] as const;
+
+function assertCalendarEventShape(value: unknown): void {
+  if (!isJsonObject(value)) return;
+  if (Object.keys(value).some((key) => !EVENT_INPUT_KEYS.includes(key as never))) {
+    throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+  }
+  if (
+    isJsonObject(value.date_parts) &&
+    Object.keys(value.date_parts).some((key) => !['year', 'month', 'day'].includes(key))
+  ) {
+    throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+  }
+  if (
+    isJsonObject(value.lunar_policy) &&
+    Object.keys(value.lunar_policy).some((key) => !['month_mode', 'missing_day'].includes(key))
+  ) {
+    throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+  }
+}
+
+async function rejectCreateEventUnknownKeys(request: FastifyRequest): Promise<void> {
+  assertCalendarEventShape(request.body);
+}
+
+async function rejectUpdateEventUnknownKeys(request: FastifyRequest): Promise<void> {
+  if (!isJsonObject(request.body)) return;
+  if (Object.keys(request.body).some((key) => !['version', 'event'].includes(key))) {
+    throw new FamilyHttpError(400, 'VALIDATION_ERROR', 'Request body is invalid');
+  }
+  assertCalendarEventShape(request.body.event);
+}
+
+function idempotencyKeyOf(request: FastifyRequest): string {
+  const value = request.headers['idempotency-key'];
+  if (
+    typeof value !== 'string' ||
+    value.length < 8 ||
+    value.length > 128 ||
+    !/^[A-Za-z0-9._:-]+$/.test(value)
+  ) {
+    throw new FamilyHttpError(
+      400,
+      'VALIDATION_ERROR',
+      'Idempotency-Key phải dài 8-128 ký tự an toàn',
+    );
+  }
+  return value;
 }
 
 const uuid = { type: 'string', format: 'uuid' } as const;
@@ -296,6 +400,7 @@ export interface FamilyRouteOptions {
   auth: Auth;
   runtimePool: Pool;
   webOrigin: string;
+  calendarConverter?: CalendarConverter;
 }
 
 async function authenticatedActor(
@@ -928,6 +1033,169 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
             actorId: actor.userId,
             claimId,
             version: request.body.version,
+          }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams; Querystring: EventListQuery }>(
+    '/api/v1/families/:familyId/events',
+    { schema: { params: familyParams, querystring: eventListQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        const query = request.query;
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          listCalendarOccurrences(client, {
+            familyId,
+            actorId: actor.userId,
+            from: query.from,
+            to: query.to,
+            ...(query.cursor !== undefined ? { cursor: query.cursor } : {}),
+            limit: query.limit ?? 20,
+          }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: EventParams }>(
+    '/api/v1/families/:familyId/events/:eventId',
+    { schema: { params: familyEventParamsSchema } },
+    async (request, reply) => {
+      try {
+        const { familyId, eventId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(eventId, 'eventId');
+        const actor = await authenticatedActor(options.auth, request);
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            getCalendarEvent(client, { familyId, eventId, actorId: actor.userId }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: FamilyParams; Body: CreateEventInput }>(
+    '/api/v1/families/:familyId/events',
+    {
+      schema: { params: familyParams, body: createEventBodySchema },
+      preValidation: rejectCreateEventUnknownKeys,
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const idempotencyKey = idempotencyKeyOf(request);
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'calendar.create');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          createCalendarEvent(client, {
+            familyId,
+            actorId: actor.userId,
+            idempotencyKey,
+            event: request.body,
+            ...(options.calendarConverter ? { converter: options.calendarConverter } : {}),
+          }),
+        );
+        return reply.code(201).send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.patch<{ Params: EventParams; Body: UpdateEventInput }>(
+    '/api/v1/families/:familyId/events/:eventId',
+    {
+      schema: { params: familyEventParamsSchema, body: updateEventBodySchema },
+      preValidation: rejectUpdateEventUnknownKeys,
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, eventId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(eventId, 'eventId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'calendar.update');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          updateCalendarEvent(client, {
+            familyId,
+            eventId,
+            actorId: actor.userId,
+            version: request.body.version,
+            event: request.body.event,
+            ...(options.calendarConverter ? { converter: options.calendarConverter } : {}),
+          }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: EventParams; Body: CancelEventInput }>(
+    '/api/v1/families/:familyId/events/:eventId/cancel',
+    {
+      schema: { params: familyEventParamsSchema, body: cancelEventBodySchema },
+      preValidation: rejectUnknownBodyKeys(['version']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, eventId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(eventId, 'eventId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'calendar.cancel');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          cancelCalendarEvent(client, {
+            familyId,
+            eventId,
+            actorId: actor.userId,
+            version: request.body.version,
+          }),
+        );
+        return reply.send(result);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.put<{ Params: OccurrenceParams; Body: RsvpBody }>(
+    '/api/v1/families/:familyId/occurrences/:occurrenceId/rsvp',
+    {
+      schema: { params: familyOccurrenceParamsSchema, body: upsertEventRsvpBodySchema },
+      preValidation: rejectUnknownBodyKeys(['response']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, occurrenceId } = request.params;
+        assertUuid(familyId, 'familyId');
+        assertUuid(occurrenceId, 'occurrenceId');
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, 'calendar.rsvp');
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          upsertCalendarRsvp(client, {
+            familyId,
+            occurrenceId,
+            actorId: actor.userId,
+            response: request.body.response,
           }),
         );
         return reply.send(result);

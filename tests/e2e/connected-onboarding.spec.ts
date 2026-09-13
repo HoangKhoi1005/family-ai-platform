@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/v1/families/*/events?*', (route) =>
+    route.fulfill({ json: { occurrences: [], next_cursor: null } }),
+  );
+});
+
 test('guest app redirects to login and preserves the invitation only in its originating tab', async ({
   page,
   context,

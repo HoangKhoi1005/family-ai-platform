@@ -1,6 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member') {
+async function mockActiveFamily(
+  page: Page,
+  role: 'member' | 'admin' = 'member',
+  calendarOccurrences: unknown[] = [],
+) {
   await page.route('**/api/v1/me', (route) =>
     route.fulfill({
       json: {
@@ -155,7 +159,89 @@ async function mockActiveFamily(page: Page, role: 'member' | 'admin' = 'member')
     '**/api/v1/families/family-1/change-requests?status=pending&scope=mine',
     (route) => route.fulfill({ json: { change_requests: [] } }),
   );
+  await page.route('**/api/v1/families/family-1/events?*', (route) =>
+    route.fulfill({ json: { occurrences: calendarOccurrences, next_cursor: null } }),
+  );
 }
+
+const calendarOccurrences = [
+  {
+    id: '30000000-0000-4000-8000-000000000001',
+    event_id: '20000000-0000-4000-8000-000000000001',
+    event_revision: 1,
+    local_date: '2026-09-15',
+    starts_at: null,
+    ends_at: null,
+    calendar_conversion_version: 'vn-lunar@1',
+    status: 'active',
+    my_rsvp: null,
+    event: {
+      id: '20000000-0000-4000-8000-000000000001',
+      kind: 'death_anniversary',
+      title: 'Ngày giỗ cụ Nguyễn Văn Bình',
+      member_id: 'member-2',
+      calendar_type: 'lunar_vietnamese',
+      all_day: true,
+    },
+  },
+  {
+    id: '30000000-0000-4000-8000-000000000002',
+    event_id: '20000000-0000-4000-8000-000000000002',
+    event_revision: 1,
+    local_date: '2026-09-20',
+    starts_at: '2026-09-20T11:30:00.000Z',
+    ends_at: '2026-09-20T13:30:00.000Z',
+    calendar_conversion_version: null,
+    status: 'active',
+    my_rsvp: 'maybe',
+    event: {
+      id: '20000000-0000-4000-8000-000000000002',
+      kind: 'gathering',
+      title: 'Bữa cơm mừng cả nhà sum họp sau chuyến đi rất dài',
+      member_id: null,
+      calendar_type: 'gregorian',
+      all_day: false,
+    },
+  },
+  {
+    id: '30000000-0000-4000-8000-000000000003',
+    event_id: '20000000-0000-4000-8000-000000000003',
+    event_revision: 1,
+    local_date: '2026-10-02',
+    starts_at: null,
+    ends_at: null,
+    calendar_conversion_version: null,
+    status: 'active',
+    my_rsvp: null,
+    event: {
+      id: '20000000-0000-4000-8000-000000000003',
+      kind: 'birthday',
+      title: 'Sinh nhật Minh Anh',
+      member_id: 'member-2',
+      calendar_type: 'gregorian',
+      all_day: true,
+    },
+  },
+  {
+    id: '30000000-0000-4000-8000-000000000004',
+    event_id: '20000000-0000-4000-8000-000000000004',
+    event_revision: 1,
+    local_date: '2026-10-10',
+    starts_at: null,
+    ends_at: null,
+    calendar_conversion_version: null,
+    status: 'active',
+    my_rsvp: null,
+    event: {
+      id: '20000000-0000-4000-8000-000000000004',
+      kind: 'wedding_anniversary',
+      title: 'Kỷ niệm ngày cưới ba mẹ',
+      member_id: null,
+      calendar_type: 'gregorian',
+      all_day: true,
+    },
+  },
+];
 
 test('active member gets the five-destination mobile shell without preview data', async ({
   page,
@@ -186,6 +272,597 @@ test('active member gets the five-destination mobile shell without preview data'
   await expect(page.getByText('Quyền riêng tư của bạn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đăng xuất', exact: true })).toBeVisible();
   await expect(page.getByText('Bữa cơm chủ nhật')).toHaveCount(0);
+});
+
+test('member opens the family timeline, keeps a selected day in the URL and responds once', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page, 'member', calendarOccurrences);
+  let rsvpBody: unknown;
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000001',
+    (route) =>
+      route.fulfill({
+        json: {
+          event: {
+            kind: 'death_anniversary',
+            title: 'Ngày giỗ cụ Nguyễn Văn Bình',
+            calendar_type: 'lunar_vietnamese',
+            recurrence: 'yearly',
+            timezone: 'Asia/Ho_Chi_Minh',
+            date_parts: { year: null, month: 8, day: 5 },
+            lunar_policy: { month_mode: 'regular', missing_day: 'last_day' },
+            all_day: true,
+            reminder_offsets: ['seven_days', 'one_day'],
+            id: '20000000-0000-4000-8000-000000000001',
+            status: 'active',
+            revision: 1,
+            version: 1,
+            can_edit: false,
+            created_at: '2026-09-01T00:00:00.000Z',
+            updated_at: '2026-09-01T00:00:00.000Z',
+          },
+          occurrences: [calendarOccurrences[0]],
+        },
+      }),
+  );
+  await page.route(
+    '**/api/v1/families/family-1/occurrences/30000000-0000-4000-8000-000000000001/rsvp',
+    async (route) => {
+      rsvpBody = route.request().postDataJSON();
+      await route.fulfill({
+        json: {
+          occurrence_id: '30000000-0000-4000-8000-000000000001',
+          response: 'yes',
+          updated_at: '2026-09-13T01:00:00.000Z',
+        },
+      });
+    },
+  );
+
+  await page.goto('/app');
+
+  await expect(page.getByRole('heading', { name: 'Ngày gần nhất' })).toBeVisible();
+  await expect(page.getByText('Ngày giỗ cụ Nguyễn Văn Bình')).toBeVisible();
+  await expect(page.getByText('Kỷ niệm ngày cưới ba mẹ')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Xem tất cả ngày quan trọng' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Ngày quan trọng của nhà mình.' })).toBeVisible();
+  await expect(page.getByText('Kỷ niệm ngày cưới ba mẹ')).toBeVisible();
+  await page.getByRole('button', { name: /Mở Ngày giỗ cụ Nguyễn Văn Bình/ }).click();
+
+  await expect(page).toHaveURL(/occurrence=30000000-0000-4000-8000-000000000001/);
+  await page.reload();
+  const detail = page.getByRole('dialog', { name: 'Ngày giỗ cụ Nguyễn Văn Bình' });
+  await expect(detail).toBeVisible();
+  await expect(detail.getByText('Âm lịch')).toBeVisible();
+  await detail.getByRole('button', { name: 'Tôi sẽ tham gia' }).click();
+  await expect(detail.getByRole('button', { name: 'Tôi sẽ tham gia' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  expect(rsvpBody).toEqual({ response: 'yes' });
+
+  await page.keyboard.press('Escape');
+  await expect(detail).toBeHidden();
+  await expect(page).not.toHaveURL(/occurrence=/);
+  await expect(page.getByRole('button', { name: /Mở Ngày giỗ cụ Nguyễn Văn Bình/ })).toBeFocused();
+});
+
+test('calendar refresh keeps the last good days when the phone loses its connection', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let calendarRequestCount = 0;
+  await page.route('**/api/v1/families/family-1/events?*', async (route) => {
+    calendarRequestCount++;
+    if (calendarRequestCount === 1) {
+      await route.fulfill({ json: { occurrences: calendarOccurrences, next_cursor: null } });
+      return;
+    }
+    await route.abort('internetdisconnected');
+  });
+  await page.goto('/app');
+  await expect(page.getByText('Ngày giỗ cụ Nguyễn Văn Bình')).toBeVisible();
+
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+
+  await expect(
+    page.getByText('Lịch chưa cập nhật được. Bạn vẫn đang xem lần tải gần nhất.'),
+  ).toBeVisible();
+  await expect(page.getByText('Ngày giỗ cụ Nguyễn Văn Bình')).toBeVisible();
+});
+
+test('calendar access revocation clears cached family days', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page, 'member', calendarOccurrences);
+  await page.route('**/api/v1/families/family-1/events?*', (route) =>
+    route.fulfill({ status: 404, json: { error: { code: 'NOT_FOUND' } } }),
+  );
+  await page.goto('/app');
+
+  await expect(page.getByRole('heading', { name: 'Một lời mời là đủ để về nhà.' })).toBeVisible();
+  await expect(page.getByText('Ngày giỗ cụ Nguyễn Văn Bình')).toHaveCount(0);
+});
+
+test('a late calendar mutation from the previous family cannot block the new family timeline', async ({
+  page,
+}) => {
+  const familyBDay = {
+    ...calendarOccurrences[2],
+    id: '30000000-0000-4000-8000-0000000000b1',
+    event_id: '20000000-0000-4000-8000-0000000000b1',
+    event: {
+      ...calendarOccurrences[2].event,
+      id: '20000000-0000-4000-8000-0000000000b1',
+      title: 'Sinh nhật của Nhà B',
+    },
+  };
+  await mockActiveFamily(page, 'member', [calendarOccurrences[0]]);
+  let activeFamily = 'family-1';
+  let familyBHasDay = false;
+  await page.route('**/api/v1/me', (route) =>
+    route.fulfill({
+      json: {
+        user: { id: 'user-1', name: 'Nguyễn Gia Bảo', email: 'bao@example.test' },
+        memberships: [
+          {
+            id: `membership-${activeFamily}`,
+            family_id: activeFamily,
+            name: activeFamily === 'family-1' ? 'Nhà A' : 'Nhà B',
+            role: 'member',
+            status: 'active',
+          },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/families/family-b/onboarding', (route) =>
+    route.fulfill({ json: { member_id: 'member-b', claims: [] } }),
+  );
+  await page.route('**/api/v1/families/family-b/members?limit=100', (route) =>
+    route.fulfill({
+      json: {
+        members: [
+          {
+            id: 'member-b',
+            display_name: 'Người Nhà B',
+            familiar_name: null,
+            hometown: null,
+            version: 1,
+          },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/v1/families/family-b/events?*', (route) =>
+    route.fulfill({
+      json: { occurrences: familyBHasDay ? [familyBDay] : [], next_cursor: null },
+    }),
+  );
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000001',
+    (route) =>
+      route.fulfill({
+        json: {
+          event: {
+            kind: 'death_anniversary',
+            title: 'Ngày giỗ cụ Nguyễn Văn Bình',
+            calendar_type: 'lunar_vietnamese',
+            recurrence: 'yearly',
+            timezone: 'Asia/Ho_Chi_Minh',
+            date_parts: { year: null, month: 8, day: 5 },
+            lunar_policy: { month_mode: 'regular', missing_day: 'last_day' },
+            all_day: true,
+            reminder_offsets: ['one_day'],
+            id: '20000000-0000-4000-8000-000000000001',
+            status: 'active',
+            revision: 1,
+            version: 1,
+            can_edit: false,
+            created_at: '2026-09-01T00:00:00.000Z',
+            updated_at: '2026-09-01T00:00:00.000Z',
+          },
+          occurrences: [calendarOccurrences[0]],
+        },
+      }),
+  );
+  let rsvpFails = false;
+  let releaseRsvp!: () => void;
+  let markRsvpStarted!: () => void;
+  let rsvpStarted!: Promise<void>;
+  let rsvpReleased!: Promise<void>;
+  const resetRsvpGate = () => {
+    rsvpStarted = new Promise<void>((resolve) => {
+      markRsvpStarted = resolve;
+    });
+    rsvpReleased = new Promise<void>((resolve) => {
+      releaseRsvp = resolve;
+    });
+  };
+  resetRsvpGate();
+  await page.route(
+    '**/api/v1/families/family-1/occurrences/30000000-0000-4000-8000-000000000001/rsvp',
+    async (route) => {
+      markRsvpStarted();
+      await rsvpReleased;
+      if (rsvpFails) {
+        await route.fulfill({ status: 403, json: { error: { code: 'FORBIDDEN' } } });
+        return;
+      }
+      await route.fulfill({
+        json: {
+          occurrence_id: '30000000-0000-4000-8000-000000000001',
+          response: 'yes',
+          updated_at: '2026-09-13T01:00:00.000Z',
+        },
+      });
+    },
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Xem tất cả ngày quan trọng' }).click();
+  await page.getByRole('button', { name: /Mở Ngày giỗ cụ Nguyễn Văn Bình/ }).click();
+  const oldRsvpResponse = page.waitForResponse((response) => response.url().endsWith('/rsvp'));
+  await page.getByRole('button', { name: 'Tôi sẽ tham gia' }).click();
+  await rsvpStarted;
+
+  activeFamily = 'family-b';
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByText('CHÀO NGƯỜI NHÀ B')).toBeVisible();
+  await expect(page).not.toHaveURL(/occurrence=/);
+
+  releaseRsvp();
+  await oldRsvpResponse;
+  familyBHasDay = true;
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByText('Sinh nhật của Nhà B')).toBeVisible();
+
+  activeFamily = 'family-1';
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByText('CHÀO GIA BẢO')).toBeVisible();
+  await page.getByRole('button', { name: 'Xem tất cả ngày quan trọng' }).click();
+  await page.getByRole('button', { name: /Mở Ngày giỗ cụ Nguyễn Văn Bình/ }).click();
+  resetRsvpGate();
+  rsvpFails = true;
+  const deniedRsvpResponse = page.waitForResponse((response) => response.url().endsWith('/rsvp'));
+  await page.getByRole('button', { name: 'Tôi sẽ tham gia' }).click();
+  await rsvpStarted;
+
+  activeFamily = 'family-b';
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByText('CHÀO NGƯỜI NHÀ B')).toBeVisible();
+  releaseRsvp();
+  await deniedRsvpResponse;
+  await expect(page.getByText('Sinh nhật của Nhà B')).toBeVisible();
+});
+
+test('empty family calendar offers one clear action on a narrow phone', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await mockActiveFamily(page);
+  await page.goto('/app');
+
+  const calendar = page.getByLabel('Ngày gần nhất');
+  await expect(calendar.getByRole('heading', { name: 'Nhà mình chưa ghi ngày nào' })).toBeVisible();
+  await expect(calendar.getByRole('button', { name: 'Thêm ngày quan trọng' })).toBeVisible();
+  await expect(page.locator('body')).toHaveJSProperty('scrollWidth', 320);
+});
+
+test('family calendar stays inside mobile, tablet and desktop viewports with large text', async ({
+  page,
+}) => {
+  await mockActiveFamily(page, 'member', calendarOccurrences);
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000002',
+    (route) =>
+      route.fulfill({
+        json: {
+          event: {
+            kind: 'gathering',
+            title: 'Bữa cơm chủ nhật',
+            note: null,
+            location: 'Nhà bà Mai',
+            member_id: null,
+            calendar_type: 'gregorian',
+            recurrence: 'none',
+            timezone: 'Asia/Ho_Chi_Minh',
+            date_parts: { year: 2026, month: 9, day: 20 },
+            all_day: true,
+            reminder_offsets: ['one_day'],
+            id: '20000000-0000-4000-8000-000000000002',
+            status: 'active',
+            revision: 1,
+            version: 1,
+            can_edit: false,
+            created_at: '2026-09-01T00:00:00.000Z',
+            updated_at: '2026-09-01T00:00:00.000Z',
+          },
+          occurrences: [calendarOccurrences[1]],
+        },
+      }),
+  );
+
+  for (const width of [390, 768, 1280]) {
+    await page.setViewportSize({ width, height: width >= 900 ? 900 : 844 });
+    await page.goto('/app?view=calendar');
+    await expect(
+      page.getByRole('heading', { name: 'Ngày quan trọng của nhà mình.' }),
+    ).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.getByRole('button', { name: /Mở Bữa cơm mừng cả nhà/ }).click();
+    const detail = page.getByRole('dialog', { name: /Bữa cơm mừng cả nhà/ });
+    await expect(detail).toBeVisible();
+    if (width >= 900) {
+      const bounds = await detail.boundingBox();
+      expect(bounds?.x).toBeGreaterThan(width / 2);
+    }
+    await page.keyboard.press('Escape');
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/app?view=calendar');
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect(page.getByRole('heading', { name: 'Ngày quan trọng của nhà mình.' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('creator adds, reloads, edits and cancels a family day from the mobile wizard', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const occurrences: Array<Record<string, unknown>> = [];
+  await mockActiveFamily(page, 'member', occurrences);
+  let eventTitle = 'Bữa cơm cuối tháng';
+  let eventVersion = 1;
+  let eventStatus: 'active' | 'cancelled' = 'active';
+  const bodies: unknown[] = [];
+
+  const eventDto = () => ({
+    kind: 'gathering',
+    title: eventTitle,
+    note: null,
+    location: 'Nhà bà Mai',
+    member_id: null,
+    calendar_type: 'gregorian',
+    recurrence: 'none',
+    timezone: 'Asia/Ho_Chi_Minh',
+    date_parts: { year: 2026, month: 10, day: 20 },
+    all_day: true,
+    reminder_offsets: ['seven_days', 'one_day'],
+    id: '20000000-0000-4000-8000-000000000099',
+    status: eventStatus,
+    revision: eventVersion,
+    version: eventVersion,
+    can_edit: true,
+    created_at: '2026-09-13T01:00:00.000Z',
+    updated_at: '2026-09-13T01:00:00.000Z',
+  });
+  const occurrenceDto = () => ({
+    id: `30000000-0000-4000-8000-00000000009${eventVersion}`,
+    event_id: '20000000-0000-4000-8000-000000000099',
+    event_revision: eventVersion,
+    local_date: '2026-10-20',
+    starts_at: null,
+    ends_at: null,
+    calendar_conversion_version: null,
+    status: eventStatus,
+    my_rsvp: null,
+    event: {
+      id: '20000000-0000-4000-8000-000000000099',
+      kind: 'gathering',
+      title: eventTitle,
+      member_id: null,
+      calendar_type: 'gregorian',
+      all_day: true,
+    },
+  });
+  const detail = () => ({ event: eventDto(), occurrences: [occurrenceDto()] });
+
+  await page.route('**/api/v1/families/family-1/events', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    bodies.push(route.request().postDataJSON());
+    expect(route.request().headers()['idempotency-key']).toBeTruthy();
+    occurrences.splice(0, occurrences.length, occurrenceDto());
+    await route.fulfill({ status: 201, json: detail() });
+  });
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000099',
+    async (route) => {
+      if (route.request().method() === 'PATCH') {
+        const body = route.request().postDataJSON() as {
+          version: number;
+          event: { title: string };
+        };
+        bodies.push(body);
+        eventTitle = body.event.title;
+        eventVersion++;
+        occurrences.splice(0, occurrences.length, occurrenceDto());
+      }
+      await route.fulfill({ json: detail() });
+    },
+  );
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000099/cancel',
+    async (route) => {
+      bodies.push(route.request().postDataJSON());
+      eventVersion++;
+      eventStatus = 'cancelled';
+      occurrences.splice(0);
+      await route.fulfill({ json: detail() });
+    },
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Thêm ngày quan trọng' }).click();
+  const wizard = page.getByRole('dialog', { name: 'Thêm ngày quan trọng' });
+  await expect(wizard).toBeVisible();
+  await wizard.getByLabel('Tên ngày').fill('Bữa cơm cuối tháng');
+  await wizard.getByRole('button', { name: 'Tiếp: Chọn ngày' }).click();
+  await wizard.getByLabel('Ngày diễn ra').fill('2026-10-20');
+  await wizard.getByRole('button', { name: 'Tiếp: Nhắc cả nhà' }).click();
+  await expect(wizard.getByText('20 tháng 10, 2026')).toBeVisible();
+  await wizard.getByLabel('Nơi gặp').fill('Nhà bà Mai');
+  await wizard.getByRole('button', { name: 'Lưu ngày quan trọng' }).click();
+  await expect(wizard).toBeHidden();
+  await expect(page.getByText('Bữa cơm cuối tháng')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText('Bữa cơm cuối tháng')).toBeVisible();
+  await page.getByRole('button', { name: /Mở Bữa cơm cuối tháng/ }).click();
+  const detailSheet = page.getByRole('dialog', { name: 'Bữa cơm cuối tháng' });
+  await detailSheet.getByRole('button', { name: 'Sửa ngày này' }).click();
+  const editor = page.getByRole('dialog', { name: 'Sửa ngày quan trọng' });
+  await editor.getByLabel('Tên ngày').fill('Bữa cơm sum họp cuối tháng');
+  await editor.getByRole('button', { name: 'Tiếp: Chọn ngày' }).click();
+  await editor.getByRole('button', { name: 'Tiếp: Nhắc cả nhà' }).click();
+  await editor.getByRole('button', { name: 'Lưu thay đổi' }).click();
+  await expect(page.getByText('Bữa cơm sum họp cuối tháng')).toBeVisible();
+
+  await page.getByRole('button', { name: /Mở Bữa cơm sum họp cuối tháng/ }).click();
+  const updatedDetail = page.getByRole('dialog', { name: 'Bữa cơm sum họp cuối tháng' });
+  await updatedDetail.getByRole('button', { name: 'Hủy ngày này' }).click();
+  await updatedDetail.getByRole('button', { name: 'Xác nhận hủy ngày này' }).click();
+  await expect(page.getByText('Bữa cơm sum họp cuối tháng')).toHaveCount(0);
+  expect(bodies).toHaveLength(3);
+});
+
+test('calendar wizard blocks an unverified lunar date without sending family data', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let createAttempts = 0;
+  await page.route('**/api/v1/families/family-1/events', async (route) => {
+    if (route.request().method() === 'POST') createAttempts++;
+    await route.fulfill({ status: 503, json: { error: { code: 'CALENDAR_UNAVAILABLE' } } });
+  });
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Thêm ngày quan trọng' }).click();
+  const wizard = page.getByRole('dialog', { name: 'Thêm ngày quan trọng' });
+  await wizard.getByLabel('Tên ngày').fill('Ngày âm cần kiểm tra');
+  await wizard.getByRole('button', { name: 'Tiếp: Chọn ngày' }).click();
+  await wizard.getByLabel('Dùng lịch').selectOption('lunar_vietnamese');
+  await wizard.getByLabel('Ngày âm').fill('1');
+  await wizard.getByLabel('Tháng âm', { exact: true }).fill('6');
+  await wizard.getByLabel('Năm nguồn').fill('2026');
+  await wizard.getByLabel('Lặp lại').selectOption('yearly');
+  await wizard.getByLabel('Nếu có tháng nhuận').selectOption('both');
+  await wizard.getByLabel('Lặp lại').selectOption('none');
+  await expect(wizard.getByLabel('Nếu có tháng nhuận')).toHaveValue('regular');
+  await wizard.getByLabel('Nếu có tháng nhuận').selectOption('leap_only');
+
+  await expect(wizard.getByText('Không thể xác nhận ngày âm này')).toBeVisible();
+  await wizard.getByRole('button', { name: 'Tiếp: Nhắc cả nhà' }).click();
+  await expect(wizard.getByText('Không thể xác nhận ngày âm này')).toBeVisible();
+  expect(createAttempts).toBe(0);
+});
+
+test('calendar wizard keeps a verified lunar draft when the calendar service is unavailable', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let createAttempts = 0;
+  const idempotencyKeys: string[] = [];
+  await page.route('**/api/v1/families/family-1/events', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    createAttempts++;
+    idempotencyKeys.push(route.request().headers()['idempotency-key'] ?? '');
+    await route.fulfill({ status: 503, json: { error: { code: 'CALENDAR_UNAVAILABLE' } } });
+  });
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Thêm ngày quan trọng' }).click();
+  const wizard = page.getByRole('dialog', { name: 'Thêm ngày quan trọng' });
+  await wizard.getByLabel('Đây là ngày gì?').selectOption('death_anniversary');
+  await wizard.getByLabel('Tên ngày').fill('Ngày giỗ ông cố');
+  await wizard.getByRole('button', { name: 'Tiếp: Chọn ngày' }).click();
+  await wizard.getByLabel('Dùng lịch').selectOption('lunar_vietnamese');
+  await wizard.getByLabel('Ngày âm').fill('5');
+  await wizard.getByLabel('Tháng âm', { exact: true }).fill('8');
+  await wizard.getByLabel('Năm nguồn').fill('2026');
+  await wizard.getByLabel('Lặp lại').selectOption('yearly');
+  await wizard.getByRole('button', { name: 'Tiếp: Nhắc cả nhà' }).click();
+  await wizard.getByRole('button', { name: 'Lưu ngày quan trọng' }).click();
+
+  await expect(
+    wizard.getByText('Chưa thể xác nhận ngày này. Kiểm tra lại ngày và thử sau nhé.'),
+  ).toBeVisible();
+  await wizard.getByRole('button', { name: 'Quay lại' }).click();
+  await wizard.getByRole('button', { name: 'Quay lại' }).click();
+  await expect(wizard.getByLabel('Tên ngày')).toHaveValue('Ngày giỗ ông cố');
+  await wizard.getByRole('button', { name: 'Tiếp: Chọn ngày' }).click();
+  await wizard.getByRole('button', { name: 'Tiếp: Nhắc cả nhà' }).click();
+  await wizard.getByRole('button', { name: 'Lưu ngày quan trọng' }).click();
+  await expect.poll(() => createAttempts).toBe(2);
+  expect(idempotencyKeys[0]).toBeTruthy();
+  expect(idempotencyKeys[1]).toBe(idempotencyKeys[0]);
+});
+
+test('calendar edit conflict presents the newest event before another save', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const original = { ...calendarOccurrences[1] } as Record<string, unknown>;
+  original.event = {
+    ...(original.event as Record<string, unknown>),
+    title: 'Bữa cơm nhà cũ',
+  };
+  await mockActiveFamily(page, 'member', [original]);
+  let conflicted = false;
+  const eventResponse = (latest: boolean) => ({
+    event: {
+      kind: 'gathering',
+      title: latest ? 'Bữa cơm đã đổi trên máy khác' : 'Bữa cơm nhà cũ',
+      note: null,
+      location: null,
+      member_id: null,
+      calendar_type: 'gregorian',
+      recurrence: 'none',
+      timezone: 'Asia/Ho_Chi_Minh',
+      date_parts: { year: 2026, month: 9, day: 20 },
+      all_day: true,
+      reminder_offsets: ['one_day'],
+      id: '20000000-0000-4000-8000-000000000002',
+      status: 'active',
+      revision: latest ? 2 : 1,
+      version: latest ? 2 : 1,
+      can_edit: true,
+      created_at: '2026-09-01T00:00:00.000Z',
+      updated_at: '2026-09-13T01:00:00.000Z',
+    },
+    occurrences: [original],
+  });
+  await page.route(
+    '**/api/v1/families/family-1/events/20000000-0000-4000-8000-000000000002',
+    async (route) => {
+      if (route.request().method() === 'PATCH') {
+        conflicted = true;
+        await route.fulfill({ status: 409, json: { error: { code: 'CONFLICT' } } });
+        return;
+      }
+      await route.fulfill({ json: eventResponse(conflicted) });
+    },
+  );
+
+  await page.goto('/app');
+  await page.getByRole('button', { name: /Mở Bữa cơm nhà cũ/ }).click();
+  await page.getByRole('button', { name: 'Sửa ngày này' }).click();
+  const editor = page.getByRole('dialog', { name: 'Sửa ngày quan trọng' });
+  await editor.getByLabel('Tên ngày').fill('Thay đổi của tôi');
+  await editor.getByRole('button', { name: 'Tiếp: Chọn ngày' }).click();
+  await editor.getByRole('button', { name: 'Tiếp: Nhắc cả nhà' }).click();
+  await editor.getByRole('button', { name: 'Lưu thay đổi' }).click();
+
+  await expect(
+    editor.getByText('Ngày này vừa được người khác cập nhật. Xem bản mới trước khi sửa tiếp.'),
+  ).toBeVisible();
+  await expect(editor.getByText('Bản mới nhất: Bữa cơm đã đổi trên máy khác')).toBeVisible();
+  await editor.getByRole('button', { name: 'Dùng bản mới để sửa tiếp' }).click();
+  await expect(editor.getByLabel('Tên ngày')).toHaveValue('Bữa cơm đã đổi trên máy khác');
 });
 
 test('member explores the approved tree and submits a reviewed relationship proposal', async ({

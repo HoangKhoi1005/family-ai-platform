@@ -1,6 +1,7 @@
 import Fastify, { LogController } from 'fastify';
 import { healthResponseSchema, type HealthResponse, type ApiError } from '@family/contracts';
 import type { Pool } from 'pg';
+import type { CalendarConverter } from '@family/domain';
 import { withActorTransaction } from '@family/database';
 import type { Auth } from './auth/auth.js';
 import { registerAuthRoutes, toAuthHeaders } from './auth/routes.js';
@@ -12,6 +13,7 @@ export interface AppOptions {
   auth?: Auth;
   publicOrigin?: string;
   runtimePool?: Pool;
+  calendarConverter?: CalendarConverter;
 }
 
 export function buildApp(options: AppOptions = {}) {
@@ -26,6 +28,7 @@ export function buildApp(options: AppOptions = {}) {
     logger: { level: 'info', redact: ['req.headers.authorization', 'req.headers.cookie'] },
     logController: new LogController({ disableRequestLogging: true }),
     bodyLimit: 1048576,
+    ajv: { customOptions: { removeAdditional: false } },
   });
   app.addHook('onSend', async (_request, reply) => {
     reply.header('Cache-Control', 'no-store');
@@ -45,6 +48,7 @@ export function buildApp(options: AppOptions = {}) {
         auth,
         runtimePool: options.runtimePool,
         webOrigin: publicOrigin,
+        ...(options.calendarConverter ? { calendarConverter: options.calendarConverter } : {}),
       });
     }
     app.get('/api/v1/me', async (request, reply) => {
