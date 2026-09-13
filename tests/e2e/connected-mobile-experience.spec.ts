@@ -1297,7 +1297,7 @@ test('admin reviews a pending family relationship with resolved member names', a
   );
   await page.getByRole('button', { name: 'Duyệt quan hệ' }).click();
 
-  await expect(page.getByRole('status')).toContainText('Đã duyệt quan hệ');
+  await expect(page.getByRole('status').filter({ hasText: 'Đã duyệt quan hệ' })).toBeVisible();
   expect(decision).toEqual({ decision: 'approved', version: 4 });
   await expect(page.getByText('Chưa có đề xuất quan hệ nào đang chờ.')).toBeVisible();
 });
