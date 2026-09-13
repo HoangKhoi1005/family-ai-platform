@@ -1,9 +1,9 @@
 # Trạng thái dự án
 
-- Cập nhật: 2026-09-13. Context version: **1.4.0**.
+- Cập nhật: 2026-09-14. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; CI của merge commit đạt. Notifications, chat, moments và AI chưa có backend hoàn chỉnh.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16. CI của các merge commit đạt. Notification delivery đang được nối tiếp; chat, moments và AI chưa có backend hoàn chỉnh.
 
 ## Gói A — ổn định onboarding
 
@@ -54,6 +54,9 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Kiểm chứng mới nhất
 
+- Trên `feat/notification-event-outbox`, Event create/update/cancel đã nối outbox trong cùng transaction. Fanout chỉ tạo `in_app` job cho membership active và offset người nhận cho phép; không xếp lại backlog đã quá hạn. Sửa Event hủy pending/leased job của revision cũ rồi tạo revision mới, hủy Event giữ hàng lịch sử ở trạng thái cancelled. Integration test chứng minh retry không nhân job, enqueue lỗi rollback cả Event/Occurrence/idempotency/audit, người pending/revoked không nhận và quy tắc cùng ngày chạy lúc 09:00 hoặc lùi 07:00 cho Event bắt đầu sớm.
+- Worker inbox đã có credential `family_worker` riêng không đọc bảng trực tiếp, claim/lease theo batch, kiểm lại quyền/revision/preference/due/expiry, dời quiet hours, upsert inbox và backoff tối đa năm attempt. Job không hợp lệ bị hủy trước khi xét quiet hours; retry và worker cạnh tranh không nhân notification. Log chỉ có ID worker, số lượng và mã lỗi cố định, không ghi title/note/contact. Migration rerun, env-init, auth-role, Calendar schema/API, notification schema/worker đều đạt. Full `npm run check` đạt với **133/133 unit tests trong 27 file**, Project Brain hợp lệ và build đủ 8 workspace.
+
 - Trên `feat/notification-delivery-schema`, contracts notification đạt **3/3**. Migration 0015–0018 và integration test PostgreSQL chứng minh inbox chỉ recipient active đọc/đánh dấu đã đọc, admin không đọc inbox riêng của người khác, pending/revoked và revision cũ bị chặn, recipient opt-out được tôn trọng, push cần opt-in, dedupe không nhân job, hai worker không claim cùng hàng và lease hết hạn được lấy lại. Runtime không đọc/cập nhật outbox trực tiếp; creator/admin hủy job qua helper có phạm vi hẹp. Auth-role và Calendar schema regression suites đạt. Full `npm run check` đạt với **123/123 unit tests trong 24 file**, Project Brain hợp lệ và build đủ 8 workspace.
 
 - Calendar Core local đạt **101/101 unit tests trong 21 file**. Full quality gate đạt đủ boundaries, tokens, lint, format, typecheck, Project Brain và production build. Hai integration suite PostgreSQL đạt cho schema/RLS và API CRUD/idempotency/revision/RSVP; lỗi converter được trả `503 CALENDAR_UNAVAILABLE`, pending/revoked/cross-family không đọc được timeline. Review độc lập không có lỗi Critical; bốn phát hiện Important về biên cuối tháng, range list, năm nguồn âm lịch và RLS RSVP đã được sửa và kiểm thử lại. PR #14 đã merge; head `f143c9c` nằm trong merge commit `00e826c` của PR #15.
@@ -77,8 +80,8 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 ## Tiếp theo
 
 1. Chủ dự án thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
-2. Hoàn tất lát schema/contracts của PR 3 trên `feat/notification-delivery-schema`: notification preferences, inbox source, outbox dedupe/lease, RLS và integration test hai worker cạnh tranh.
-3. Nối enqueue cùng transaction Event, sau đó triển khai worker dedupe/retry/revoke và inbox web trong các PR nhỏ riêng. Push chỉ bật sau khi delivery không trùng và có thiết bị thật để thử app đóng.
+2. Review và tích hợp lát Event → outbox → worker trên `feat/notification-event-outbox` qua PR.
+3. Triển khai API và giao diện inbox mobile, mark-read idempotent, deep link Event và preferences ba mốc nhắc. Push chỉ bật sau khi inbox đạt và có thiết bị thật để thử.
 4. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật. Moments và Chat triển khai sau vertical slice calendar; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
 
 ## Calendar Core và Mobile Calendar — đã merge
@@ -95,7 +98,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline và CRUD/RSVP nhưng chưa có inbox, worker lời nhắc hay push. Chưa có chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
+Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline, CRUD/RSVP, Event-to-outbox và worker tạo notification, nhưng chưa có API/UI inbox hay push. Chưa có chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
 
 ## Cập nhật cây tương tác 2026-09-13
 

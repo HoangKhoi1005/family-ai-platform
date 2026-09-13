@@ -167,6 +167,10 @@ ensure(
   'RUNTIME_DATABASE_URL',
   postgresUrl('family_runtime', randomPassword(), dbHost, dbPort, dbName),
 );
+ensure(
+  'WORKER_DATABASE_URL',
+  postgresUrl('family_worker', randomPassword(), dbHost, dbPort, dbName),
+);
 ensure('BETTER_AUTH_SECRET', randomBytes(32).toString('base64url'));
 for (const [name, value] of Object.entries(DEFAULTS)) ensure(name, value);
 

@@ -2,7 +2,7 @@
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác và lịch nhà nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, xem timeline, tạo/sửa/hủy ngày quan trọng và RSVP theo quyền. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md). Inbox nhắc ngày, Khoảnh khắc, Chat và AI chưa hoàn thiện; dự án chưa phải MVP đầy đủ.
+Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác và lịch nhà nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, xem timeline, tạo/sửa/hủy ngày quan trọng và RSVP theo quyền; Event đã tự ghi lịch nhắc vào outbox và worker tạo nguồn inbox an toàn. Inbox UI, Khoảnh khắc, Chat và AI chưa hoàn thiện; dự án chưa phải MVP đầy đủ. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md).
 
 ## Chạy local
 
@@ -10,17 +10,14 @@ Cần Node **24.18+ trong dòng 24**, npm 11; Python 3 cho kiểm tra Project Br
 
 ```sh
 npm ci
-npm run dev
-```
-
-Web: `http://127.0.0.1:3000`. API: `http://127.0.0.1:4000/health/live`. Worker đang chờ, chưa có job handler và không gửi thông báo. Dừng bằng Ctrl+C.
-
-```sh
 npm run env:init
 npm run db:up
 npm run db:migrate
-npm run test:db
+npm run db:provision-auth
+npm run dev
 ```
+
+Web: `http://127.0.0.1:3200`. API: `http://127.0.0.1:4010/health/live`. Worker dùng credential riêng, lấy Event reminder đến hạn và tạo notification inbox. Dừng bằng Ctrl+C.
 
 `env:init` tạo mật khẩu local ngẫu nhiên, không ghi đè `.env` có sẵn. `db:down` dừng container và giữ volume. Không dùng credential database owner của local cho runtime production.
 
@@ -30,7 +27,7 @@ npm run test:db
 apps/
   web/          Next.js App Router, trang giới thiệu responsive
   api/          Fastify, health và error contract
-  worker/       Process lifecycle cho background jobs tương lai
+  worker/       Claim/lease, retry và tạo notification inbox từ outbox
 packages/
   domain/       Business types và policy primitives
   contracts/    DTO / JSON Schema dùng chung
@@ -53,8 +50,9 @@ Không tạo mobile app giả; khi đến phase native, thêm `apps/mobile` và 
 | `npm test`                         | Vitest cho config, policy và API qua inject                                         |
 | `npm run test:db`                  | PostgreSQL integration, rollback dữ liệu giả sau kiểm thử                           |
 | `npm run test:calendar-schema`     | Constraint, tenant RLS, creator/admin và RSVP của Calendar Core                     |
-| `npm run test:calendar-api`        | CRUD, idempotency, revision, tenant access và RSVP qua Fastify/PostgreSQL thật      |
-| `npm run test:notification-schema` | Constraint, inbox privacy, dedupe và lease của notification/outbox                  |
+| `npm run test:calendar-api`        | CRUD, revision, RSVP và Event-to-outbox transaction qua Fastify/PostgreSQL thật     |
+| `npm run test:notification-schema` | Inbox privacy, recipient fanout, giờ nhắc, dedupe và lease của notification/outbox  |
+| `npm run test:notification-worker` | Credential, quiet hours, revoke, retry và inbox dedupe của worker PostgreSQL        |
 | `npm run test:e2e`                 | Playwright khởi động bản web đã build; cần Chromium                                 |
 | `npm run format`                   | Định dạng các file được quản lý                                                     |
 | `npm run tokens:generate`          | Sinh CSS từ `design/tokens.json`                                                    |

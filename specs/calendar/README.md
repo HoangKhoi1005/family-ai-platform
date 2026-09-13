@@ -29,4 +29,4 @@ Calendar Core hiện có CRUD/RSVP API thật, occurrence cửa sổ 30 ngày tr
 
 Lát Calendar Mobile trên `feat/family-calendar-mobile` đã nối API này vào Nhà mình: tối đa ba ngày gần nhất, timeline theo tháng, occurrence giữ trong URL, detail sheet/rail, RSVP và wizard ba bước tạo/sửa/hủy. Form tách rõ Ngày âm, Tháng âm và Năm nguồn; lần diễn ra kế tiếp dùng chung converter đã kiểm chứng. Khi mất mạng, timeline giữ bản tốt gần nhất; 401/revoke xóa family scope; conflict version buộc xem bản mới. Browser tests bao phủ 320/390/768/1280, chữ 200%, create → reload → edit → cancel và `CALENDAR_UNAVAILABLE` không làm mất bản nháp.
 
-Cơ chế bổ sung occurrence khi cửa sổ trôi, inbox/outbox, worker lời nhắc và push thuộc các lát phát hành kế tiếp.
+Event-to-outbox và worker `in_app` đã triển khai local trên `feat/notification-event-outbox`: credential riêng, lease, recheck quyền/revision/preference, quiet hours, retry năm lần và inbox dedupe. Inbox UI, API preference và push thuộc các lát phát hành kế tiếp; cơ chế bổ sung occurrence khi cửa sổ trôi vẫn chưa làm.

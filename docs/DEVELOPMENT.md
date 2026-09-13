@@ -20,11 +20,11 @@ Turbo cache dist/.next; env ảnh hưởng build phải được khai báo trong
 
 ## Database
 
-`env:init` tạo .env local ngẫu nhiên, giữ file có sẵn. Compose dùng port 54329 trên loopback, volume riêng. `db:down` không xóa volume. Không thêm lệnh reset phá dữ liệu mặc định. Khi đổi mật khẩu trong .env, volume PostgreSQL đã khởi tạo không tự đổi password — sửa có chủ ý, không xóa volume để “fix”.
+`env:init` tạo .env local ngẫu nhiên, giữ file có sẵn. Compose dùng port 54339 trên loopback, volume riêng. `db:down` không xóa volume. Không thêm lệnh reset phá dữ liệu mặc định. Khi đổi mật khẩu trong .env, volume PostgreSQL đã khởi tạo không tự đổi password — sửa có chủ ý, không xóa volume để “fix”.
 
 `db:migrate` giữ advisory lock, xác minh checksum migration cũ, mỗi migration trong transaction. Lần chạy lại là no-op. Không sửa file đã apply; sửa bằng migration mới. `db:status` yêu cầu đã migrate. Migration 0001 chỉ identity/member/contact, chưa có relationship graph hoặc outbox.
 
-`test:db` chỉ chạy local/test với owner có quyền tạo role để kiểm RLS, mọi bản ghi/role test trong transaction được rollback. Không chạy bằng URL production. RLS runtime hiện deny-all (không policy), kể cả khi SELECT đã được cấp; superuser bypass là lý do tuyệt đối không dùng local owner làm role ứng dụng.
+`test:db` chỉ chạy local/test với owner có quyền tạo role để kiểm RLS; integration scripts dùng dữ liệu tổng hợp và cleanup. Không chạy bằng URL production. API dùng `family_auth`/`family_runtime`; worker dùng `family_worker`, chỉ có quyền execute các hàm claim/deliver/fail và không được đọc bảng trực tiếp. Superuser bypass là lý do tuyệt đối không dùng local owner làm role ứng dụng.
 
 Trước feature auth: chọn provider, tạo runtime role NOSUPERUSER/NOBYPASSRLS, thiết kế identity context tin cậy, policies membership/contact và test actor. Không lấy `x-user-id` hay `x-family-id` làm căn cứ truy cập. Policy primitive trong domain chưa giải quyết quản trị hồ sơ chưa liên kết; quy trình đó phải được test trong task riêng.
 
@@ -50,7 +50,7 @@ npm run test:db
 npm run test:auth
 ```
 
-`env:init` creates missing values in the ignored `.env` with cryptographically random local passwords and a Better Auth secret. Existing values are preserved, and a second run does not rewrite the file. `APP_ENV=local` is required for role provisioning; the owner, auth, and runtime URLs must all point to a loopback host. Provisioning checks that `family_auth` and `family_runtime` are `LOGIN`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS` before setting their passwords. It never prints a URL, password, or SQL statement.
+`env:init` creates missing values in the ignored `.env` with cryptographically random local passwords and a Better Auth secret. Existing values are preserved, and a second run does not rewrite the file. `APP_ENV=local` is required for role provisioning; the owner, auth, runtime and worker URLs must all point to a loopback host. Provisioning checks that `family_auth`, `family_runtime` and `family_worker` are `LOGIN`, `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOINHERIT`, and `NOBYPASSRLS` before setting their passwords. It never prints a URL, password, or SQL statement.
 
 Migration `0002_authentication.sql` adds Better Auth's global tables and preserves historical `users.auth_subject` rows without fabricating email values. `family_auth` has CRUD on `users` and the auth tables only. `family_runtime` has no auth-table privilege, while runtime tenant grants are constrained by actor/membership RLS in migrations 0006–0008. Auth tables use forced RLS with explicit auth-role policies; tenant authorization is implemented for membership and claim operations; directory/profile work is tracked in CURRENT_STATE.
 

@@ -1,6 +1,6 @@
 # Kiến trúc hệ thống
 
-**Baseline:** web/PWA và backend dạng một ứng dụng có module rõ, một relational database, private object storage, worker cho lịch/notification, realtime transport. Stack monorepo đã chọn theo [ADR-001](decisions/ADR-001-monorepo.md): Next.js, Fastify và PostgreSQL trên npm workspaces/Turbo. Web/API/worker mới là nền tảng; storage, realtime, notification handler và provider chưa triển khai. Không tạo microservices hoặc vector DB chỉ để dự phòng.
+**Baseline:** web/PWA và backend dạng một ứng dụng có module rõ, một relational database, private object storage, worker cho lịch/notification, realtime transport. Stack monorepo đã chọn theo [ADR-001](decisions/ADR-001-monorepo.md): Next.js, Fastify và PostgreSQL trên npm workspaces/Turbo. Worker notification inbox đã có claim/lease/retry và credential riêng; storage, realtime và push provider chưa triển khai. Không tạo microservices hoặc vector DB chỉ để dự phòng.
 
 ```mermaid
 flowchart LR

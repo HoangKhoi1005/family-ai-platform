@@ -31,9 +31,13 @@ const ids = Object.fromEntries(
     'membershipB',
     'eventA',
     'eventB',
+    'timedEventA',
     'oldOccurrenceA',
     'currentOccurrenceA',
     'occurrenceB',
+    'timedMorningOccurrenceA',
+    'timedEarlyOccurrenceA',
+    'timedTooEarlyOccurrenceA',
     'notificationA',
     'jobA',
   ].map((key) => [key, randomUUID()]),
@@ -114,19 +118,37 @@ async function seed() {
   await owner.query(
     `INSERT INTO events(
        id,family_id,creator_membership_id,kind,title,calendar_type,recurrence,timezone,
-       date_year,date_month,date_day,all_day,reminder_offsets,revision
+       date_year,date_month,date_day,all_day,starts_local_time,reminder_offsets,revision
      ) VALUES
        ($1,$2,$3,'gathering','Synthetic notification event','gregorian','none',
-        'Asia/Ho_Chi_Minh',2026,9,20,true,ARRAY['one_day']::text[],2),
+        'Asia/Ho_Chi_Minh',2026,9,20,true,NULL,ARRAY['one_day']::text[],2),
        ($4,$5,$6,'gathering','Synthetic other event','gregorian','none',
-        'Asia/Ho_Chi_Minh',2026,9,20,true,ARRAY['one_day']::text[],1)`,
-    [ids.eventA, ids.familyA, ids.creatorMembershipA, ids.eventB, ids.familyB, ids.membershipB],
+        'Asia/Ho_Chi_Minh',2026,9,20,true,NULL,ARRAY['one_day']::text[],1),
+       ($7,$2,$3,'gathering','Synthetic timed event','gregorian','none',
+        'Asia/Ho_Chi_Minh',2026,9,20,false,time '10:00',ARRAY['same_day']::text[],1)`,
+    [
+      ids.eventA,
+      ids.familyA,
+      ids.creatorMembershipA,
+      ids.eventB,
+      ids.familyB,
+      ids.membershipB,
+      ids.timedEventA,
+    ],
   );
   await owner.query(
-    `INSERT INTO event_occurrences(id,family_id,event_id,event_revision,local_date,status)
-     VALUES ($1,$2,$3,1,'2026-09-19','cancelled'),
-            ($4,$2,$3,2,'2026-09-20','active'),
-            ($5,$6,$7,1,'2026-09-20','active')`,
+    `INSERT INTO event_occurrences(
+       id,family_id,event_id,event_revision,local_date,starts_at,status
+     )
+     VALUES ($1,$2,$3,1,(clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+29,NULL,'cancelled'),
+            ($4,$2,$3,2,(clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+30,NULL,'active'),
+            ($5,$6,$7,1,(clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+30,NULL,'active'),
+            ($8,$2,$9,1,(clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+31,
+             (((clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+31)+time '10:00') AT TIME ZONE 'Asia/Ho_Chi_Minh','active'),
+            ($10,$2,$9,1,(clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+32,
+             (((clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+32)+time '08:00') AT TIME ZONE 'Asia/Ho_Chi_Minh','active'),
+            ($11,$2,$9,1,(clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+33,
+             (((clock_timestamp() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date+33)+time '06:00') AT TIME ZONE 'Asia/Ho_Chi_Minh','active')`,
     [
       ids.oldOccurrenceA,
       ids.familyA,
@@ -135,12 +157,17 @@ async function seed() {
       ids.occurrenceB,
       ids.familyB,
       ids.eventB,
+      ids.timedMorningOccurrenceA,
+      ids.timedEventA,
+      ids.timedEarlyOccurrenceA,
+      ids.timedTooEarlyOccurrenceA,
     ],
   );
   await owner.query('COMMIT');
 }
 
 async function cleanup() {
+  await owner.query('ROLLBACK');
   await owner.query('BEGIN');
   for (const table of ['notifications', 'outbox_jobs', 'notification_preferences']) {
     await owner.query(`DELETE FROM ${table} WHERE family_id = ANY($1::uuid[])`, [
@@ -242,6 +269,103 @@ try {
       ),
     '23514',
   );
+
+  await mustFail(
+    () =>
+      asActor(ids.creatorA, undefined, (client) =>
+        client.query('SELECT public.actor_enqueue_event_reminders($1,$2,$3)', [
+          ids.familyA,
+          ids.eventA,
+          2,
+        ]),
+      ),
+    '42501',
+  );
+  await mustFail(
+    () =>
+      asActor(ids.memberA, 'calendar_write', (client) =>
+        client.query('SELECT public.actor_enqueue_event_reminders($1,$2,$3)', [
+          ids.familyA,
+          ids.eventA,
+          2,
+        ]),
+      ),
+    '42501',
+  );
+  const enqueued = await asActor(ids.creatorA, 'calendar_write', (client) =>
+    client.query('SELECT public.actor_enqueue_event_reminders($1,$2,$3) AS count', [
+      ids.familyA,
+      ids.eventA,
+      2,
+    ]),
+  );
+  assert.equal(enqueued.rows[0].count, 3);
+  const enqueuedRetry = await asActor(ids.creatorA, 'calendar_write', (client) =>
+    client.query('SELECT public.actor_enqueue_event_reminders($1,$2,$3) AS count', [
+      ids.familyA,
+      ids.eventA,
+      2,
+    ]),
+  );
+  assert.equal(enqueuedRetry.rows[0].count, 0);
+  const fanoutRecipients = await owner.query(
+    `SELECT array_agg(recipient_membership_id ORDER BY recipient_membership_id) AS recipients
+       FROM outbox_jobs WHERE family_id=$1 AND event_id=$2`,
+    [ids.familyA, ids.eventA],
+  );
+  assert.deepEqual(
+    fanoutRecipients.rows[0].recipients,
+    [ids.adminMembershipA, ids.creatorMembershipA, ids.memberMembershipA].sort(),
+  );
+  await owner.query('DELETE FROM outbox_jobs WHERE family_id=$1 AND event_id=$2', [
+    ids.familyA,
+    ids.eventA,
+  ]);
+
+  const timedEnqueue = await asActor(ids.creatorA, 'calendar_write', (client) =>
+    client.query('SELECT public.actor_enqueue_event_reminders($1,$2,$3) AS count', [
+      ids.familyA,
+      ids.timedEventA,
+      1,
+    ]),
+  );
+  assert.equal(timedEnqueue.rows[0].count, 6);
+  const timedDueTimes = await owner.query(
+    `SELECT occurrence_id,
+            to_char(due_at AT TIME ZONE 'Asia/Ho_Chi_Minh','HH24:MI') AS due_local
+       FROM outbox_jobs
+      WHERE family_id=$1 AND event_id=$2
+      ORDER BY occurrence_id,due_local`,
+    [ids.familyA, ids.timedEventA],
+  );
+  assert.deepEqual(
+    [
+      ...new Set(
+        timedDueTimes.rows
+          .filter((job) => job.occurrence_id === ids.timedMorningOccurrenceA)
+          .map((job) => job.due_local),
+      ),
+    ],
+    ['09:00'],
+  );
+  assert.deepEqual(
+    [
+      ...new Set(
+        timedDueTimes.rows
+          .filter((job) => job.occurrence_id === ids.timedEarlyOccurrenceA)
+          .map((job) => job.due_local),
+      ),
+    ],
+    ['07:00'],
+  );
+  assert.equal(
+    timedDueTimes.rows.some((job) => job.occurrence_id === ids.timedTooEarlyOccurrenceA),
+    false,
+  );
+  await owner.query('DELETE FROM outbox_jobs WHERE family_id=$1 AND event_id=$2', [
+    ids.familyA,
+    ids.timedEventA,
+  ]);
 
   const job = await asActor(ids.creatorA, 'calendar_write', (client) =>
     client.query(insertJobSql, [

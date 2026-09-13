@@ -32,9 +32,9 @@ async function mustFail(sql, params, expectedCode = '42501') {
 
 try {
   const roles = await client.query(
-    "SELECT rolname, rolcanlogin, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolinherit, rolreplication FROM pg_roles WHERE rolname IN ('family_auth','family_runtime') ORDER BY rolname",
+    "SELECT rolname, rolcanlogin, rolsuper, rolbypassrls, rolcreatedb, rolcreaterole, rolinherit, rolreplication FROM pg_roles WHERE rolname IN ('family_auth','family_runtime','family_worker') ORDER BY rolname",
   );
-  assert.equal(roles.rowCount, 2, 'Both restricted application roles must exist');
+  assert.equal(roles.rowCount, 3, 'All restricted application roles must exist');
   for (const role of roles.rows) {
     assert.deepEqual(
       role,
@@ -121,6 +121,7 @@ try {
     assert.equal(table.relforcerowsecurity, true, `${table.relname} must force RLS`);
     assert.notEqual(table.owner, 'family_auth', `${table.relname} must not be auth owned`);
     assert.notEqual(table.owner, 'family_runtime', `${table.relname} must not be runtime owned`);
+    assert.notEqual(table.owner, 'family_worker', `${table.relname} must not be worker owned`);
   }
 
   const requiredColumns = await client.query(

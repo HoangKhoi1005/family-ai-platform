@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 
-export type ApplicationRole = 'family_auth' | 'family_runtime';
+export type ApplicationRole = 'family_auth' | 'family_runtime' | 'family_worker';
 
 const TENANT_TABLES = [
   'family_spaces',
@@ -93,7 +93,7 @@ export async function assertSafeApplicationRole(
 
   const forbiddenTables = expectedRole === 'family_auth' ? TENANT_TABLES : AUTH_TABLES;
   const privileges =
-    expectedRole === 'family_auth'
+    expectedRole === 'family_auth' || expectedRole === 'family_worker'
       ? await pool.query(
           `SELECT c.relname AS table_name, p.privilege_type
              FROM pg_class c
@@ -114,7 +114,11 @@ export async function assertSafeApplicationRole(
                 )
               )
             LIMIT 1`,
-          [TABLE_PRIVILEGES, ['users', ...AUTH_TABLES], COLUMN_PRIVILEGES],
+          [
+            TABLE_PRIVILEGES,
+            expectedRole === 'family_auth' ? ['users', ...AUTH_TABLES] : [],
+            COLUMN_PRIVILEGES,
+          ],
         )
       : await pool.query(
           `SELECT table_name, privilege_type

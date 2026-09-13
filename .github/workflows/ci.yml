@@ -32,6 +32,7 @@ jobs:
       DATABASE_URL: postgresql://family_test:ephemeral_ci_only@127.0.0.1:5432/family_test
       AUTH_DATABASE_URL: postgresql://family_auth:ephemeral_auth_only@127.0.0.1:5432/family_test
       RUNTIME_DATABASE_URL: postgresql://family_runtime:ephemeral_runtime_only@127.0.0.1:5432/family_test
+      WORKER_DATABASE_URL: postgresql://family_worker:ephemeral_worker_only@127.0.0.1:5432/family_test
       BETTER_AUTH_SECRET: ci-only-better-auth-secret-012345678901234567890123
       WEB_ORIGIN: http://127.0.0.1:3200
       API_INTERNAL_URL: http://127.0.0.1:4010
@@ -59,6 +60,7 @@ jobs:
           DATABASE_URL=postgresql://family_test:ephemeral_ci_only@127.0.0.1:5432/family_test
           AUTH_DATABASE_URL=postgresql://family_auth:ephemeral_auth_only@127.0.0.1:5432/family_test
           RUNTIME_DATABASE_URL=postgresql://family_runtime:ephemeral_runtime_only@127.0.0.1:5432/family_test
+          WORKER_DATABASE_URL=postgresql://family_worker:ephemeral_worker_only@127.0.0.1:5432/family_test
           BETTER_AUTH_SECRET=ci-only-better-auth-secret-012345678901234567890123
           WEB_ORIGIN=http://127.0.0.1:3200
           API_INTERNAL_URL=http://127.0.0.1:4010
@@ -78,6 +80,7 @@ jobs:
       - run: npm run test:calendar-schema
       - run: npm run test:calendar-api
       - run: npm run test:notification-schema
+      - run: npm run test:notification-worker
       - run: npm run test:auth
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

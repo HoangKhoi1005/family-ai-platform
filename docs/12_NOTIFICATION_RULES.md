@@ -17,7 +17,7 @@ Không tự chọn phong tục cho mọi gia đình. Ngày gốc thuộc tháng 
 ## Quy tắc nhắc pilot
 
 - Offsets tùy chọn: trước 7 ngày, 1 ngày và trong ngày; mặc định nhắc 09:00 giờ sự kiện cho all-day. Sự kiện có giờ phải không nhắc sau lúc bắt đầu.
-- Quiet hours baseline 21:00–07:00 theo người nhận. Dời tới cuối quiet hours nếu còn trước hạn hữu ích; nếu đã quá thì bỏ push, vẫn để sự kiện trong lịch.
+- Quiet hours baseline 21:00–07:00 theo người nhận. Worker dời job tới cuối quiet hours nếu còn trước hạn hữu ích; nếu đã quá thì hủy reminder job, vẫn để sự kiện trong lịch.
 - Nhắc trong app là bản ghi nguồn; push là kênh cố gắng gửi, không hứa người dùng chắc chắn nhìn thấy. Bị tắt quyền push vẫn dùng lịch và inbox.
 - Không gửi bù toàn bộ nhắc quá hạn khi worker phục hồi. Baseline bỏ push nhắc quá 2 giờ so với due_at hoặc sự kiện đã bắt đầu, tùy mốc đến trước.
 - Nội dung mặc định: “Nhà mình có một ngày quan trọng sắp tới”. Deep link luôn xác thực lại.

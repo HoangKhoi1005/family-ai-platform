@@ -260,6 +260,28 @@ async function insertOccurrences(
   }
 }
 
+async function enqueueEventReminders(
+  client: PoolClient,
+  input: { familyId: string; eventId: string; revision: number },
+): Promise<void> {
+  await client.query('SELECT public.actor_enqueue_event_reminders($1,$2,$3)', [
+    input.familyId,
+    input.eventId,
+    input.revision,
+  ]);
+}
+
+async function cancelEventReminderJobs(
+  client: PoolClient,
+  input: { familyId: string; eventId: string; keepRevision: number | null },
+): Promise<void> {
+  await client.query('SELECT public.actor_cancel_event_outbox_jobs($1,$2,$3)', [
+    input.familyId,
+    input.eventId,
+    input.keepRevision,
+  ]);
+}
+
 const EVENT_COLUMNS = `
   id,creator_membership_id,member_id,kind,title,note,location,calendar_type,recurrence,
   timezone,date_year,date_month,date_day,lunar_month_mode,lunar_missing_day_policy,
@@ -371,6 +393,11 @@ export async function createCalendarEvent(
     eventId: row.id,
     revision: row.revision,
     occurrences,
+  });
+  await enqueueEventReminders(client, {
+    familyId: input.familyId,
+    eventId: row.id,
+    revision: row.revision,
   });
   await client.query(
     `INSERT INTO event_idempotency_keys(
@@ -576,6 +603,16 @@ export async function updateCalendarEvent(
     revision: row.revision,
     occurrences,
   });
+  await cancelEventReminderJobs(client, {
+    familyId: input.familyId,
+    eventId: input.eventId,
+    keepRevision: row.revision,
+  });
+  await enqueueEventReminders(client, {
+    familyId: input.familyId,
+    eventId: input.eventId,
+    revision: row.revision,
+  });
   await writeAudit(client, {
     familyId: input.familyId,
     actorId: input.actorId,
@@ -616,6 +653,11 @@ export async function cancelCalendarEvent(
       WHERE family_id=$1 AND event_id=$2 AND status='active' AND local_date >= $3::date`,
     [input.familyId, input.eventId, input.today ?? vietnamToday()],
   );
+  await cancelEventReminderJobs(client, {
+    familyId: input.familyId,
+    eventId: input.eventId,
+    keepRevision: null,
+  });
   await writeAudit(client, {
     familyId: input.familyId,
     actorId: input.actorId,
