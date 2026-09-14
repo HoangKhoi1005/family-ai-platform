@@ -172,7 +172,10 @@ try {
   console.log('Stage: relationship approved');
   await member.reload();
   await member.getByRole('button', { name: 'Người thân', exact: true }).click();
-  await member.getByText('Cha / mẹ', { exact: true }).waitFor();
+  await member
+    .getByRole('navigation', { name: 'Quanh người thân' })
+    .getByRole('button', { name: 'Cha / mẹ · Cha kiểm thử' })
+    .waitFor();
   await member.screenshot({ path: evidence + '/flow-family-tree-mobile.png', fullPage: true });
   await member.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await member.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
