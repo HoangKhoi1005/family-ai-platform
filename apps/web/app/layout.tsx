@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
   icons: { apple: '/apple-touch-icon.png' },
 };
-export const viewport: Viewport = { colorScheme: 'light', themeColor: '#315D47' };
+export const viewport: Viewport = { colorScheme: 'light', themeColor: '#285B45' };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi">

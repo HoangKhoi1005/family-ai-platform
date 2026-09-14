@@ -37,7 +37,9 @@ test('preview pages remain usable when browser text is enlarged to 200 percent',
     await page.setViewportSize({ width: 320, height: 720 });
     await page.goto(route);
     if (route === '/design-preview') {
-      await expect(page.getByRole('heading', { name: 'Nhà mình, hôm nay.' })).toBeVisible();
+      await expect(
+        page.getByRole('heading', { name: 'Chào Gia Bảo, nhà mình có gì mới?' }),
+      ).toBeVisible();
     } else {
       await expect(page.getByRole('heading', { name: 'Nguyễn Thị Thanh Hương' })).toBeVisible();
     }

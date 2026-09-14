@@ -1,10 +1,18 @@
 # Trạng thái dự án
 
-- Cập nhật: 2026-09-14. Context version: **1.4.0**.
+- Cập nhật: 2026-09-14. Context version: **1.5.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
 - Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat, moments và AI chưa có backend hoàn chỉnh.
-- Gói đồng bộ Project Brain và PWA foundation riêng tư đã hoàn thiện trên `feat/project-brain-pwa-foundation`; chưa merge vào `main`. Manifest, launcher icons, service-worker lifecycle và hướng dẫn cài đặt trong Tôi đã có code và browser test; push, offline data và production hosting vẫn chưa triển khai.
+- Gói đồng bộ Project Brain và PWA foundation riêng tư đã merge vào `main` tại `ac8fb16` qua PR #19. Manifest, launcher icons, service-worker lifecycle và hướng dẫn cài đặt trong Tôi đã có code và browser test; push, offline data và production hosting vẫn chưa triển khai.
+
+## Hệ thống trải nghiệm mobile A+B+C — đang ở nhánh feature
+
+- Chủ dự án duyệt **A — Nhà đang sống** làm nền tảng cho Nhà/Khoảnh khắc, **B — Dòng ký ức** cho Kỷ niệm và **C — Quanh người thân** cho Gia phả. Quyết định ở PAD-023 và spec ngày 2026-09-14; năm tab chính không đổi, Kỷ niệm mở theo ngữ cảnh.
+- `feat/mobile-experience-redesign` đã đổi tokens sang sans-serif hệ thống, nền trung tính ấm, xanh lá trầm và đỏ sơn mài; màu manifest/theme bar PWA đã đồng bộ. Home preview có lời chào, hàng người vừa cập nhật, một Khoảnh khắc chính, hành động gửi, ngày gần nhất và lối vào Kỷ niệm/Gia phả.
+- Route `/design-preview/memories` dùng timeline ảnh/lời kể/sự kiện có nguồn hư cấu và nút voice chỉ mô phỏng trạng thái, không giả phát âm thanh hay gọi API. Gia phả có lớp định hướng quan hệ trực tiếp quanh người được chọn trước canvas; graph, directory, URL selection và member sheet giữ nguyên.
+- Visual review ở 390×844 và 1280×900 phát hiện rồi sửa prefix `/memories` bị nhận nhầm là tab Tôi và hero desktop đẩy hành động chính khỏi màn hình đầu. Sáu ảnh review không tràn ngang và không phát sinh request `/api/*`; browser matrix tiếp tục đạt ở 320/390/768/1280.
+- Full `npm run check` đạt trên nhánh: boundaries, tokens, PWA safety, lint, format, typecheck **13/13 Turbo tasks**, **152/152 unit tests trong 31 file**, Project Brain **71 Markdown / 4 JSON / 24 seed cases** và production build đủ 8 workspace. Bốn E2E suite liên quan đạt **57 pass, 3 skip đúng theo project** trên Chromium desktop/Pixel 7; route Kỷ niệm được đưa vào kiểm tra dữ liệu hư cấu, không gọi API và viewport matrix.
 
 ## Gói A — ổn định onboarding
 
@@ -35,14 +43,14 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 ## Trải nghiệm mobile-primary và cây gia phả
 
 - Chủ dự án xác nhận điện thoại là ứng dụng chính. Pilot vẫn phát hành web/PWA trước; desktop dùng rail để mở rộng cùng năm đích **Nhà · Khoảnh khắc · Gia phả · Trò chuyện · Tôi**. Quản trị nằm dưới Tôi.
-- `/design-preview` dùng app bar, tab bar cố định có safe-area và Home theo nhịp dùng hằng ngày: lời chào, ngày gần nhất, moments, gửi ảnh gọn, nhắc việc và lối vào cây. Empty state vẫn có.
+- `/design-preview` dùng app bar, tab bar cố định có safe-area và Home theo hướng Nhà đang sống: lời chào, người vừa cập nhật, một Khoảnh khắc chính, gửi ảnh gọn, ngày gần nhất và lối vào Kỷ niệm/Gia phả. Empty state vẫn có.
 - `/design-preview/moments` có feed riêng tư, đối tượng nhận thay đổi theo lựa chọn, phản hồi “Thương”, trả lời riêng và composer dạng sheet hoạt động cục bộ. `/design-preview/chat` mở được thread Cả nhà hoặc Minh Anh và gửi tin local với nhãn chưa đồng bộ. `/design-preview/me` gom đúng hồ sơ Gia Bảo, thông báo, giải thích phạm vi riêng tư và lối duyệt thành viên.
-- Hướng thị giác vẫn là **Album gia đình Việt đương đại**: nền giấy ấm, chữ màu mực, xanh lá trầm, điểm nhấn đất nung, con người/câu chuyện quyết định bố cục. Font serif token dùng fallback có glyph tiếng Việt ổn định trong Windows và Chromium CI.
+- Hướng thị giác hiện hành là **Nhà đang sống + Dòng ký ức + Quanh người thân**: sans-serif tiếng Việt ổn định, ảnh/câu chuyện quyết định bố cục, xanh lá trầm và đỏ sơn mài dùng có tiết chế. Không dùng giant serif heading, nhãn chữ hoa và đường kẻ như công thức chung cho mọi màn hình.
 - Hồ sơ có quick actions Gọi/Nhắn/Email và view/edit/saving/error/conflict. Quản trị có pending/empty/conflict, quyết định cục bộ và state lưu trong URL.
 - `/design-preview/tree` dùng 15 người hư cấu và 22 relationship fixtures tường minh. SVG sinh một cạnh cho mỗi quan hệ đã xác nhận; Hoàng An chưa rõ nhánh chỉ ở danh bạ. Cây có ba thế hệ, zoom cục bộ, “Về tôi”, URL-backed selection, reload/deep-link, danh bạ tìm không dấu và member bottom sheet có focus trap, Escape, backdrop và trả focus đúng nút trên mobile. Desktop dùng vùng bổ trợ liền kề.
 - Graph thật trong `/app` đã dùng `@xyflow/react`: kéo nền, pinch/wheel zoom, **Thu nhỏ**, **Phóng to**, **Vừa cây**, **Về tôi**, kéo node bằng tay nắm riêng và thu/mở nhánh. Thanh điều khiển bám dưới app bar trên mobile; node, chữ và màu tiếp tục dùng ngôn ngữ album gia đình thay vì giao diện mặc định của trình sửa sơ đồ.
 - Membership active trong `/app` đã dùng app bar, tab bar mobile có safe-area và desktop rail. Home chỉ hiển thị tên nhà, danh tính và số thành viên từ API thật. Gia phả tải graph đã duyệt quanh hồ sơ đang liên kết, giữ danh bạ làm lối tương đương, mở hồ sơ đã lọc liên hệ phía server và gửi đề xuất quan hệ chờ duyệt. Moments và Chat là trạng thái chưa sẵn sàng trung thực, không gửi API giả hoặc trộn fixture. Guest, invitation, pending và revoked vẫn dùng luồng truy cập đã ổn định.
-- Đây vẫn chưa phải UI cuối. Ba bề mặt connected Home, Gia phả/danh bạ và Tôi đã được kiểm trực quan ở Pixel 7; cần tiếp tục thử với thành viên gia đình thật trước khi mở rộng các tính năng giữ chân.
+- Đây vẫn chưa phải UI cuối. Hướng A+B+C mới nằm ở design preview; `/app` connected vẫn giữ UI trước đó cho đến khi browser test, visual review và thử với thành viên gia đình thật đạt.
 
 ## Quan hệ gia đình và canvas — đã merge
 
@@ -88,10 +96,11 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Chủ dự án thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
-2. Chọn hosting/domain HTTPS rồi thử PWA trên iPhone/Android thật; chỉ thiết kế push provider/standard và bật push sau khi có thiết bị để thử app đóng.
-3. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
-4. Chuẩn bị vertical slice Moments trước Chat; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
+1. Duyệt trực quan Home, Kỷ niệm và lớp Quanh người thân mới; sau đó nâng Khoảnh khắc, hồ sơ, Tôi, onboarding và admin theo đúng nhiệm vụ riêng của từng màn hình.
+2. Thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
+3. Nối Home A+B+C vào `/app` bằng dữ liệu thật theo từng vertical slice; không mang fixture Kỷ niệm hoặc Khoảnh khắc sang connected app.
+4. Chọn hosting/domain HTTPS, mail production, storage và quy trình bootstrap admin trước pilot; chỉ bật push sau khi có thiết bị thật để thử app đóng.
+5. Chuẩn bị backend vertical slice Moments trước Chat; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
 
 ## Calendar Core và Mobile Calendar — đã merge
 

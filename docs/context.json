@@ -1,10 +1,10 @@
 {
   "project": "family-ai-platform",
-  "context_version": "1.4.0",
+  "context_version": "1.5.0",
   "updated_at": "2026-09-14",
-  "stage": "pilot-core-pwa-foundation",
+  "stage": "pilot-core-mobile-experience-redesign",
   "pilot_people": 15,
   "implementation_exists": true,
-  "baseline": "pwa-delivery-mobile-primary-experience",
+  "baseline": "pwa-delivery-mobile-primary-abc-experience",
   "technical_stack_status": "npm-turbo-typescript-next-fastify-postgresql; better-auth-selected; hosting-storage-llm-not-selected"
 }

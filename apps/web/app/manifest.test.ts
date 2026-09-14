@@ -14,6 +14,8 @@ describe('PWA manifest', () => {
       start_url: '/app',
       scope: '/',
       display: 'standalone',
+      background_color: '#F4F2EB',
+      theme_color: '#285B45',
     });
   });
 

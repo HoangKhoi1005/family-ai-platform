@@ -1,5 +1,18 @@
 import { expect, test } from '@playwright/test';
 
+test('person context orients the viewer before they enter the full canvas', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/design-preview/tree');
+
+  const context = page.getByRole('region', { name: 'Người thân quanh Gia Bảo' });
+  await expect(context).toBeVisible();
+  await expect(context.getByText('Cha / mẹ', { exact: true })).toHaveCount(2);
+
+  await context.getByRole('button', { name: 'Xem Cha / mẹ Nguyễn Minh Đức', exact: true }).click();
+  await expect(page).toHaveURL(/person=minh-duc/);
+  await expect(page.getByRole('dialog', { name: 'Hồ sơ người thân' })).toBeVisible();
+});
+
 test('selected relative is reflected in the URL and restored after reload', async ({ page }) => {
   await page.goto('/design-preview/tree');
   await expect(page.getByText('Quanh Gia Bảo', { exact: true })).toBeVisible();

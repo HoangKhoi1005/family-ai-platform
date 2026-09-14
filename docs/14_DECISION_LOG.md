@@ -42,3 +42,7 @@ Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISI
 ## Ngày quan trọng — 2026-09-13
 
 - **PAD-022 / Confirmed:** sau cây gia phả, triển khai Ngày quan trọng/nhắc ngày làm vertical slice giữ chân đầu tiên. Timeline mở từ Nhà mình và chuông mở inbox, không thêm bottom-tab ngoài năm đích mobile-primary. Làm calendar core → trải nghiệm mobile → inbox/outbox → push pilot; push không chặn dữ liệu lịch và chỉ hoàn thành sau thử app đóng trên thiết bị thật. [Thiết kế](superpowers/specs/2026-09-13-family-calendar-foundation-design.md).
+
+## Hệ thống trải nghiệm mobile — 2026-09-14
+
+- **PAD-023 / Confirmed:** dùng **A — Nhà đang sống** làm nền tảng cho Nhà/Khoảnh khắc, **B — Dòng ký ức** cho Kỷ niệm và **C — Quanh người thân** cho Gia phả. Giữ năm đích chính theo PAD-020; Kỷ niệm mở theo ngữ cảnh thay vì thêm tab thứ sáu. Triển khai và duyệt ở design preview theo từng surface trước khi đưa vào `/app`. [Thiết kế](superpowers/specs/2026-09-14-mobile-experience-redesign-design.md).

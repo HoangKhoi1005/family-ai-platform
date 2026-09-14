@@ -1,6 +1,6 @@
 # Mục lục và quản lý context
 
-Context **1.4.0** — 2026-09-09. [Metadata](context.json) là nơi duy nhất khai báo phiên bản bằng máy.
+Context **1.5.0** — 2026-09-14. [Metadata](context.json) là nơi duy nhất khai báo phiên bản bằng máy.
 
 ## Đọc theo nhu cầu
 
@@ -48,6 +48,7 @@ Trạng thái quyết định:
 
 ## Lịch sử context
 
+- 1.5.0 / 2026-09-14: chủ dự án duyệt A — Nhà đang sống làm nền tảng, B — Dòng ký ức cho Kỷ niệm và C — Quanh người thân cho Gia phả. Kỷ niệm mở theo ngữ cảnh, không thêm tab thứ sáu. Design preview bắt đầu áp dụng hệ thống sans-serif và ba lớp trải nghiệm trước khi rollout vào `/app`.
 - 1.4.0 / 2026-09-09: chủ dự án xác nhận điện thoại là trải nghiệm chính. Design preview chuyển sang năm tab Nhà, Khoảnh khắc, Gia phả, Trò chuyện, Tôi; PWA/web vẫn là cách phát hành pilot và desktop mở rộng từ cùng cấu trúc mobile.
 - 1.3.0 / 2026-09-09: onboarding đã được tích hợp và ổn định thêm cho mất mạng, claim thay đổi/hết hạn, thu hồi quyền và response cũ; browser flow thật trở thành gate CI. Làm trực tiếp là mặc định để tiết kiệm context, subagent chỉ dùng khi có lợi ích rõ.
 - 1.2.0 / 2026-09-08: chủ dự án duyệt [đợt onboarding](superpowers/specs/2026-09-08-onboarding.md), email/mật khẩu và review UI trước triển khai hàng loạt; bổ sung tiêu chí tránh AI slop và lựa chọn Luna xhigh. Trạng thái implementation tra CURRENT_STATE.

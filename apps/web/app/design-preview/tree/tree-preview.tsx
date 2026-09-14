@@ -8,6 +8,7 @@ import { TreeCanvas } from './tree-canvas';
 import { TreeDirectory } from './tree-directory';
 import { getTreePerson } from './tree-model';
 import { MemberSheet } from './member-sheet';
+import { RelationshipOrbit } from './relationship-orbit';
 import styles from './tree.module.css';
 
 export function TreePreview() {
@@ -67,8 +68,8 @@ export function TreePreview() {
     <main id="main" className={styles.treePage}>
       <header ref={treeTopRef} id="tree-top" className={styles.treeMasthead} tabIndex={-1}>
         <div>
-          <p>GIA PHẢ · 15 NGƯỜI</p>
-          <h1>Cây nhà mình</h1>
+          <p>15 người đã xác nhận</p>
+          <h1>Gia phả nhà mình</h1>
         </div>
         <div className={styles.treeIntro}>
           <nav aria-label="Chế độ xem gia phả">
@@ -84,6 +85,7 @@ export function TreePreview() {
           </nav>
         </div>
       </header>
+      {!directoryView ? <RelationshipOrbit selected={selected} onSelect={selectPerson} /> : null}
       <div className={styles.treeWorkspace}>
         {directoryView ? (
           <TreeDirectory

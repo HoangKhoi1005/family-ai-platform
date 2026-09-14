@@ -21,6 +21,12 @@ const destinations: ReadonlyArray<Destination> = [
   { label: 'Tôi', href: '/design-preview/me', icon: 'me' },
 ];
 
+function isDestinationActive(pathname: string, href: string) {
+  if (pathname === '/design-preview/memories') return href === '/design-preview';
+  if (href === '/design-preview') return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function PreviewShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const onboarding = pathname.startsWith('/design-preview/join');
@@ -55,8 +61,8 @@ export function PreviewShell({ children }: { children: ReactNode }) {
             NM
           </span>
           <span>
-            <small>NHÀ ÔNG BÌNH &amp; BÀ MAI</small>
-            <strong>Nhà mình</strong>
+            <small>Nhà mình</small>
+            <strong>Nhà ông Bình &amp; bà Mai</strong>
           </span>
         </Link>
         <div className={styles.appBarActions}>
@@ -80,8 +86,7 @@ export function PreviewShell({ children }: { children: ReactNode }) {
         </Link>
         <div className={styles.navigationItems}>
           {destinations.map(({ label, href, icon }) => {
-            const active =
-              href === '/design-preview' ? pathname === href : pathname.startsWith(href);
+            const active = isDestinationActive(pathname, href);
             return (
               <Link key={href} href={href} aria-current={active ? 'page' : undefined}>
                 <NavIcon name={icon} />

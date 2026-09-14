@@ -23,7 +23,8 @@
 
 .appBar {
   align-items: center;
-  background: color-mix(in srgb, var(--color-surface-primary) 96%, transparent);
+  background: color-mix(in srgb, var(--color-surface-primary) 94%, transparent);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--color-border-soft);
   display: flex;
   height: 64px;
@@ -49,9 +50,8 @@
 
 .houseIdentity small {
   color: var(--color-text-secondary);
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 650;
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -60,14 +60,15 @@
 
 .houseIdentity strong {
   font-family: var(--typography-font-title);
-  font-size: 20px;
+  font-size: 15px;
+  letter-spacing: -0.02em;
   line-height: 1.2;
 }
 
 .houseMark {
   align-items: center;
   background: var(--color-brand-primary);
-  border-radius: 50% 50% 42% 48%;
+  border-radius: 14px 14px 14px 5px;
   color: var(--color-on-brand);
   display: inline-flex;
   flex: 0 0 40px;
@@ -227,6 +228,394 @@
 
 .homePage {
   overflow-x: clip;
+}
+
+.homeGreeting {
+  padding: 24px 2px 14px;
+}
+
+.homeGreeting p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 0 0 6px;
+  text-transform: capitalize;
+}
+
+.homeGreeting h1 {
+  font-family: var(--typography-font-title);
+  font-size: clamp(27px, 8vw, 36px);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  margin: 0;
+  max-width: 580px;
+  overflow-wrap: anywhere;
+}
+
+.homePulse {
+  display: flex;
+  gap: 11px;
+  margin-inline: -16px;
+  overflow-x: auto;
+  padding: 4px 16px 19px;
+  scrollbar-width: none;
+}
+
+.homePulse::-webkit-scrollbar {
+  display: none;
+}
+
+.pulseCreate,
+.pulsePerson {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex: 0 0 58px;
+  flex-direction: column;
+  font-size: 10px;
+  gap: 6px;
+  min-height: 72px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pulseCreate > span:first-child,
+.pulsePortrait {
+  align-items: center;
+  background: var(--color-surface-primary);
+  border: 1px dashed color-mix(in srgb, var(--color-brand-primary) 58%, transparent);
+  border-radius: 20px;
+  display: flex;
+  height: 52px;
+  justify-content: center;
+  width: 52px;
+}
+
+.pulseCreate > span:first-child {
+  color: var(--color-brand-primary);
+  font-size: 24px;
+  font-weight: 450;
+}
+
+.pulsePortrait {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-background-primary);
+  overflow: hidden;
+}
+
+.pulsePortrait > span {
+  height: 48px;
+  width: 48px;
+}
+
+.pulseCreate small,
+.pulsePerson small {
+  font-size: 10px;
+  line-height: 1.15;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.homePulse a:focus-visible,
+.homeMomentSection a:focus-visible,
+.homeEvent:focus-visible,
+.homePaths a:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.homeMomentSection {
+  padding-bottom: 18px;
+}
+
+.homeSectionHeading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 11px;
+}
+
+.homeSectionHeading h2 {
+  font-size: 18px;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.homeSectionHeading a {
+  align-items: center;
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 750;
+  min-height: 44px;
+}
+
+.heroMoment {
+  background: var(--color-text-primary);
+  border-radius: var(--radius-px-card);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--color-text-primary) 18%, transparent);
+  color: var(--color-on-brand);
+  overflow: hidden;
+}
+
+.heroMomentVisual {
+  aspect-ratio: 5 / 4;
+  background-color: #d7c7a9;
+  background-image:
+    linear-gradient(180deg, transparent 58%, rgba(20, 34, 28, 0.34)),
+    url('/illustrations/family-dinner-preview.svg');
+  background-position: center;
+  background-size: cover;
+  padding: 13px;
+}
+
+.heroMomentVisual > span {
+  background: rgba(25, 37, 32, 0.72);
+  border-radius: var(--radius-px-pill);
+  color: var(--color-on-brand);
+  display: inline-flex;
+  font-size: 10px;
+  font-weight: 650;
+  padding: 6px 9px;
+}
+
+.heroMomentBody {
+  padding: 14px 15px 15px;
+}
+
+.heroMomentBody > header,
+.heroMomentBody > header > a,
+.heroMomentBody > footer {
+  align-items: center;
+  display: flex;
+}
+
+.heroMomentBody > header {
+  justify-content: space-between;
+}
+
+.heroMomentBody > header > a {
+  gap: 9px;
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.heroMomentBody > header > a > span:last-child {
+  display: grid;
+}
+
+.heroMomentBody header strong {
+  font-size: 12px;
+}
+
+.heroMomentBody header small {
+  color: color-mix(in srgb, var(--color-on-brand) 70%, transparent);
+  font-size: 10px;
+}
+
+.audienceLabel {
+  border: 1px solid color-mix(in srgb, var(--color-on-brand) 32%, transparent);
+  border-radius: var(--radius-px-pill);
+  font-size: 10px;
+  padding: 5px 8px;
+}
+
+.heroMomentBody > p {
+  font-size: 18px;
+  font-weight: 690;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  margin: 9px 0 12px;
+}
+
+.heroMomentBody > footer {
+  border-top: 1px solid color-mix(in srgb, var(--color-on-brand) 18%, transparent);
+  color: color-mix(in srgb, var(--color-on-brand) 73%, transparent);
+  font-size: 10px;
+  justify-content: space-between;
+  padding: 10px 0 0;
+}
+
+.heroMomentBody > footer a {
+  color: var(--color-on-brand);
+  font-size: 11px;
+  font-weight: 750;
+  min-height: 44px;
+  align-items: center;
+  display: inline-flex;
+}
+
+.shareMomentAction {
+  align-items: center;
+  background: var(--color-accent);
+  border-radius: 18px;
+  color: var(--color-on-brand);
+  display: flex;
+  gap: 11px;
+  margin: 11px 5px 0;
+  min-height: 58px;
+  padding: 8px 13px;
+  text-decoration: none;
+}
+
+.shareMomentAction > span:first-child {
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--color-on-brand) 52%, transparent);
+  border-radius: 13px;
+  display: flex;
+  flex: 0 0 38px;
+  font-size: 21px;
+  height: 38px;
+  justify-content: center;
+}
+
+.shareMomentAction > span:last-child {
+  display: grid;
+}
+
+.shareMomentAction strong {
+  font-size: 13px;
+}
+
+.shareMomentAction small {
+  color: color-mix(in srgb, var(--color-on-brand) 78%, transparent);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.homeEvent {
+  align-items: center;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 18px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 48px minmax(0, 1fr) 12px;
+  margin: 3px 0 22px;
+  min-height: 82px;
+  padding: 10px 13px;
+  text-decoration: none;
+}
+
+.homeEvent > time {
+  align-content: center;
+  background: var(--color-accent-soft);
+  border-radius: 14px;
+  color: color-mix(in srgb, var(--color-accent) 84%, var(--color-text-primary));
+  display: grid;
+  height: 52px;
+  justify-items: center;
+}
+
+.homeEvent > time strong {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.homeEvent > time span,
+.homeEvent > span:nth-child(2) small,
+.homeEvent > span:nth-child(2) > span {
+  font-size: 10px;
+}
+
+.homeEvent > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.homeEvent > span:nth-child(2) small {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.homeEvent > span:nth-child(2) strong {
+  font-size: 13px;
+}
+
+.homeEvent > span:nth-child(2) > span {
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.homePaths {
+  display: grid;
+  gap: 12px;
+}
+
+.homePaths > a {
+  min-height: 150px;
+  padding: 17px;
+  text-decoration: none;
+}
+
+.homePaths small {
+  display: block;
+  font-size: 10px;
+  margin-bottom: 7px;
+}
+
+.homePaths strong {
+  display: block;
+  font-size: 17px;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.memoryPath {
+  background: #293348;
+  border-radius: 8px 26px 26px 26px;
+  color: #f8f4e8;
+}
+
+.memoryPath small,
+.memoryPath > span {
+  color: #cfd5d1;
+}
+
+.memoryPath > span {
+  align-items: center;
+  display: flex;
+  font-size: 11px;
+  justify-content: space-between;
+  margin-top: 26px;
+}
+
+.memoryPath b {
+  font-size: 21px;
+  font-weight: 450;
+}
+
+.treePath {
+  background: var(--color-brand-secondary);
+  border-radius: 26px 26px 8px 26px;
+  color: var(--color-brand-primary);
+}
+
+.treePath .familyFaces {
+  margin-bottom: 17px;
+}
+
+.treePath .familyFaces > span {
+  align-items: center;
+  background: var(--color-surface-primary);
+  border: 2px solid var(--color-brand-secondary);
+  border-radius: 14px;
+  color: var(--color-brand-primary);
+  display: flex;
+  font-size: 9px;
+  font-weight: 800;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.treePath small {
+  color: color-mix(in srgb, var(--color-brand-primary) 72%, transparent);
 }
 
 .mobilePageHeader {
@@ -1226,6 +1615,27 @@
   .mePage {
     max-width: 1040px;
     padding-inline: 32px;
+  }
+  .heroMoment {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+    min-height: 390px;
+  }
+  .heroMomentVisual {
+    aspect-ratio: auto;
+    min-height: 390px;
+  }
+  .heroMomentBody {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px;
+  }
+  .heroMomentBody > p {
+    font-size: 22px;
+  }
+  .homePaths {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .mobilePageHeader {
     padding-top: 44px;
