@@ -128,7 +128,8 @@ async function openInstallPanel(page: Page) {
 test('offers the Chromium install prompt only after a deliberate tap', async ({
   page,
 }, testInfo) => {
-  await openInstallPanel(page);
+  await mockConnectedProfile(page);
+  await page.goto('/app');
   await page.evaluate(() => {
     const host = window as Window & { __pwaPromptCalls?: number };
     host.__pwaPromptCalls = 0;
@@ -141,6 +142,8 @@ test('offers the Chromium install prompt only after a deliberate tap', async ({
     });
     window.dispatchEvent(event);
   });
+  await page.getByRole('button', { name: 'Hồ sơ của tôi' }).click();
+  await expect(page.getByRole('heading', { name: 'Cài Nhà mình trên điện thoại' })).toBeVisible();
 
   await expect(page.getByRole('button', { name: 'Cài ứng dụng' })).toBeVisible();
   const screenshot = testInfo.outputPath('install-guidance.png');
@@ -169,6 +172,31 @@ test('shows manual Add to Home Screen steps on an iPhone browser', async ({ page
 
   await expect(page.getByText('Chia sẻ', { exact: true })).toBeVisible();
   await expect(page.getByText('Thêm vào Màn hình chính', { exact: true })).toBeVisible();
+});
+
+test('keeps a usable fallback when the browser install prompt fails', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  await mockConnectedProfile(page);
+  await page.goto('/app');
+  await page.evaluate(() => {
+    const event = new Event('beforeinstallprompt', { cancelable: true });
+    Object.assign(event, {
+      prompt: async () => {
+        throw new Error('browser prompt unavailable');
+      },
+      userChoice: Promise.resolve({ outcome: 'dismissed', platform: 'web' }),
+    });
+    window.dispatchEvent(event);
+  });
+  await page.getByRole('button', { name: 'Hồ sơ của tôi' }).click();
+
+  await page.getByRole('button', { name: 'Cài ứng dụng' }).click();
+
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Không mở được yêu cầu cài đặt' }),
+  ).toBeVisible();
+  expect(pageErrors).toEqual([]);
 });
 
 test('confirms standalone mode without showing another install action', async ({ page }) => {

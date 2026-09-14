@@ -58,4 +58,19 @@ describe('PWA installation model', () => {
       }),
     ).toBe(false);
   });
+
+  it('keeps an early browser prompt until the profile panel can consume it', async () => {
+    const model = await loadModel();
+    const prompt = Object.assign(new Event('beforeinstallprompt'), {
+      prompt: async () => undefined,
+      userChoice: Promise.resolve({ outcome: 'accepted' as const, platform: 'web' }),
+    });
+
+    expect(model?.rememberInstallPrompt).toBeTypeOf('function');
+    model?.rememberInstallPrompt(prompt);
+
+    expect(model?.currentInstallPrompt()).toBe(prompt);
+    expect(model?.takeInstallPrompt()).toBe(prompt);
+    expect(model?.currentInstallPrompt()).toBeNull();
+  });
 });

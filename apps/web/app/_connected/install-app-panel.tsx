@@ -1,22 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { isAppleMobileBrowser, resolveInstallState } from './pwa-install';
+import {
+  clearInstallPrompt,
+  currentInstallPrompt,
+  INSTALL_PROMPT_CHANGE_EVENT,
+  isAppleMobileBrowser,
+  resolveInstallState,
+  takeInstallPrompt,
+  type StoredInstallPrompt,
+} from './pwa-install';
 import s from './connected.module.css';
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-};
 
 type NavigatorWithStandalone = Navigator & { standalone?: boolean };
 
 export function InstallAppPanel() {
-  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [promptEvent, setPromptEvent] = useState<StoredInstallPrompt | null>(null);
   const [standalone, setStandalone] = useState(false);
   const [appleMobile, setAppleMobile] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [installError, setInstallError] = useState('');
 
   useEffect(() => {
     const updateEnvironment = () => {
@@ -32,21 +36,20 @@ export function InstallAppPanel() {
         }),
       );
     };
-    const onPrompt = (event: Event) => {
-      event.preventDefault();
-      setPromptEvent(event as BeforeInstallPromptEvent);
-    };
+    const updatePrompt = () => setPromptEvent(currentInstallPrompt());
     const onInstalled = () => {
-      setPromptEvent(null);
+      clearInstallPrompt();
+      updatePrompt();
       setStandalone(true);
       setAccepted(false);
     };
 
     updateEnvironment();
-    window.addEventListener('beforeinstallprompt', onPrompt);
+    updatePrompt();
+    window.addEventListener(INSTALL_PROMPT_CHANGE_EVENT, updatePrompt);
     window.addEventListener('appinstalled', onInstalled);
     return () => {
-      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener(INSTALL_PROMPT_CHANGE_EVENT, updatePrompt);
       window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
@@ -59,12 +62,19 @@ export function InstallAppPanel() {
 
   const install = async () => {
     if (!promptEvent || installing) return;
+    takeInstallPrompt();
+    setPromptEvent(null);
     setInstalling(true);
+    setInstallError('');
     try {
       await promptEvent.prompt();
       const choice = await promptEvent.userChoice;
       setAccepted(choice.outcome === 'accepted');
-      setPromptEvent(null);
+    } catch {
+      setAccepted(false);
+      setInstallError(
+        'Không mở được yêu cầu cài đặt. Bạn có thể dùng mục Thêm vào màn hình chính trong menu trình duyệt.',
+      );
     } finally {
       setInstalling(false);
     }
@@ -97,7 +107,7 @@ export function InstallAppPanel() {
 
         {state === 'ios-instructions' && (
           <>
-            <p>Trên Safari, bạn chỉ cần làm ba bước:</p>
+            <p>Trên iPhone hoặc iPad, bạn chỉ cần làm ba bước:</p>
             <ol className={s.installSteps}>
               <li>
                 Chạm <strong>Chia sẻ</strong> trên thanh công cụ.
@@ -122,6 +132,11 @@ export function InstallAppPanel() {
         {accepted && (
           <p className={s.installHint} role="status">
             Trình duyệt đang hoàn tất việc cài đặt.
+          </p>
+        )}
+        {installError && (
+          <p className={s.installError} role="alert">
+            {installError}
           </p>
         )}
         <small>

@@ -1,5 +1,32 @@
 export type InstallState = 'installed' | 'prompt-ready' | 'ios-instructions' | 'fallback';
 
+export type StoredInstallPrompt = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
+
+export const INSTALL_PROMPT_CHANGE_EVENT = 'family-pwa-install-prompt-change';
+
+let pendingInstallPrompt: StoredInstallPrompt | null = null;
+
+export function rememberInstallPrompt(prompt: StoredInstallPrompt) {
+  pendingInstallPrompt = prompt;
+}
+
+export function currentInstallPrompt() {
+  return pendingInstallPrompt;
+}
+
+export function takeInstallPrompt() {
+  const prompt = pendingInstallPrompt;
+  pendingInstallPrompt = null;
+  return prompt;
+}
+
+export function clearInstallPrompt() {
+  pendingInstallPrompt = null;
+}
+
 export function resolveInstallState({
   standalone,
   appleMobile,

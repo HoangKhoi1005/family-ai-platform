@@ -845,7 +845,7 @@
   font: 600 clamp(22px, 6vw, 29px) / 1.06 var(--typography-font-title);
   letter-spacing: -0.025em;
 }
-.installPanelBody > p:not(.eyebrow, .installStatus, .installHint) {
+.installPanelBody > p:not(.eyebrow, .installStatus, .installHint, .installError) {
   max-width: 600px;
   margin: 0 0 15px;
   color: var(--color-text-secondary);
@@ -876,7 +876,8 @@
   line-height: 1.45;
 }
 .installStatus,
-.installHint {
+.installHint,
+.installError {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -884,6 +885,10 @@
   color: var(--color-brand-primary);
   font-size: 14px;
   font-weight: 700;
+}
+.installError {
+  color: var(--color-danger);
+  font-weight: 600;
 }
 .installStatus span {
   display: grid;
