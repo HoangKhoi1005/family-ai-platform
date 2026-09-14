@@ -1,4 +1,5 @@
 import { createDatabasePool, assertSafeApplicationRoles } from '@family/database';
+import { readMediaStorageConfig, S3MediaStorage } from '@family/media';
 import { readServerConfig } from '@family/config';
 import { buildApp } from './app.js';
 import { createAuth } from './auth/auth.js';
@@ -23,6 +24,9 @@ const authConfig = authEnvPresent ? readAuthConfig(process.env) : undefined;
 const authPool = authConfig ? createDatabasePool(authConfig.authDatabaseUrl) : undefined;
 const runtimePool = authConfig ? createDatabasePool(authConfig.runtimeDatabaseUrl) : undefined;
 const mailer = authConfig ? createAuthMailer(authConfig) : undefined;
+const mediaStorage = authConfig
+  ? new S3MediaStorage(readMediaStorageConfig(process.env))
+  : undefined;
 
 try {
   if (authConfig && authPool && runtimePool) {
@@ -33,7 +37,12 @@ try {
     authConfig && authPool && mailer ? createAuth(authConfig, authPool, mailer) : undefined;
   const app = buildApp(
     auth && authConfig && runtimePool
-      ? { auth, publicOrigin: authConfig.webOrigin, runtimePool }
+      ? {
+          auth,
+          publicOrigin: authConfig.webOrigin,
+          runtimePool,
+          ...(mediaStorage ? { mediaStorage } : {}),
+        }
       : undefined,
   );
   let shuttingDown = false;

@@ -1,13 +1,20 @@
 import { readdirSync, readFileSync } from 'node:fs';
 const allowed = {
   '@family/web': ['@family/ui', '@family/contracts', '@family/domain'],
-  '@family/api': ['@family/contracts', '@family/domain', '@family/config', '@family/database'],
-  '@family/worker': ['@family/config', '@family/domain', '@family/database'],
+  '@family/api': [
+    '@family/contracts',
+    '@family/domain',
+    '@family/config',
+    '@family/database',
+    '@family/media',
+  ],
+  '@family/worker': ['@family/config', '@family/domain', '@family/database', '@family/media'],
   '@family/ui': [],
   '@family/contracts': [],
   '@family/domain': [],
   '@family/config': [],
   '@family/database': [],
+  '@family/media': [],
 };
 let count = 0;
 for (const folder of ['apps', 'packages']) {

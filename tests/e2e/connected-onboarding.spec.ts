@@ -717,7 +717,9 @@ test('ignores an older refresh response after logout', async ({ page }) => {
   await page.route('**/api/auth/sign-out', (route) => route.fulfill({ json: { ok: true } }));
 
   await page.goto('/app');
-  await expect(page.getByRole('heading', { name: 'Nhà mình ở đây.' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Chào Người minh họa, nhà mình có gì mới?' }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await refreshStarted;

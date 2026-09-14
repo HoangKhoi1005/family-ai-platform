@@ -9,6 +9,18 @@ import type {
   NotificationListResponse,
   NotificationPreferencesDto,
   UpdateNotificationPreferencesInput,
+  AddMemoryItemInput,
+  CreateMediaUploadInput,
+  CreateMemoryFromMomentInput,
+  CreateMemoryInput,
+  CreateMomentInput,
+  MediaAssetDto,
+  MediaUploadGrantResponse,
+  MemoryDto,
+  MemoryListResponse,
+  MomentDto,
+  MomentListResponse,
+  UpdateMomentReactionInput,
 } from '@family/contracts';
 
 export class RequestError extends Error {
@@ -208,6 +220,178 @@ export function updateFamilyNotificationPreferences(
     `${familyCalendarBase(familyId)}/notification-preferences`,
     input,
     'PATCH',
+    options,
+  );
+}
+
+export function listFamilyMoments(
+  familyId: string,
+  query: { cursor?: string; limit?: number } = {},
+  options: CalendarRequestOptions = {},
+) {
+  const search = new URLSearchParams();
+  if (query.cursor) search.set('cursor', query.cursor);
+  if (query.limit) search.set('limit', String(query.limit));
+  const suffix = search.size ? `?${search.toString()}` : '';
+  return request<MomentListResponse>(
+    `${familyCalendarBase(familyId)}/moments${suffix}`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function createFamilyMediaUpload(
+  familyId: string,
+  input: CreateMediaUploadInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<MediaUploadGrantResponse>(
+    `${familyCalendarBase(familyId)}/media/uploads`,
+    input,
+    'POST',
+    options,
+  );
+}
+
+export async function uploadFamilyMedia(
+  grant: MediaUploadGrantResponse['upload'],
+  file: File,
+  signal?: AbortSignal,
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(grant.url, {
+      method: grant.method,
+      headers: grant.headers,
+      body: file,
+      ...(signal ? { signal } : {}),
+    });
+  } catch {
+    if (signal?.aborted) throw new RequestError(0, 'REQUEST_ABORTED');
+    throw new RequestError(0, 'NETWORK_ERROR');
+  }
+  if (!response.ok) throw new RequestError(response.status, 'UPLOAD_FAILED');
+}
+
+export function completeFamilyMediaUpload(
+  familyId: string,
+  mediaId: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<MediaAssetDto>(
+    `${familyCalendarBase(familyId)}/media/${encodeURIComponent(mediaId)}/complete`,
+    {},
+    'POST',
+    options,
+  );
+}
+
+export function getFamilyMedia(
+  familyId: string,
+  mediaId: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<MediaAssetDto>(
+    `${familyCalendarBase(familyId)}/media/${encodeURIComponent(mediaId)}`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function familyMediaContentUrl(familyId: string, mediaId: string): string {
+  return `${familyCalendarBase(familyId)}/media/${encodeURIComponent(mediaId)}/content`;
+}
+
+export function createFamilyMoment(
+  familyId: string,
+  input: CreateMomentInput,
+  idempotencyKey: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<MomentDto>(`${familyCalendarBase(familyId)}/moments`, input, 'POST', {
+    ...options,
+    headers: { 'Idempotency-Key': idempotencyKey },
+  });
+}
+
+export function setFamilyMomentReaction(
+  familyId: string,
+  momentId: string,
+  input: UpdateMomentReactionInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<{ reaction: 'thuong' | null }>(
+    `${familyCalendarBase(familyId)}/moments/${encodeURIComponent(momentId)}/reaction`,
+    input,
+    'PUT',
+    options,
+  );
+}
+
+export function deleteFamilyMoment(
+  familyId: string,
+  momentId: string,
+  options: CalendarRequestOptions = {},
+) {
+  return request<void>(
+    `${familyCalendarBase(familyId)}/moments/${encodeURIComponent(momentId)}`,
+    {},
+    'DELETE',
+    options,
+  );
+}
+
+export function listFamilyMemories(
+  familyId: string,
+  query: { cursor?: string; limit?: number } = {},
+  options: CalendarRequestOptions = {},
+) {
+  const search = new URLSearchParams();
+  if (query.cursor) search.set('cursor', query.cursor);
+  if (query.limit) search.set('limit', String(query.limit));
+  const suffix = search.size ? `?${search.toString()}` : '';
+  return request<MemoryListResponse>(
+    `${familyCalendarBase(familyId)}/memories${suffix}`,
+    undefined,
+    'GET',
+    options,
+  );
+}
+
+export function createFamilyMemory(
+  familyId: string,
+  input: CreateMemoryInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<MemoryDto>(`${familyCalendarBase(familyId)}/memories`, input, 'POST', options);
+}
+
+export function preserveFamilyMoment(
+  familyId: string,
+  momentId: string,
+  input: CreateMemoryFromMomentInput = {},
+  options: CalendarRequestOptions = {},
+) {
+  return request<MemoryDto>(
+    `${familyCalendarBase(familyId)}/moments/${encodeURIComponent(momentId)}/memory`,
+    input,
+    'POST',
+    options,
+  );
+}
+
+export function addFamilyMemoryItem(
+  familyId: string,
+  memoryId: string,
+  input: AddMemoryItemInput,
+  options: CalendarRequestOptions = {},
+) {
+  return request<MemoryDto>(
+    `${familyCalendarBase(familyId)}/memories/${encodeURIComponent(memoryId)}/items`,
+    input,
+    'POST',
     options,
   );
 }

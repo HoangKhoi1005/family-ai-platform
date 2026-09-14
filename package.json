@@ -32,7 +32,7 @@
     "test:pwa-safety": "node scripts/test-pwa-safety.mjs",
     "env:init": "node scripts/init-env.mjs",
     "test:env-init": "node scripts/test-init-env.mjs",
-    "db:up": "docker compose up -d --wait postgres mailpit",
+    "db:up": "docker compose up -d --wait postgres mailpit minio minio-init",
     "db:down": "docker compose down",
     "db:migrate": "node --env-file=.env packages/database/scripts/migrate.mjs",
     "db:status": "node --env-file=.env packages/database/scripts/status.mjs",
@@ -45,6 +45,10 @@
     "test:notification-schema": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-notification-schema.mjs",
     "test:notification-worker": "node --env-file=.env packages/database/scripts/test-notification-worker.mjs",
     "test:notification-api": "npm run build --workspace @family/api && node --env-file=.env packages/database/scripts/test-notification-api.mjs",
+    "test:moments-schema": "npm run build --workspace @family/database && node --env-file=.env packages/database/scripts/test-moments-memories-schema.mjs",
+    "test:moments-api": "npm run build -- --filter=@family/api && node --env-file=.env packages/database/scripts/test-moments-api.mjs",
+    "test:media-worker": "npm run build -- --filter=@family/worker && node --env-file=.env packages/database/scripts/test-media-worker.mjs",
+    "test:media-storage": "npm run build --workspace @family/media && node --env-file=.env packages/media/scripts/test-storage.mjs",
     "db:bootstrap-family": "node --env-file=.env packages/database/scripts/bootstrap-family.mjs"
   },
   "devDependencies": {

@@ -1,13 +1,6 @@
 import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-
-const workerIndex = process.argv.indexOf('--worker');
-const workerPath = resolve(
-  workerIndex >= 0 && process.argv[workerIndex + 1]
-    ? process.argv[workerIndex + 1]
-    : 'apps/web/public/sw.js',
-);
-const source = await readFile(workerPath, 'utf8');
 
 const forbidden = [
   ['fetch handler', /addEventListener\s*\(\s*['"]fetch['"]/i],
@@ -19,10 +12,28 @@ const forbidden = [
   ['background sync handler', /addEventListener\s*\(\s*['"](?:periodic)?sync['"]/i],
 ];
 
-const violations = forbidden.filter(([, pattern]) => pattern.test(source)).map(([label]) => label);
-if (violations.length) {
-  console.error(`PWA worker safety check failed: ${violations.join(', ')}.`);
-  process.exitCode = 1;
-} else {
-  console.log('PASS: PWA worker has lifecycle behavior only and no private-data capabilities.');
+export function findPwaSafetyViolations(source) {
+  return forbidden.filter(([, pattern]) => pattern.test(source)).map(([label]) => label);
+}
+
+async function main() {
+  const workerIndex = process.argv.indexOf('--worker');
+  const workerPath = resolve(
+    workerIndex >= 0 && process.argv[workerIndex + 1]
+      ? process.argv[workerIndex + 1]
+      : 'apps/web/public/sw.js',
+  );
+  const source = await readFile(workerPath, 'utf8');
+  const violations = findPwaSafetyViolations(source);
+
+  if (violations.length) {
+    console.error(`PWA worker safety check failed: ${violations.join(', ')}.`);
+    process.exitCode = 1;
+  } else {
+    console.log('PASS: PWA worker has lifecycle behavior only and no private-data capabilities.');
+  }
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
 }

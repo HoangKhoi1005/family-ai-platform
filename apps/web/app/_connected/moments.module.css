@@ -1,0 +1,312 @@
+.page {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 24px var(--product-gutter) calc(108px + env(safe-area-inset-bottom));
+}
+.pageHeader {
+  display: grid;
+  gap: 20px;
+  padding: 8px 0 24px;
+  border-bottom: 1px solid var(--color-text-primary);
+}
+.pageHeader > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+.pageHeader span {
+  color: var(--color-accent);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+.pageHeader h1 {
+  margin: 0;
+  font: 700 clamp(38px, 11vw, 64px)/0.95 var(--typography-font-title);
+  letter-spacing: -0.055em;
+}
+.pageHeader p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+.headerActions button,
+.empty button,
+.loadMore,
+.feedError button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-button);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+.headerActions .newMoment,
+.empty button {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-brand);
+}
+.feed {
+  display: grid;
+  gap: 42px;
+  padding: 28px 0;
+}
+.moment {
+  display: grid;
+  gap: 14px;
+}
+.moment > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.moment > header > div {
+  display: grid;
+}
+.moment time {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+.moment > img {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: cover;
+  border-radius: 2px;
+  background: var(--color-surface-muted);
+}
+.momentCaption {
+  margin: 0;
+  font: 600 19px/1.45 var(--typography-font-title);
+}
+.moment footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-top: 1px solid var(--color-border-soft);
+  padding-top: 8px;
+}
+.moment footer button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-weight: 700;
+}
+.moment footer button:first-child {
+  color: var(--color-accent);
+}
+.moment footer .reacted {
+  background: var(--color-brand-secondary);
+  border-radius: 999px;
+}
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-height: 55vh;
+  align-content: center;
+}
+.empty h2 {
+  max-width: 520px;
+  margin: 0;
+  font: 700 clamp(27px, 7vw, 42px)/1.06 var(--typography-font-title);
+}
+.empty p {
+  max-width: 520px;
+  margin: 0 0 8px;
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+.emptyFrame {
+  width: 120px;
+  height: 90px;
+  border: 1px solid var(--color-accent);
+  box-shadow: 12px 12px 0 var(--color-brand-secondary);
+  margin-bottom: 18px;
+}
+.loading {
+  display: grid;
+  gap: 12px;
+  padding: 60px 0;
+}
+.loading span {
+  display: block;
+  width: 100%;
+  height: 18px;
+  background: var(--color-surface-muted);
+}
+.loading span:first-child {
+  height: 44vh;
+}
+.feedError {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}
+.loadMore {
+  display: block;
+  margin: 0 auto;
+}
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  align-items: end;
+  background: color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+}
+.composer {
+  display: grid;
+  gap: 16px;
+  max-height: 94dvh;
+  overflow: auto;
+  padding: 18px var(--product-gutter) calc(20px + env(safe-area-inset-bottom));
+  border-top: 4px solid var(--color-accent);
+  background: var(--color-background-primary);
+}
+.composer header {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+}
+.composer header button,
+.changePhoto {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-brand-primary);
+  font-weight: 700;
+}
+.composer header div {
+  display: grid;
+  gap: 2px;
+}
+.composer header span {
+  font-size: 11px;
+  color: var(--color-accent);
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+.composer h2 {
+  margin: 0;
+  font: 700 27px/1.05 var(--typography-font-title);
+}
+.photoPicker {
+  display: grid;
+  min-height: 42vh;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  border: 1px dashed var(--color-accent);
+  background: var(--color-surface-primary);
+  text-align: center;
+}
+.photoPicker > span {
+  font: 400 54px/1 var(--typography-font-title);
+  color: var(--color-accent);
+}
+.photoPicker small,
+.draftNote {
+  color: var(--color-text-secondary);
+}
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.preview {
+  background: var(--color-text-primary);
+}
+.preview img {
+  display: block;
+  width: 100%;
+  max-height: 48vh;
+  object-fit: contain;
+}
+.changePhoto {
+  justify-self: start;
+}
+.caption {
+  display: grid;
+  gap: 7px;
+  font-weight: 700;
+}
+.caption textarea {
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-button);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
+  font: inherit;
+  resize: vertical;
+}
+.audience {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-block: 1px solid var(--color-border-soft);
+}
+.audience > span {
+  font-size: 24px;
+}
+.audience div {
+  display: grid;
+}
+.audience small {
+  color: var(--color-text-secondary);
+}
+.publish {
+  min-height: 50px;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-brand-primary);
+  color: var(--color-on-brand);
+  font-weight: 750;
+}
+.publish:disabled {
+  opacity: 0.5;
+}
+.inlineError {
+  margin: 0;
+  color: var(--color-danger);
+}
+.draftNote {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+}
+.page button:focus-visible,
+.composer button:focus-visible,
+.composer input:focus-visible,
+.composer textarea:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+@media (min-width: 760px) {
+  .page {
+    padding-top: 42px;
+    padding-bottom: 60px;
+  }
+  .pageHeader {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+  }
+  .composer {
+    width: min(620px, 100%);
+    margin: 0 auto;
+    border-inline: 1px solid var(--color-border-soft);
+  }
+}

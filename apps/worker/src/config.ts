@@ -8,6 +8,13 @@ export type ReminderWorkerConfig = {
   leaseSeconds: number;
 };
 
+export type MediaWorkerConfig = {
+  workerId: string;
+  pollMs: number;
+  batchSize: number;
+  leaseSeconds: number;
+};
+
 function boundedInteger(
   env: Record<string, string | undefined>,
   name: string,
@@ -49,5 +56,18 @@ export function readReminderWorkerConfig(
     pollMs: boundedInteger(env, 'REMINDER_WORKER_POLL_MS', 5000, 250, 60000),
     batchSize: boundedInteger(env, 'REMINDER_WORKER_BATCH_SIZE', 25, 1, 100),
     leaseSeconds: boundedInteger(env, 'REMINDER_WORKER_LEASE_SECONDS', 60, 5, 300),
+  };
+}
+
+export function readMediaWorkerConfig(env: Record<string, string | undefined>): MediaWorkerConfig {
+  const workerId = env.MEDIA_WORKER_ID ?? `media-${hostname()}-${process.pid}`;
+  if (workerId.trim().length < 1 || workerId.length > 120) {
+    throw new Error('MEDIA_WORKER_ID must contain 1 to 120 characters');
+  }
+  return {
+    workerId,
+    pollMs: boundedInteger(env, 'MEDIA_WORKER_POLL_MS', 3000, 250, 60000),
+    batchSize: boundedInteger(env, 'MEDIA_WORKER_BATCH_SIZE', 5, 1, 25),
+    leaseSeconds: boundedInteger(env, 'MEDIA_WORKER_LEASE_SECONDS', 120, 10, 300),
   };
 }
