@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Nhà mình</title>
+  <desc id="description">Chữ n màu xanh lá trên nền giấy ấm với một chấm màu đất nung.</desc>
+  <rect width="512" height="512" rx="112" fill="#F5F0E7"/>
+  <rect x="42" y="42" width="428" height="428" rx="86" fill="none" stroke="#315D47" stroke-width="18"/>
+  <path d="M130 203L256 116L382 203" fill="none" stroke="#315D47" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M151 359V226M151 292C151 248 184 218 225 218C267 218 294 246 294 292V359" fill="none" stroke="#315D47" stroke-width="31" stroke-linecap="round"/>
+  <circle cx="356" cy="346" r="27" fill="#A24F35"/>
+</svg>
