@@ -1,6 +1,6 @@
 # Quyền và riêng tư
 
-Ma trận dưới đây là baseline sản phẩm. Auth/session, membership/invitation/claim, danh bạ/hồ sơ, quan hệ/cây, lịch và inbox đã có API, runtime RLS và luồng web được kiểm thử; chat, media, export, push và AI chưa triển khai, không coi toàn bộ ma trận đã được thực thi. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
+Ma trận dưới đây là baseline sản phẩm. Auth/session, membership/invitation/claim, danh bạ/hồ sơ, quan hệ/cây, lịch và inbox đã có trên `main`. Media, Khoảnh khắc và Kỷ niệm đã có API, runtime RLS, worker và luồng web được kiểm thử trên `feat/connected-family-experience`; chat, export, push và AI chưa triển khai. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
 
 PWA foundation không cache HTML, API, ảnh hoặc dữ liệu gia đình. Service worker chỉ quản lý install/activate lifecycle; offline dữ liệu riêng tư phải có threat model và quyết định riêng trước khi triển khai.
 
@@ -32,7 +32,7 @@ Hồ sơ chưa có account: admin đóng vai người quản lý, chịu trách 
 - Session/token phải được xác minh; invitation token lưu hash, có expiry, dùng một lần, revoke được. Duyệt và consume link có transaction để tránh hai người nhận một hồ sơ.
 - Mọi object ID resolve trong family được quyền; API ngoài phạm vi dùng phản hồi không tiết lộ object tồn tại. Field bị cấm không xuất hiện trong payload, search snippet, AI hoặc export.
 - Realtime subscribe/publish xác thực membership. Khi revoke, ngắt subscription hoặc ngừng fanout ngay; endpoint fetch vẫn từ chối dù client còn cache.
-- Media theo quyền parent. Ưu tiên media gateway kiểm quyền mỗi request; nếu signed URL thì TTL tối đa đề xuất 60 giây và phải ghi rõ revoke không thu hồi bản đã tải hoặc URL còn hạn. Không tuyên bố có thể xóa bản sao trên thiết bị người khác.
+- Media draft/pending chỉ owner đọc metadata; thành viên khác chỉ thấy media `ready` có Moment hoặc Memory đang sống. API kiểm membership và parent mỗi request rồi chuyển hướng sang signed URL tối đa 60 giây; revoke không thu hồi bản đã tải hoặc URL còn hạn. Upload grant tối đa 600 giây, object key opaque, bản chia sẻ đã được worker kiểm signature/decode/re-encode. Không tuyên bố có thể xóa bản sao trên thiết bị người khác.
 - Push chỉ dùng câu chung mặc định, không contact/chat preview nhạy cảm; kiểm membership trước send, token thiết bị tách user, clear association khi logout.
 - Service credential không đến browser. Secret manager/env ngoài Git. Rate limit auth/invite/upload/AI. Escape/sanitize text, kiểm MIME và chữ ký file, giới hạn kích thước; bỏ EXIF vị trí khỏi ảnh được chia sẻ.
 - Audit giới hạn quyền admin, ghi actor/action/target/time và thay đổi tối thiểu; không sao chép nội dung chat hoặc contact private để “debug”.
@@ -41,6 +41,7 @@ Hồ sơ chưa có account: admin đóng vai người quản lý, chịu trách 
 
 - Thu hồi membership chặn lần truy cập kế tiếp và job chưa gửi; giữ hồ sơ gia phả theo chính sách riêng, không tự xóa người khỏi cây.
 - Yêu cầu xóa contact/nội dung xử lý ở DB, media, chỉ mục AI, cache và queued jobs. Đề xuất hoàn thành active storage trong 7 ngày; backup luân chuyển tối đa 30 ngày, cần xác nhận khi chọn provider. Khi restore phải chạy lại deletion ledger trước mở phục vụ.
+- Xóa Moment/Memory dùng helper actor-aware, ẩn nội dung ngay và chỉ enqueue xóa object khi media không còn parent sống. Lưu Kỷ niệm và xóa Moment dùng cùng khóa; trigger khóa media khi tạo parent, worker kiểm lại parent trước claim. Raw quarantine được purge sau xử lý; pending quá một giờ, rejected và media mồ côi được dọn theo job lease, retry tối đa năm lần. Backup vẫn theo chính sách provider chưa chọn.
 - Log vận hành không PII, giữ đề xuất 14 ngày; audit tối thiểu giữ đề xuất 90 ngày. Chưa là cam kết dịch vụ, phải cấu hình và kiểm thử trước dữ liệu thật.
 - Export là tác vụ có kiểm quyền tại thời điểm tạo và tải, URL có hạn; không email tự động bản dữ liệu riêng tư.
 - Trước bật AI, làm rõ dữ liệu gửi nhà cung cấp và cài đặt lưu giữ; không dùng chat/dữ liệu gia đình cho training mặc định.

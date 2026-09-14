@@ -8,6 +8,8 @@
 
 **Tech Stack:** PostgreSQL 17, Fastify 5, TypeScript, MinIO/S3-compatible API, worker process, Vitest và database integration scripts.
 
+**Status 2026-09-14:** Implemented on `feat/connected-family-experience` through migration 0032. Contracts, RLS, typed API, S3 adapter, media processing, actor-aware lifecycle transitions, shared-parent protection, draft-metadata isolation, quarantine cleanup and local MinIO integration are present. Production storage/provider, quota policy, dead-letter alerting and operational backup/restore remain deployment decisions.
+
 **Spec:** `docs/superpowers/specs/2026-09-14-connected-family-experience-design.md`
 
 ## Global Constraints

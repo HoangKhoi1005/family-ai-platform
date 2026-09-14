@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, CSS Modules, browser File/Audio APIs, Playwright.
 
+**Status 2026-09-14:** Core mobile slice implemented on `feat/connected-family-experience`: private Moment composer/feed, reaction, Moment-to-Memory, timeline, text/audio contribution, contextual navigation and Home latest Moment. Focused Pixel 7 browser flow passes without media payload in browser storage. The remaining gate is full matrix/regression verification plus physical camera/microphone testing.
+
 **Spec:** `docs/superpowers/specs/2026-09-14-connected-family-experience-design.md`
 
 ## Global Constraints

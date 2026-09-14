@@ -14,7 +14,7 @@ Cỡ chữ nội dung mặc định 16 px, chế độ chữ lớn 20 px; không
 
 ## Tiêu chí tránh giao diện chung chung
 
-Yêu cầu trực tiếp của chủ dự án ngày 2026-09-08: không AI slop, AI-generated UI hoặc generic AI app. Ngày 2026-09-14, chủ dự án duyệt mô hình **A — Nhà đang sống làm nền tảng + B — Dòng ký ức cho Kỷ niệm + C — Quanh người thân cho Gia phả**. [Spec thiết kế](superpowers/specs/2026-09-14-mobile-experience-redesign-design.md) là hướng hiện hành; việc áp dụng vào từng surface vẫn qua visual review trước khi chuyển sang `/app`.
+Yêu cầu trực tiếp của chủ dự án ngày 2026-09-08: không AI slop, AI-generated UI hoặc generic AI app. Ngày 2026-09-14, chủ dự án duyệt mô hình **A — Nhà đang sống làm nền tảng + B — Dòng ký ức cho Kỷ niệm + C — Quanh người thân cho Gia phả**. [Spec thiết kế](superpowers/specs/2026-09-14-connected-family-experience-design.md) là hướng hiện hành; A+B+C đã vào `/app`, nhưng vẫn phải qua visual review và thử người dùng thật trước khi coi là UI pilot cuối.
 
 - Nhà và Khoảnh khắc tạo nhịp dùng hằng ngày bằng nội dung của người thân và một hành động chia sẻ rõ. Kỷ niệm kể chuyện theo thời gian. Gia phả bắt đầu quanh người được chọn rồi mở rộng vào canvas chính xác.
 - Kỷ niệm không thêm tab thứ sáu trong pilot; truy cập theo ngữ cảnh từ Nhà, hồ sơ và Khoảnh khắc.

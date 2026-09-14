@@ -2,7 +2,7 @@
 
 Đợt nối UI 2026-09-09: thêm `GET /api/v1/families/{familyId}/onboarding`, trả `{ member_id: string | null, claims: [{ id, version }] }` của chính actor active. Không trả contacts hoặc claim của người khác. Guest trả 401; pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên. Xem [luồng đã nối](CONNECTED_ONBOARDING.md). Danh bạ/hồ sơ API đã được merge vào `main` tại `c07a225`.
 
-Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ, quan hệ gia phả, Event/Occurrence/RSVP và notification inbox/preferences. Chat, moments, media và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ, quan hệ gia phả, Event/Occurrence/RSVP và notification inbox/preferences. Media, Moments và Memories đã triển khai trên `feat/connected-family-experience`; chat và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
@@ -14,41 +14,53 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 
 ## Bản đồ routes (gồm cả thiết kế chưa triển khai)
 
-| Method / path sau prefix                  | Input chính                                                      | Output và quyền                                           |
-| ----------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
-| GET /members                              | q, cursor, limit                                                 | Hồ sơ tóm tắt được phép; không search qua contact private |
-| GET /members/{id}                         | —                                                                | Hồ sơ, contacts đã lọc, version                           |
-| PATCH /members/{id}                       | display_name, contacts, version                                  | Owner được liên kết; admin chỉ sửa theo policy; 409 stale |
-| GET /relationships                        | root_member_id, depth tối đa 4                                   | Cạnh đã duyệt và node được phép, không trả graph nhà khác |
-| POST /change-requests                     | type, target_id?, base_version?, payload                         | 201 pending; payload theo schema type                     |
-| POST /change-requests/{id}/decision       | decision approved/rejected, version                              | Admin; transaction validate + apply + audit; 409 đã xử lý |
-| GET /change-requests                      | status=pending, scope=all\|mine                                  | `all`: admin; `mine`: đề xuất của actor active            |
-| POST /change-requests/{id}/cancel         | version                                                          | Người gửi; chỉ pending và đúng optimistic version         |
-| POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                  |
-| POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ     |
-| POST /memberships/{id}/revoke             | version                                                          | Admin; chặn self-revoke admin cuối                        |
-| GET /events                               | from, to, cursor, limit                                          | Occurrence theo range tối đa 600 ngày                     |
-| POST /events                              | title, calendar, recurrence, timezone, date_parts, lunar_policy? | Active member; validate lịch, không LLM                   |
-| PATCH /events/{id}                        | event hoàn chỉnh, version                                        | Creator/admin; tăng revision, sinh lại occurrence         |
-| POST /events/{id}/cancel                  | version                                                          | Creator/admin; hủy occurrences/jobs tương lai             |
-| PUT /occurrences/{id}/rsvp                | response yes/no/maybe                                            | Upsert của actor, không gửi membership_id giả             |
-| GET /threads/{id}/messages                | before_seq?, limit                                               | Chỉ thread được phép, thứ tự server_seq                   |
-| POST /threads/{id}/messages               | client_message_id, body?, media_id?, reply_to_id?                | Commit rồi realtime; retry cùng key trả cùng message      |
-| DELETE /threads/{id}/messages/{messageId} | —                                                                | Author/admin; tombstone, audit moderation                 |
-| GET /moments                              | cursor, limit                                                    | Feed audience=family, active membership                   |
+| Method / path sau prefix                  | Input chính                                                      | Output và quyền                                                                  |
+| ----------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| GET /members                              | q, cursor, limit                                                 | Hồ sơ tóm tắt được phép; không search qua contact private                        |
+| GET /members/{id}                         | —                                                                | Hồ sơ, contacts đã lọc, version                                                  |
+| PATCH /members/{id}                       | display_name, contacts, version                                  | Owner được liên kết; admin chỉ sửa theo policy; 409 stale                        |
+| GET /relationships                        | root_member_id, depth tối đa 4                                   | Cạnh đã duyệt và node được phép, không trả graph nhà khác                        |
+| POST /change-requests                     | type, target_id?, base_version?, payload                         | 201 pending; payload theo schema type                                            |
+| POST /change-requests/{id}/decision       | decision approved/rejected, version                              | Admin; transaction validate + apply + audit; 409 đã xử lý                        |
+| GET /change-requests                      | status=pending, scope=all\|mine                                  | `all`: admin; `mine`: đề xuất của actor active                                   |
+| POST /change-requests/{id}/cancel         | version                                                          | Người gửi; chỉ pending và đúng optimistic version                                |
+| POST /invitations                         | expires_at, intended_member_id?                                  | Admin, token chỉ trả lúc tạo; single-use                                         |
+| POST /memberships/{id}/approve            | version                                                          | Admin; chỉ active membership, không tự liên kết hồ sơ                            |
+| POST /memberships/{id}/revoke             | version                                                          | Admin; chặn self-revoke admin cuối                                               |
+| GET /events                               | from, to, cursor, limit                                          | Occurrence theo range tối đa 600 ngày                                            |
+| POST /events                              | title, calendar, recurrence, timezone, date_parts, lunar_policy? | Active member; validate lịch, không LLM                                          |
+| PATCH /events/{id}                        | event hoàn chỉnh, version                                        | Creator/admin; tăng revision, sinh lại occurrence                                |
+| POST /events/{id}/cancel                  | version                                                          | Creator/admin; hủy occurrences/jobs tương lai                                    |
+| PUT /occurrences/{id}/rsvp                | response yes/no/maybe                                            | Upsert của actor, không gửi membership_id giả                                    |
+| GET /threads/{id}/messages                | before_seq?, limit                                               | Chỉ thread được phép, thứ tự server_seq                                          |
+| POST /threads/{id}/messages               | client_message_id, body?, media_id?, reply_to_id?                | Commit rồi realtime; retry cùng key trả cùng message                             |
+| DELETE /threads/{id}/messages/{messageId} | —                                                                | Author/admin; tombstone, audit moderation                                        |
+| GET /moments                              | cursor, limit                                                    | Feed audience=family, active membership                                          |
+| POST /moments                             | client_request_id, media_id, caption, audience=family            | Author; media ready và đúng owner/family                                         |
+| DELETE /moments/{id}                      | —                                                                | Author/admin; soft-delete và enqueue media khi mồ côi                            |
+| PUT /moments/{id}/reaction                | reaction hoặc null                                               | Upsert/remove của actor                                                          |
+| GET /memories                             | cursor, limit                                                    | Timeline theo occurred_on, active membership                                     |
+| POST /memories                            | title, occurred_on, audience=family, items                       | Tạo Kỷ niệm thủ công, media phải ready/đúng purpose                              |
+| POST /moments/{id}/memory                 | title?                                                           | Author/admin; retry không tạo hai Kỷ niệm                                        |
+| POST /memories/{id}/items                 | version, kind, position, media_id/body                           | Optimistic version; tối đa 50 item                                               |
+| DELETE /memories/{id}                     | —                                                                | Creator/admin; soft-delete và cleanup media mồ côi                               |
+| POST /media/uploads                       | mime_type, byte_size, purpose                                    | Trả upload grant tối đa 600 giây và media_id                                     |
+| POST /media/{id}/complete                 | —                                                                | HEAD object rồi enqueue worker, không tự đánh dấu ready                          |
+| GET /media/{id}                           | —                                                                | Owner thấy draft; người khác chỉ thấy ready có parent sống; không trả object key |
+| GET /media/{id}/content                   | —                                                                | Kiểm parent/owner rồi redirect URL tối đa 60 giây                                |
+| GET /notifications                        | cursor, limit, unread_only                                       | Chỉ active recipient hiện tại; cursor giữ family scope                           |
+| POST /notifications/{id}/read             | body rỗng                                                        | Idempotent, giữ thời điểm đọc đầu tiên                                           |
+| GET /notification-preferences             | —                                                                | Trả mặc định version 0 nếu actor chưa lưu cấu hình                               |
+| PATCH /notification-preferences           | reminder_offsets, quiet_hours, push_enabled=false, version       | Actor; tạo version 1 từ mặc định 0                                               |
+| POST /ai/query                            | question, conversation_id?                                       | Giai đoạn 2; status, answer, sources, request_id                                 |
 
 `POST /events` bắt buộc header `Idempotency-Key` dài 8–128 ký tự an toàn. Server gắn khóa với active membership và hash body đã chuẩn hóa; retry cùng nội dung không tạo Event/Occurrence thứ hai. Body không nhận `family_id`, `creator_membership_id`, actor hoặc membership RSVP. Lỗi converter trả `503 CALENDAR_UNAVAILABLE` và transaction không ghi Event dở dang.
-| POST /moments | client_request_id, media_id, caption, audience=family | Author; media ready và đúng owner/family |
-| DELETE /moments/{id} | — | Author/admin; media cleanup, không còn trong feed |
-| PUT /moments/{id}/reaction | reaction hoặc null | Upsert/remove của actor |
-| POST /media/uploads | mime, bytes, purpose | Kiểm quota, trả upload grant ngắn hạn và media_id |
-| POST /media/{id}/complete | — | Server xác minh object thực trước ready |
-| GET /media/{id}/content | — | Quyền parent, gateway hoặc URL TTL giới hạn |
-| GET /notifications | cursor, limit, unread_only | Chỉ active recipient hiện tại; cursor giữ family scope |
-| POST /notifications/{id}/read | body rỗng | Idempotent, giữ thời điểm đọc đầu tiên |
-| GET /notification-preferences | — | Trả mặc định version 0 nếu actor chưa lưu cấu hình |
-| PATCH /notification-preferences | reminder_offsets, quiet_hours, push_enabled=false, version | Actor, không sửa người khác; tạo version 1 từ mặc định 0 |
-| POST /ai/query | question, conversation_id? | Giai đoạn 2; status, answer, sources, request_id |
+
+## Media, Khoảnh khắc và Kỷ niệm — đã triển khai trên nhánh feature
+
+Upload chỉ nhận JPEG/PNG/WebP tối đa 10 MB cho ảnh và WebM/MP4/MP3/Ogg tối đa 25 MB cho âm thanh. API xác minh object tồn tại và đúng byte size trước khi chuyển `pending → processing`; worker mới có quyền xác nhận signature, decode/re-encode ảnh bỏ metadata, kiểm audio tối đa 10 phút và chuyển `ready/rejected`. Raw source được purge sau xử lý; pending quá một giờ và rejected được xếp hàng xóa. Client không được gửi `family_id`, owner hoặc status trong body.
+
+Moment chỉ có audience `family`, một ảnh và caption tối đa 500 ký tự. `client_request_id` cùng body là idempotent; cùng khóa với body khác trả conflict. Reaction pilot chỉ có `thuong`, không trả public count. Memory giữ audience nguồn, sắp theo `occurred_on DESC,id DESC`; item có vị trí 0–49 và optimistic version. Media dùng chung chỉ được enqueue xóa sau khi Moment/Memory cuối cùng còn sống đã bị xóa.
 
 Routes global: `POST /api/v1/invitations/accept` nhận token và credential, tạo pending membership; không trả dữ liệu nhà trước duyệt. `POST/DELETE /api/v1/me/push-subscriptions` chỉ thiết bị của actor. Auth routes dùng Better Auth theo ADR-002; push-subscriptions chưa triển khai.
 

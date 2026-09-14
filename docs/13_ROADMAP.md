@@ -16,11 +16,12 @@ Chưa ước lượng ngày phát hành khi chưa chọn hosting và năng lực
 - Đã triển khai trên `main`: stack/ADR, auth và tenant isolation, onboarding, hồ sơ/account link, quan hệ/duyệt, cây tương tác, lịch/âm lịch/RSVP, outbox/worker và inbox trong app.
 - Hoàn thiện trên nhánh, chờ merge: PWA foundation riêng tư và đồng bộ tài liệu trạng thái.
 - Preview có nhãn, chưa có backend thật: Moments và Chat.
-- Chưa triển khai: private media/storage, realtime, push, AI runtime, hosting/mail production, readiness, backup/restore và pilot thiết bị thật.
+- Đang hoàn thiện trên nhánh feature: private media/storage, Moments, Memories và rollout A+B+C vào `/app`.
+- Chưa triển khai: realtime, push, AI runtime, hosting/mail/storage production, readiness, backup/restore và pilot thiết bị thật.
 
 ## Thứ tự tiếp theo
 
-PWA foundation → hosting/mail/storage và vận hành → thử thiết bị thật → private media → Moments vertical slice → realtime/Chat → pilot 15 người → đánh giá AI. Push chỉ tiếp tục sau khi có HTTPS và thiết bị hỗ trợ để thử app đóng.
+Merge A+B+C + media vertical slice → chọn hosting/mail/storage production → thử thiết bị thật → realtime/Chat → pilot 15 người → đánh giá AI. Push chỉ tiếp tục sau khi có HTTPS và thiết bị hỗ trợ để thử app đóng.
 
 ## Kiểm soát phạm vi
 

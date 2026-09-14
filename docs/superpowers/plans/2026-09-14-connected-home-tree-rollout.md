@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 16, React 19, TypeScript, CSS Modules, `@xyflow/react`, Vitest, Playwright.
 
+**Status 2026-09-14:** Implemented on `feat/connected-family-experience`. Home uses real family/member/calendar/notification/Moment data; Tree includes the approved direct-relationship orbit and retains React Flow interactions. Unit, production build and focused desktop/mobile browser checks pass. Physical-device pan/pinch and family usability remain pilot validation.
+
 **Spec:** `docs/superpowers/specs/2026-09-14-connected-family-experience-design.md`
 
 ## Global Constraints
@@ -80,8 +82,12 @@ Expected: PASS.
 - [ ] **Step 1: Viết browser assertions cho hierarchy và empty state**
 
 ```ts
-await expect(page.getByRole('heading', { name: 'Chào Gia Bảo, nhà mình có gì mới?' })).toBeVisible();
-await expect(page.getByRole('region', { name: 'Khoảnh khắc trong nhà' })).toContainText('Chưa có Khoảnh khắc nào');
+await expect(
+  page.getByRole('heading', { name: 'Chào Gia Bảo, nhà mình có gì mới?' }),
+).toBeVisible();
+await expect(page.getByRole('region', { name: 'Khoảnh khắc trong nhà' })).toContainText(
+  'Chưa có Khoảnh khắc nào',
+);
 await expect(page.getByText('Bữa cơm nhà')).toHaveCount(0);
 ```
 
@@ -200,4 +206,3 @@ Run: `python scripts/validate_brain.py`
 Run: `npm run check`
 
 Expected: tất cả PASS.
-
