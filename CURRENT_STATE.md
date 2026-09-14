@@ -3,7 +3,8 @@
 - Cập nhật: 2026-09-14. Context version: **1.4.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. CI của các merge commit đạt. Task 11 API và inbox mobile đã hoàn thiện và qua gate local trên `feat/notification-inbox-mobile`; chat, moments và AI chưa có backend hoàn chỉnh.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat, moments và AI chưa có backend hoàn chỉnh.
+- Gói đồng bộ Project Brain và PWA foundation riêng tư đã hoàn thiện trên `feat/project-brain-pwa-foundation`; chưa merge vào `main`. Manifest, launcher icons, service-worker lifecycle và hướng dẫn cài đặt trong Tôi đã có code và browser test; push, offline data và production hosting vẫn chưa triển khai.
 
 ## Gói A — ổn định onboarding
 
@@ -54,7 +55,12 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Kiểm chứng mới nhất
 
-- Trên `feat/notification-inbox-mobile`, API đã đọc inbox theo active recipient, phân trang bằng cursor gắn family, giữ unread count, mark-read bằng `COALESCE` để retry không đổi thời điểm đầu và đọc/cập nhật preferences của chính actor. Cấu hình chưa lưu dùng version 0; lần đầu tạo version 1 nên request cũ không thể ghi đè. Cross-family và revoked trả 404. UI có chuông app bar/desktop rail, unread dot nhẹ, sheet mobile, ba mốc nhắc, deep link occurrence, tải trang cũ, giữ dữ liệu tốt gần nhất khi mất mạng và xóa cache khi quyền bị thu hồi. Push chưa hiển thị khi capability chưa tồn tại.
+- Trên `feat/project-brain-pwa-foundation`, `/manifest.webmanifest` dùng tiếng Việt, mở tại `/app`, `display: standalone` và có icon 192/512 cùng maskable icon. Worker production chỉ xử lý install/activate, được phục vụ bằng no-store/CSP và không có fetch/cache/IndexedDB/API/push/sync. Development không đăng ký và dọn registration cùng origin còn lại. Safety checker cùng fixture tự kiểm tra đã được đưa vào root quality gate.
+- Mục Tôi có hướng dẫn cài đặt theo bốn trạng thái: đã cài, Chromium có prompt, Safari trên iPhone/iPad và fallback. Prompt chỉ chạy sau thao tác bấm; không xin quyền thông báo. Visual review desktop/Pixel 7 giữ bố cục album gia đình; kiểm tra 320 px với chữ 200% không tràn ngang.
+- PWA E2E đạt **14/14** trên Chromium desktop và Pixel 7 emulation, gồm manifest/icon/header thật, worker registration, Cache Storage rỗng, lưu prompt xuất hiện trước khi mở Tôi, prompt theo thao tác, fallback khi trình duyệt từ chối, hướng dẫn iPhone, standalone và 320 px/200%. Hồi quy logout/revoke chọn lọc đạt **10/10**. Toàn bộ Playwright đạt **179 pass, 3 skip đúng theo project** trong 182 lượt.
+- Full `npm run check` đạt ngày 2026-09-14: boundaries, design tokens, PWA safety/checker fixtures, lint, format, typecheck **13/13 Turbo tasks**, **152/152 unit tests trong 31 file**, Project Brain **69 Markdown / 4 JSON / 24 seed cases** và production build đủ 8 workspace.
+
+- Task 11 trên `main` đọc inbox theo active recipient, phân trang bằng cursor gắn family, giữ unread count, mark-read bằng `COALESCE` để retry không đổi thời điểm đầu và đọc/cập nhật preferences của chính actor. Cấu hình chưa lưu dùng version 0; lần đầu tạo version 1 nên request cũ không thể ghi đè. Cross-family và revoked trả 404. UI có chuông app bar/desktop rail, unread dot nhẹ, sheet mobile, ba mốc nhắc, deep link occurrence, tải trang cũ, giữ dữ liệu tốt gần nhất khi mất mạng và xóa dữ liệu UI khi quyền bị thu hồi. Push chưa hiển thị khi capability chưa tồn tại.
 - Full `npm run check` của Task 11 đạt với **140/140 unit tests trong 28 file**, Project Brain **67 Markdown / 4 JSON / 24 seed cases** và production build đủ 8 workspace. Ba integration suite PostgreSQL cho notification schema/RLS, worker và API đều đạt. Toàn bộ Playwright đạt **165 pass, 3 skip đúng theo project**; riêng inbox có 10 lượt kiểm tra trên Chromium desktop và Pixel 7, gồm read → calendar → reload, preferences, offline, revoke và viewport 320 px với chữ 200%. Sheet mobile và rail desktop đã được kiểm trực quan theo hướng album gia đình hiện tại.
 
 - Trên `feat/notification-event-outbox`, Event create/update/cancel đã nối outbox trong cùng transaction. Fanout chỉ tạo `in_app` job cho membership active và offset người nhận cho phép; không xếp lại backlog đã quá hạn. Sửa Event hủy pending/leased job của revision cũ rồi tạo revision mới, hủy Event giữ hàng lịch sử ở trạng thái cancelled. Integration test chứng minh retry không nhân job, enqueue lỗi rollback cả Event/Occurrence/idempotency/audit, người pending/revoked không nhận và quy tắc cùng ngày chạy lúc 09:00 hoặc lùi 07:00 cho Event bắt đầu sớm.
@@ -83,7 +89,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 ## Tiếp theo
 
 1. Chủ dự án thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
-2. Chọn hướng PWA/push và chỉ bật push khi có domain HTTPS, provider/standard đã ghi ADR và thiết bị thật để thử app đóng.
+2. Chọn hosting/domain HTTPS rồi thử PWA trên iPhone/Android thật; chỉ thiết kế push provider/standard và bật push sau khi có thiết bị để thử app đóng.
 3. Chọn mail production, hosting/storage và quy trình bootstrap admin trước pilot gia đình thật.
 4. Chuẩn bị vertical slice Moments trước Chat; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
 
@@ -101,7 +107,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline, CRUD/RSVP, Event-to-outbox, worker và inbox trong app; chưa có push hay cơ chế bổ sung occurrence khi cửa sổ thời gian trôi. Chưa có chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
+Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. PWA có nền cài đặt nhưng chưa được thử Add to Home Screen trên thiết bị thật, không hỗ trợ cold-start offline và chưa có push. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline, CRUD/RSVP, Event-to-outbox, worker và inbox trong app; chưa có cơ chế bổ sung occurrence khi cửa sổ thời gian trôi. Chưa có chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
 
 ## Cập nhật cây tương tác 2026-09-13
 

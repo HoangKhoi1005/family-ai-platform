@@ -15,4 +15,21 @@ describe('Next same-origin API proxy', () => {
       },
     ]);
   });
+
+  it('serves the service worker with no-store and script-only security headers', async () => {
+    const module = await import('./next.config.js');
+    const headers = await module.default.headers?.();
+
+    expect(headers).toContainEqual({
+      source: '/sw.js',
+      headers: [
+        { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        {
+          key: 'Content-Security-Policy',
+          value: "default-src 'self'; script-src 'self'",
+        },
+      ],
+    });
+  });
 });

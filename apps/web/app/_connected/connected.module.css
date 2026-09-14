@@ -794,6 +794,144 @@
   color: var(--color-text-secondary);
   font-size: 13px;
 }
+.installPanel {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 15px;
+  margin: 28px 0 4px;
+  padding: 24px 0;
+  border-top: 1px solid var(--color-border-soft);
+  border-bottom: 1px solid var(--color-border-soft);
+}
+.installPanelMark {
+  position: relative;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 2px solid var(--color-brand-primary);
+  border-radius: 15px;
+  color: var(--color-brand-primary);
+  background: var(--color-background-primary);
+}
+.installPanelMark::before {
+  position: absolute;
+  top: 8px;
+  width: 24px;
+  height: 15px;
+  border-top: 2px solid currentColor;
+  transform: rotate(-35deg) skewX(20deg);
+  content: '';
+}
+.installPanelMark span {
+  padding-top: 7px;
+  font: 600 27px/1 var(--typography-font-title);
+}
+.installPanelMark i {
+  position: absolute;
+  right: 8px;
+  bottom: 9px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+.installPanelBody {
+  min-width: 0;
+}
+.installPanelBody h2 {
+  max-width: 520px;
+  margin: 3px 0 8px;
+  font: 600 clamp(22px, 6vw, 29px) / 1.06 var(--typography-font-title);
+  letter-spacing: -0.025em;
+}
+.installPanelBody > p:not(.eyebrow, .installStatus, .installHint, .installError) {
+  max-width: 600px;
+  margin: 0 0 15px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.installPanelBody > button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-color: var(--color-brand-primary);
+  color: var(--color-on-brand);
+  background: var(--color-brand-primary);
+  font-weight: 700;
+}
+.installPanelBody > button:hover {
+  background: var(--color-text-primary);
+}
+.installPanelBody > button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+.installPanelBody > small {
+  display: block;
+  max-width: 590px;
+  margin-top: 14px;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.installStatus,
+.installHint,
+.installError {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 14px;
+  color: var(--color-brand-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+.installError {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+.installStatus span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--color-on-brand);
+  background: var(--color-brand-primary);
+}
+.installSteps {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 13px 0 17px;
+  list-style: none;
+  counter-reset: install-step;
+}
+.installSteps li {
+  position: relative;
+  min-height: 28px;
+  padding: 3px 0 0 37px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.45;
+  counter-increment: install-step;
+}
+.installSteps li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 50%;
+  color: var(--color-accent);
+  background: var(--color-surface-primary);
+  font-size: 12px;
+  font-weight: 800;
+  content: counter(install-step);
+}
 .backButton {
   padding: 5px 0 !important;
   border: 0 !important;
@@ -916,6 +1054,22 @@
   }
   .meActions {
     grid-column: auto;
+  }
+  .installPanel {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 22px;
+    padding: 32px 0;
+  }
+  .installPanelMark {
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 360px) {
+  .installPanel {
+    grid-template-columns: 1fr;
   }
 }
 

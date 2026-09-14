@@ -1,8 +1,8 @@
 {
   "project": "family-ai-platform",
   "context_version": "1.4.0",
-  "updated_at": "2026-09-09",
-  "stage": "mobile-primary-preview",
+  "updated_at": "2026-09-14",
+  "stage": "pilot-core-pwa-foundation",
   "pilot_people": 15,
   "implementation_exists": true,
   "baseline": "pwa-delivery-mobile-primary-experience",

@@ -1,6 +1,8 @@
 # Quyền và riêng tư
 
-Ma trận dưới đây là baseline sản phẩm. Auth/session, membership/invitation/claim và danh bạ/hồ sơ đã có API, runtime RLS và luồng web được kiểm thử; cây quan hệ thật, chat, media, export, push và AI chưa triển khai, không coi toàn bộ ma trận đã được thực thi. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
+Ma trận dưới đây là baseline sản phẩm. Auth/session, membership/invitation/claim, danh bạ/hồ sơ, quan hệ/cây, lịch và inbox đã có API, runtime RLS và luồng web được kiểm thử; chat, media, export, push và AI chưa triển khai, không coi toàn bộ ma trận đã được thực thi. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
+
+PWA foundation không cache HTML, API, ảnh hoặc dữ liệu gia đình. Service worker chỉ quản lý install/activate lifecycle; offline dữ liệu riêng tư phải có threat model và quyết định riêng trước khi triển khai.
 
 ## Ma trận pilot
 
