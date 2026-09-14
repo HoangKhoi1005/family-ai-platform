@@ -39,6 +39,7 @@ import {
 } from './calendar-state';
 import { CalendarHomeSection, FamilyCalendarTimeline } from './family-calendar';
 import { NotificationInbox } from './notification-inbox';
+import { InstallAppPanel } from './install-app-panel';
 import s from './connected.module.css';
 
 export function FamilyApp() {
@@ -698,6 +699,7 @@ export function FamilyApp() {
                   nhà.
                 </p>
               </aside>
+              <InstallAppPanel />
               <ProfilePanel
                 key={`${familyId}:${revision}:${onboarding.member_id ?? onboarding.claims[0]?.id ?? 'none'}:${onboarding.claims[0]?.version ?? 'linked'}`}
                 base={base}
