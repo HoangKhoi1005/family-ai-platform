@@ -1,6 +1,6 @@
 # Dùng thử luồng vào nhà
 
-Luồng tài khoản, membership, danh bạ, claim và cập nhật hồ sơ gọi API thật. Cây ở `/design-preview/tree` vẫn dùng 15 người hư cấu và có link trở về ứng dụng. Không ghép người thật với quan hệ giả. Chưa có API quan hệ.
+Luồng tài khoản, membership, danh bạ, claim, cập nhật hồ sơ, quan hệ, cây tương tác, lịch và inbox trong `/app` gọi API thật. Cây connected chỉ hiển thị quan hệ đã duyệt và cho phép gửi đề xuất để admin xét. `/design-preview/tree` vẫn là mẫu 15 người hư cấu tách biệt; không ghép người thật với quan hệ giả.
 
 ## Mở ứng dụng local
 

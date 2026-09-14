@@ -2,7 +2,7 @@
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác và lịch nhà nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, xem timeline, tạo/sửa/hủy ngày quan trọng và RSVP theo quyền; Event đã tự ghi lịch nhắc vào outbox và worker tạo nguồn inbox an toàn. Inbox UI, Khoảnh khắc, Chat và AI chưa hoàn thiện; dự án chưa phải MVP đầy đủ. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md).
+Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác, lịch nhà và hộp thư thông báo trong app nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, xem timeline, tạo/sửa/hủy ngày quan trọng, RSVP, đọc lời nhắc và chọn mốc nhắc theo quyền. Khoảnh khắc và Chat mới có prototype được gắn nhãn; AI, push và phát hành production chưa triển khai. Dự án chưa phải MVP đầy đủ. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md).
 
 ## Chạy local
 
@@ -25,7 +25,7 @@ Web: `http://127.0.0.1:3200`. API: `http://127.0.0.1:4010/health/live`. Worker d
 
 ```text
 apps/
-  web/          Next.js App Router, trang giới thiệu responsive
+  web/          Next.js App Router, onboarding và ứng dụng mobile-first
   api/          Fastify, health và error contract
   worker/       Claim/lease, retry và tạo notification inbox từ outbox
 packages/

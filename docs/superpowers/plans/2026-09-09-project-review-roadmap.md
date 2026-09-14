@@ -32,7 +32,7 @@
 | Lịch/nhắc              | Spec và quy tắc baseline                                             | Chưa có engine lịch, occurrences, outbox, push                                                |
 | Ảnh/chat               | Spec                                                                 | Chưa storage, upload, realtime, retry                                                         |
 | AI                     | Domain/quyền/seed cases trong Brain                                  | Chưa tools truy xuất, provider, eval chạy thật                                                |
-| Vận hành               | Docker/Mailpit local                                                 | HTTPS, mail thật, backup/restore, log, PWA và pilot thiết bị                                  |
+| Vận hành               | Docker/Mailpit local; PWA foundation đang thực hiện                  | HTTPS, mail thật, backup/restore, log và pilot thiết bị                                       |
 
 Kết luận: nền kỹ thuật và onboarding đã tiến xa hơn bản prototype tĩnh; chưa phải MVP gia đình. Giá trị cốt lõi gia phả, nhớ việc và kết nối hằng ngày vẫn cần triển khai.
 
@@ -89,11 +89,11 @@ Thiết kế chi tiết đang chờ duyệt tại [Nền trải nghiệm sản p
 
 **Phụ thuộc:** A; UI theo B. **Files dự kiến:** migration kế tiếp sau 0009 (kiểm lại số trước tạo); `packages/contracts/src/relationships.ts`; module `apps/api/src/family/relationships.ts`, `change-requests.ts`; tests integration mới; spec family-tree/domain/schema/API.
 
-- [ ] C1. Chốt schema Relationship và ChangeRequest từ spec: cha/mẹ-con biological/adoptive/unspecified; partnership có lịch sử; same-family FK; version và audit. Không thêm bảng Household/Branch đầy đủ nếu không cần cho cây pilot.
-- [ ] C2. Chốt contract đọc graph giới hạn độ sâu/số node; node là summary không chứa private contact. API hồ sơ tiếp tục lọc quyền riêng.
-- [ ] C3. Implement đề xuất tạo/sửa/loại bỏ quan hệ, duyệt/từ chối/hủy; apply+audit trong transaction. Admin có thể tự duyệt theo baseline, vẫn qua validation và audit.
-- [ ] C4. Test TREE-01–06: chu trình kể cả concurrent approvals, tự nối, trùng đối xứng partnership, cross-family, tái hôn, cha mẹ nuôi, pending không xuất hiện ở graph chuẩn.
-- [ ] C5. Seed 15 người hoàn toàn hư cấu vào DB thử riêng; nối graph và profile vào app. Hiển thị một người hoặc chưa có quan hệ vẫn dùng được; người không có account vẫn xuất hiện trong cây.
+- [x] C1. Chốt schema Relationship và ChangeRequest từ spec: cha/mẹ-con biological/adoptive/unspecified; partnership có lịch sử; same-family FK; version và audit. Không thêm bảng Household/Branch đầy đủ nếu không cần cho cây pilot.
+- [x] C2. Chốt contract đọc graph giới hạn độ sâu/số node; node là summary không chứa private contact. API hồ sơ tiếp tục lọc quyền riêng.
+- [x] C3. Implement đề xuất tạo/sửa/loại bỏ quan hệ, duyệt/từ chối/hủy; apply+audit trong transaction. Admin có thể tự duyệt theo baseline, vẫn qua validation và audit.
+- [x] C4. Test TREE-01–06: chu trình kể cả concurrent approvals, tự nối, trùng đối xứng partnership, cross-family, tái hôn, cha mẹ nuôi, pending không xuất hiện ở graph chuẩn.
+- [x] C5. Seed 15 người hoàn toàn hư cấu vào DB thử riêng; nối graph và profile vào app. Hiển thị một người hoặc chưa có quan hệ vẫn dùng được; người không có account vẫn xuất hiện trong cây.
 
 **Nghiệm thu:** thay đổi đã duyệt tồn tại sau reload, graph đọc từ DB; không còn dựa fixture cho cây trong app; không suy luận quan hệ từ vị trí node hoặc LLM.
 
@@ -101,11 +101,11 @@ Thiết kế chi tiết đang chờ duyệt tại [Nền trải nghiệm sản p
 
 **Phụ thuộc:** contract C và thiết kế B. Chọn thư viện graph/layout sau một spike có tiêu chí mobile, accessibility, kích thước bundle, license và bảo trì; xác minh tài liệu chính thức lúc chọn, không chốt thư viện trong bản kế hoạch này.
 
-- [ ] D1. Pan, pinch/wheel zoom, nút +/−, fit, Về tôi; mặc định quanh người xem 2–3 thế hệ, thu/mở nhánh.
-- [ ] D2. Chạm node mở hồ sơ B; phân biệt click với drag; kéo node thay bố cục nhìn, tuyệt đối không thay quan hệ. Ban đầu reset được, không cần lưu bố cục chung cho cả nhà.
-- [ ] D3. Từ node chọn Thêm cha/mẹ, con hoặc bạn đời → người có sẵn/người mới → xem lại đề xuất → gửi duyệt. Không kéo dây tự tạo quan hệ chuẩn.
-- [ ] D4. Hiển thị quan hệ chưa rõ/nuôi/lịch sử chính xác; pending tách khỏi cạnh chuẩn. Tìm không dấu, danh bạ và bàn phím cung cấp lối tương đương.
-- [ ] D5. Test drag không mở nhầm, pinch không gây tràn toàn trang, giữ selection sau refresh, reject không đổi cây, phê duyệt cập nhật graph. Thử 15 người và fixture lớn hơn để phát hiện layout kém, không cam kết quy mô vô hạn.
+- [x] D1. Pan, pinch/wheel zoom, nút +/−, fit, Về tôi; mặc định quanh người xem 2–3 thế hệ, thu/mở nhánh.
+- [x] D2. Chạm node mở hồ sơ B; phân biệt click với drag; kéo node thay bố cục nhìn, tuyệt đối không thay quan hệ. Ban đầu reset được, không cần lưu bố cục chung cho cả nhà.
+- [x] D3. Từ node chọn Thêm cha/mẹ, con hoặc bạn đời → người có sẵn/người mới → xem lại đề xuất → gửi duyệt. Không kéo dây tự tạo quan hệ chuẩn.
+- [x] D4. Hiển thị quan hệ chưa rõ/nuôi/lịch sử chính xác; pending tách khỏi cạnh chuẩn. Tìm không dấu, danh bạ và bàn phím cung cấp lối tương đương.
+- [x] D5. Test drag không mở nhầm, pinch không gây tràn toàn trang, giữ selection sau refresh, reject không đổi cây, phê duyệt cập nhật graph. Thử 15 người và fixture lớn hơn để phát hiện layout kém, không cam kết quy mô vô hạn.
 
 **Nghiệm thu:** người dùng tìm được mình, xem đúng hồ sơ, thêm một đề xuất và thấy cạnh sau duyệt trên điện thoại thật.
 

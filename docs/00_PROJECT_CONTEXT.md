@@ -23,7 +23,7 @@ Gia đình khác nhau không thấy dữ liệu của nhau. Trong cùng nhà, qu
 
 ## Phạm vi và trạng thái
 
-Nguồn phạm vi phát hành: [MVP](04_MVP_SCOPE.md). Nguồn tiến độ: [CURRENT_STATE](../CURRENT_STATE.md). Đã có monorepo nền tảng theo [ADR-001](decisions/ADR-001-monorepo.md): npm/Turbo, TypeScript, Next.js, Fastify, PostgreSQL. Onboarding email/mật khẩu, lời mời, duyệt membership, nhận hồ sơ và gói ổn định mất mạng/claim/revoke đã được merge vào `main` tại `9854d39`; CI của merge commit đạt. Gói tiếp theo chốt nền trải nghiệm sản phẩm trước khi triển khai dữ liệu quan hệ thật. Auth dùng Better Auth theo [ADR-002](decisions/ADR-002-authentication.md). Hosting, storage và LLM provider chưa chọn; chưa có dữ liệu gia đình thật.
+Nguồn phạm vi phát hành: [MVP](04_MVP_SCOPE.md). Nguồn tiến độ: [CURRENT_STATE](../CURRENT_STATE.md). Monorepo theo [ADR-001](decisions/ADR-001-monorepo.md) dùng npm/Turbo, TypeScript, Next.js, Fastify và PostgreSQL; auth dùng Better Auth theo [ADR-002](decisions/ADR-002-authentication.md). Trên `main` đã có onboarding, membership, hồ sơ, quan hệ/cây tương tác, lịch, outbox/worker và inbox thông báo nối dữ liệu thật cho pilot. Connected Home còn tối thiểu; Moments và Chat chỉ có preview được gắn nhãn, AI chưa có runtime. Gói hiện tại bổ sung PWA foundation và đồng bộ Project Brain; sau đó cần chọn hosting/mail/storage, hoàn thiện vận hành và thử thiết bị thật trước khi mời gia đình. Hosting, storage và LLM provider chưa chọn; chưa có dữ liệu gia đình thật.
 
 ## Các giả định cần xác minh
 
