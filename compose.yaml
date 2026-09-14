@@ -22,6 +22,38 @@ services:
       - '127.0.0.1:${MAILPIT_PORT:-8035}:8025'
     volumes:
       - mailpit_data:/data
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ':9001'
+    ports:
+      - '127.0.0.1:${MINIO_PORT:-9030}:9000'
+      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9031}:9001'
+    environment:
+      MINIO_ROOT_USER: ${MEDIA_STORAGE_ACCESS_KEY_ID:?Run npm run env:init}
+      MINIO_ROOT_PASSWORD: ${MEDIA_STORAGE_SECRET_ACCESS_KEY:?Run npm run env:init}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - >-
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing "local/$$MEDIA_STORAGE_BUCKET"
+    environment:
+      MINIO_ROOT_USER: ${MEDIA_STORAGE_ACCESS_KEY_ID:?Run npm run env:init}
+      MINIO_ROOT_PASSWORD: ${MEDIA_STORAGE_SECRET_ACCESS_KEY:?Run npm run env:init}
+      MEDIA_STORAGE_BUCKET: ${MEDIA_STORAGE_BUCKET:-family-private}
 volumes:
   postgres_data:
   mailpit_data:
+  minio_data:

@@ -234,6 +234,11 @@ function InteractiveTreeCanvasInner({
           edges={edges}
           nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
+          onNodeDragStop={(_, node) =>
+            setStatus(
+              `Đã đổi vị trí tạm thời của ${node.data.seed.member.familiar_name ?? node.data.seed.member.display_name}.`,
+            )
+          }
           minZoom={0.48}
           maxZoom={1.65}
           fitView

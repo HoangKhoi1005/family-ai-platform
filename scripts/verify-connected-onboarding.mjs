@@ -120,7 +120,7 @@ try {
   await admin.getByRole('button', { name: 'Tải lại danh sách' }).click();
   await admin.getByRole('button', { name: 'Duyệt vào nhà' }).click();
   await member.getByRole('button', { name: 'Kiểm tra trạng thái' }).click();
-  await member.getByRole('heading', { name: 'Nhà mình ở đây.' }).waitFor();
+  await member.getByRole('heading', { name: /nhà mình có gì mới\?/i }).waitFor();
   console.log('Stage: approved');
   await admin.getByLabel('Tên người chưa có trong danh bạ').fill('Người thân minh họa');
   await admin.getByRole('button', { name: 'Thêm hồ sơ mới', exact: true }).click();
@@ -172,7 +172,10 @@ try {
   console.log('Stage: relationship approved');
   await member.reload();
   await member.getByRole('button', { name: 'Người thân', exact: true }).click();
-  await member.getByText('Cha / mẹ', { exact: true }).waitFor();
+  await member
+    .getByRole('navigation', { name: 'Quanh người thân' })
+    .getByRole('button', { name: 'Cha / mẹ · Cha kiểm thử' })
+    .waitFor();
   await member.screenshot({ path: evidence + '/flow-family-tree-mobile.png', fullPage: true });
   await member.getByRole('button', { name: 'Hồ sơ của tôi', exact: true }).click();
   await member.getByRole('button', { name: 'Đăng xuất', exact: true }).click();
@@ -190,7 +193,7 @@ try {
   await member.getByRole('link', { name: 'Về đăng nhập' }).click();
   await member.waitForURL('**/login');
   await login(member, emails[1], newPassword);
-  await member.getByRole('heading', { name: 'Nhà mình ở đây.' }).waitFor();
+  await member.getByRole('heading', { name: /nhà mình có gì mới\?/i }).waitFor();
   const memberships = await pool.query(
     'SELECT id,version FROM family_memberships WHERE family_id=$1 AND user_id=(SELECT id FROM users WHERE email=$2)',
     [family, emails[1]],

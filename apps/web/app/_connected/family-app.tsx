@@ -5,6 +5,9 @@ import type {
   NotificationDto,
   NotificationListResponse,
   NotificationPreferencesDto,
+  MomentDto,
+  MemoryDto,
+  MediaPurpose,
 } from '@family/contracts';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -25,11 +28,24 @@ import {
   updateFamilyEvent,
   updateFamilyNotificationPreferences,
   upsertFamilyOccurrenceRsvp,
+  completeFamilyMediaUpload,
+  addFamilyMemoryItem,
+  createFamilyMediaUpload,
+  createFamilyMoment,
+  deleteFamilyMoment,
+  getFamilyMedia,
+  listFamilyMemories,
+  listFamilyMoments,
+  preserveFamilyMoment,
+  setFamilyMomentReaction,
+  uploadFamilyMedia,
 } from './api';
 import type { Me, Onboarding, Member } from './types';
 import { ProfilePanel } from './profile-panel';
 import { AdminPanel } from './admin-panel';
 import { ConnectedAppShell, ConnectedIdentity, type ConnectedTab } from './connected-app-shell';
+import { ConnectedHome } from './connected-home';
+import { buildConnectedHomeModel } from './home-model';
 import { RelationshipTree } from './relationship-tree';
 import { JoinHouse } from './join-house';
 import {
@@ -37,9 +53,15 @@ import {
   calendarTimelineReducer,
   createCalendarTimelineState,
 } from './calendar-state';
-import { CalendarHomeSection, FamilyCalendarTimeline } from './family-calendar';
+import { FamilyCalendarTimeline } from './family-calendar';
 import { NotificationInbox } from './notification-inbox';
 import { InstallAppPanel } from './install-app-panel';
+import { MomentComposer } from './moment-composer';
+import { MomentsFeed } from './moments-feed';
+import { createMomentsState, momentsReducer } from './moments-state';
+import { MemoriesTimeline } from './memories-timeline';
+import { createMemoriesState, memoriesReducer } from './memories-state';
+import { nextMemoryItemPosition } from './memory-contribution';
 import s from './connected.module.css';
 
 export function FamilyApp() {
@@ -57,6 +79,10 @@ export function FamilyApp() {
   const [lastCheckedAt, setLastCheckedAt] = useState<Date | null>(null);
   const [revision, setRevision] = useState(0);
   const [directoryRevision, setDirectoryRevision] = useState(0);
+  const [treeSelectionRequest, setTreeSelectionRequest] = useState<{
+    memberId: string;
+    requestId: number;
+  } | null>(null);
   const [profileRevision, setProfileRevision] = useState(0);
   const [calendar, dispatchCalendar] = useReducer(
     calendarTimelineReducer,
@@ -75,10 +101,18 @@ export function FamilyApp() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
   const [notificationError, setNotificationError] = useState('');
+  const [moments, dispatchMoments] = useReducer(momentsReducer, undefined, () =>
+    createMomentsState(),
+  );
+  const [memories, dispatchMemories] = useReducer(memoriesReducer, undefined, () =>
+    createMemoriesState(),
+  );
+  const [composerOpen, setComposerOpen] = useState(false);
   const sequence = useRef(0);
   const calendarSequence = useRef(0);
   const calendarGeneration = useRef(0);
   const notificationSequence = useRef(0);
+  const treeSelectionSequence = useRef(0);
   const familyIdRef = useRef('');
   const clearFamily = useCallback(() => {
     calendarSequence.current++;
@@ -102,7 +136,11 @@ export function FamilyApp() {
     setNotificationOpen(false);
     setNotificationLoading(false);
     setNotificationError('');
+    dispatchMoments({ type: 'reset', familyId: '' });
+    dispatchMemories({ type: 'reset', familyId: '' });
+    setComposerOpen(false);
     setTab('home');
+    setTreeSelectionRequest(null);
     setProfileVisited(false);
     setRevision((value) => value + 1);
   }, []);
@@ -126,6 +164,68 @@ export function FamilyApp() {
       if (familyIdRef.current === failedFamilyId) fail(error);
     },
     [fail],
+  );
+
+  const loadMoments = useCallback(
+    async (append = false) => {
+      const targetFamilyId = familyIdRef.current;
+      if (!targetFamilyId) return;
+      const cursor = append && moments.familyId === targetFamilyId ? moments.cursor : null;
+      if (moments.familyId !== targetFamilyId)
+        dispatchMoments({ type: 'reset', familyId: targetFamilyId });
+      dispatchMoments({ type: 'loading' });
+      try {
+        const response = await listFamilyMoments(targetFamilyId, {
+          limit: 12,
+          ...(cursor ? { cursor } : {}),
+        });
+        dispatchMoments({
+          type: 'loaded',
+          familyId: targetFamilyId,
+          moments: response.moments,
+          cursor: response.next_cursor,
+          append,
+        });
+      } catch (caught) {
+        if (familyIdRef.current !== targetFamilyId) return;
+        if (caught instanceof RequestError && caught.status === 401) fail(caught);
+        else if (caught instanceof RequestError && [403, 404].includes(caught.status))
+          clearFamily();
+        else dispatchMoments({ type: 'failed', error: explain(caught) });
+      }
+    },
+    [clearFamily, fail, moments.cursor, moments.familyId],
+  );
+
+  const loadMemories = useCallback(
+    async (append = false) => {
+      const targetFamilyId = familyIdRef.current;
+      if (!targetFamilyId) return;
+      const cursor = append && memories.familyId === targetFamilyId ? memories.cursor : null;
+      if (memories.familyId !== targetFamilyId)
+        dispatchMemories({ type: 'reset', familyId: targetFamilyId });
+      dispatchMemories({ type: 'loading' });
+      try {
+        const response = await listFamilyMemories(targetFamilyId, {
+          limit: 12,
+          ...(cursor ? { cursor } : {}),
+        });
+        dispatchMemories({
+          type: 'loaded',
+          familyId: targetFamilyId,
+          memories: response.memories,
+          cursor: response.next_cursor,
+          append,
+        });
+      } catch (caught) {
+        if (familyIdRef.current !== targetFamilyId) return;
+        if (caught instanceof RequestError && caught.status === 401) fail(caught);
+        else if (caught instanceof RequestError && [403, 404].includes(caught.status))
+          clearFamily();
+        else dispatchMemories({ type: 'failed', error: explain(caught) });
+      }
+    },
+    [clearFamily, fail, memories.cursor, memories.familyId],
   );
   const refreshNotifications = useCallback(
     async (requestedFamilyId?: string) => {
@@ -220,7 +320,8 @@ export function FamilyApp() {
         }
         return;
       }
-      if (previousFamilyId && previousFamilyId !== active.family_id) clearFamily();
+      const familyChanged = previousFamilyId !== active.family_id;
+      if (previousFamilyId && familyChanged) clearFamily();
       const base = '/api/v1/families/' + active.family_id;
       const [state, list] = await Promise.all([
         request<Onboarding>(base + '/onboarding'),
@@ -229,6 +330,10 @@ export function FamilyApp() {
       if (run !== sequence.current) return;
       familyIdRef.current = active.family_id;
       setFamilyId(active.family_id);
+      if (familyChanged) {
+        dispatchMoments({ type: 'reset', familyId: active.family_id });
+        dispatchMemories({ type: 'reset', familyId: active.family_id });
+      }
       setOnboarding(state);
       setMembers(list.members);
       setMe(next);
@@ -298,6 +403,142 @@ export function FamilyApp() {
       window.removeEventListener('popstate', syncCalendarLocation);
     };
   }, [refresh]);
+
+  useEffect(() => {
+    if (
+      (tab === 'home' || tab === 'moments') &&
+      familyId &&
+      (moments.familyId !== familyId || moments.status === 'idle')
+    ) {
+      queueMicrotask(() => void loadMoments());
+    }
+  }, [familyId, loadMoments, moments.familyId, moments.status, tab]);
+
+  useEffect(() => {
+    if (
+      tab === 'memories' &&
+      familyId &&
+      (memories.familyId !== familyId || memories.status === 'idle')
+    ) {
+      queueMicrotask(() => void loadMemories());
+    }
+  }, [familyId, loadMemories, memories.familyId, memories.status, tab]);
+
+  async function prepareFamilyMedia(targetFamilyId: string, file: File, purpose: MediaPurpose) {
+    const grant = await createFamilyMediaUpload(targetFamilyId, {
+      mime_type: file.type,
+      byte_size: file.size,
+      purpose,
+    });
+    await uploadFamilyMedia(grant.upload, file);
+    let media = await completeFamilyMediaUpload(targetFamilyId, grant.media.id);
+    const deadline = Date.now() + 30_000;
+    while (media.status === 'processing' && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      media = await getFamilyMedia(targetFamilyId, media.id);
+    }
+    if (media.status === 'rejected')
+      throw new Error(
+        purpose === 'memory_audio'
+          ? 'Bản ghi này chưa thể xử lý. Hãy chọn bản khác.'
+          : 'Ảnh này chưa thể xử lý. Hãy chọn ảnh khác.',
+      );
+    if (media.status !== 'ready')
+      throw new Error('Nội dung vẫn đang được chuẩn bị. Hãy thử lưu lại sau một chút.');
+    return media;
+  }
+
+  async function publishMoment(file: File, caption: string, clientRequestId: string) {
+    const targetFamilyId = familyIdRef.current;
+    try {
+      const media = await prepareFamilyMedia(targetFamilyId, file, 'moment_image');
+      const moment = await createFamilyMoment(
+        targetFamilyId,
+        {
+          client_request_id: clientRequestId,
+          media_id: media.id,
+          caption: caption || null,
+          audience: 'family',
+        },
+        clientRequestId,
+      );
+      if (familyIdRef.current === targetFamilyId) dispatchMoments({ type: 'prepend', moment });
+    } catch (caught) {
+      if (caught instanceof RequestError && [401, 403, 404].includes(caught.status)) fail(caught);
+      throw new Error(explain(caught), { cause: caught });
+    }
+  }
+
+  async function reactToMoment(moment: MomentDto) {
+    const previous = moment.my_reaction;
+    const next = previous === 'thuong' ? null : 'thuong';
+    dispatchMoments({ type: 'reaction', momentId: moment.id, reaction: next });
+    try {
+      await setFamilyMomentReaction(familyId, moment.id, { reaction: next });
+    } catch (caught) {
+      dispatchMoments({ type: 'reaction', momentId: moment.id, reaction: previous });
+      dispatchMoments({ type: 'failed', error: explain(caught) });
+    }
+  }
+
+  async function removeMoment(moment: MomentDto) {
+    if (!window.confirm('Xóa Khoảnh khắc này khỏi album nhà mình?')) return;
+    try {
+      await deleteFamilyMoment(familyId, moment.id);
+      dispatchMoments({ type: 'remove', momentId: moment.id });
+    } catch (caught) {
+      dispatchMoments({ type: 'failed', error: explain(caught) });
+    }
+  }
+
+  async function preserveMoment(moment: MomentDto) {
+    try {
+      const memory = await preserveFamilyMoment(familyId, moment.id);
+      dispatchMemories({ type: 'upsert', memory });
+      setTab('memories');
+    } catch (caught) {
+      dispatchMoments({ type: 'failed', error: explain(caught) });
+    }
+  }
+
+  async function addMemoryText(memory: MemoryDto, body: string) {
+    const position = nextMemoryItemPosition(memory);
+    if (position === null) throw new Error('Kỷ niệm này đã đủ 50 phần nội dung.');
+    try {
+      const updated = await addFamilyMemoryItem(familyId, memory.id, {
+        version: memory.version,
+        kind: 'text',
+        position,
+        body,
+      });
+      dispatchMemories({ type: 'upsert', memory: updated });
+    } catch (caught) {
+      if (caught instanceof RequestError && [401, 403, 404].includes(caught.status)) fail(caught);
+      throw new Error(explain(caught), { cause: caught });
+    }
+  }
+
+  async function addMemoryAudio(memory: MemoryDto, file: File) {
+    const targetFamilyId = familyIdRef.current;
+    const position = nextMemoryItemPosition(memory);
+    if (position === null) throw new Error('Kỷ niệm này đã đủ 50 phần nội dung.');
+    try {
+      const media = await prepareFamilyMedia(targetFamilyId, file, 'memory_audio');
+      const updated = await addFamilyMemoryItem(targetFamilyId, memory.id, {
+        version: memory.version,
+        kind: 'audio',
+        position,
+        media_id: media.id,
+      });
+      if (familyIdRef.current === targetFamilyId) {
+        dispatchMemories({ type: 'upsert', memory: updated });
+      }
+    } catch (caught) {
+      if (caught instanceof RequestError && [401, 403, 404].includes(caught.status)) fail(caught);
+      throw new Error(explain(caught), { cause: caught });
+    }
+  }
+
   async function logout() {
     setBusy(true);
     try {
@@ -353,6 +594,7 @@ export function FamilyApp() {
         window.history.replaceState(null, '', url.pathname + url.search + url.hash);
       }
       setSelectedOccurrenceId(null);
+      if (destination === 'directory') setTreeSelectionRequest(null);
     }
     setTab(destination);
     setError('');
@@ -533,6 +775,13 @@ export function FamilyApp() {
 
   if (!loading && me && active && onboarding) {
     const viewerName = own?.familiar_name ?? own?.display_name ?? me.user.name;
+    const homeModel = buildConnectedHomeModel({
+      viewerName,
+      members,
+      occurrences: calendar.occurrences,
+      moments: moments.moments,
+      linkedMemberId: onboarding.member_id,
+    });
     return (
       <main id="main" className={`${s.shell} ${s.productShell}`}>
         <ConnectedAppShell
@@ -574,63 +823,45 @@ export function FamilyApp() {
             </section>
           )}
           {tab === 'home' && (
-            <section className={s.productPage}>
-              <header className={s.productHeader}>
-                <p className={s.eyebrow}>CHÀO {viewerName.toLocaleUpperCase('vi')}</p>
-                <h1>Nhà mình ở đây.</h1>
-                <p className={s.productLead}>
-                  Một nơi riêng để tìm người thân và chăm chút những thông tin cả nhà cùng gìn giữ.
-                </p>
-              </header>
-              <div className={s.memberSummary}>
-                <div>
-                  <span className={s.summaryNumber}>{members.length}</span>
-                  <span>{members.length} người trong nhà</span>
-                </div>
-                <button type="button" onClick={() => navigate('directory')}>
-                  Mở danh bạ <span aria-hidden="true">→</span>
-                </button>
-              </div>
-              <CalendarHomeSection
-                timeline={calendar}
-                members={members}
-                onOpen={openCalendar}
-                onCreate={startCreatingCalendarEvent}
-                onRefresh={() => void refreshCalendar()}
-              />
-              {!onboarding.member_id && (
-                <section className={s.ownershipPrompt}>
-                  <p className={s.eyebrow}>HỒ SƠ CỦA BẠN</p>
-                  <h2>
-                    {onboarding.claims.length
-                      ? 'Một hồ sơ đang chờ bạn xác nhận.'
-                      : 'Mình là ai trong gia phả?'}
-                  </h2>
-                  <p>
-                    {onboarding.claims.length
-                      ? 'Kiểm tra thông tin và chọn ai được xem liên hệ trước khi nhận hồ sơ.'
-                      : 'Quản trị viên sẽ chọn đúng hồ sơ cho bạn. Bạn vẫn có thể xem danh bạ trong lúc chờ.'}
-                  </p>
-                  <button type="button" onClick={() => navigate('profile')}>
-                    Xem hồ sơ của tôi <span aria-hidden="true">→</span>
-                  </button>
-                </section>
-              )}
-              <section className={s.homeDirectory}>
-                <div>
-                  <p className={s.eyebrow}>NGƯỜI THÂN</p>
-                  <h2>Những gương mặt trong nhà.</h2>
-                </div>
-                <div className={s.identityRow} aria-label={`${members.length} người trong nhà`}>
-                  {members.slice(0, 5).map((member) => (
-                    <ConnectedIdentity key={member.id} name={member.display_name} />
-                  ))}
-                </div>
-                <button type="button" onClick={() => navigate('directory')}>
-                  Tìm một người thân
-                </button>
-              </section>
-            </section>
+            <ConnectedHome
+              model={homeModel}
+              familyId={familyId}
+              calendar={calendar}
+              members={members}
+              onOpenCalendar={openCalendar}
+              onCreateEvent={startCreatingCalendarEvent}
+              onRefreshCalendar={() => void refreshCalendar()}
+              onOpenMoments={() => navigate('moments')}
+              onOpenPerson={(memberId) => {
+                setTreeSelectionRequest({
+                  memberId,
+                  requestId: ++treeSelectionSequence.current,
+                });
+                setTab('directory');
+                setError('');
+              }}
+              onOpenTree={() => navigate('directory')}
+              ownershipPrompt={
+                !onboarding.member_id ? (
+                  <section className={s.ownershipPrompt}>
+                    <p className={s.eyebrow}>HỒ SƠ CỦA BẠN</p>
+                    <h2>
+                      {onboarding.claims.length
+                        ? 'Một hồ sơ đang chờ bạn xác nhận.'
+                        : 'Mình là ai trong gia phả?'}
+                    </h2>
+                    <p>
+                      {onboarding.claims.length
+                        ? 'Kiểm tra thông tin và chọn ai được xem liên hệ trước khi nhận hồ sơ.'
+                        : 'Quản trị viên sẽ chọn đúng hồ sơ cho bạn. Bạn vẫn có thể xem danh bạ trong lúc chờ.'}
+                    </p>
+                    <button type="button" onClick={() => navigate('profile')}>
+                      Xem hồ sơ của tôi <span aria-hidden="true">→</span>
+                    </button>
+                  </section>
+                ) : undefined
+              }
+            />
           )}
           {tab === 'calendar' && (
             <FamilyCalendarTimeline
@@ -651,10 +882,33 @@ export function FamilyApp() {
             />
           )}
           {tab === 'moments' && (
-            <UnavailableDestination
-              eyebrow="KHOẢNH KHẮC"
-              title="Khoảnh khắc đang được chuẩn bị."
-              description="Ảnh và câu chuyện chỉ nên xuất hiện khi chúng thực sự thuộc về nhà bạn. Phần này sẽ được nối với API riêng tư ở gói tiếp theo."
+            <MomentsFeed
+              familyId={familyId}
+              moments={moments.moments}
+              status={moments.status}
+              error={moments.error}
+              hasMore={moments.cursor !== null}
+              onCompose={() => setComposerOpen(true)}
+              onRetry={() => void loadMoments()}
+              onLoadMore={() => void loadMoments(true)}
+              onReact={(moment) => void reactToMoment(moment)}
+              onDelete={(moment) => void removeMoment(moment)}
+              onPreserve={(moment) => void preserveMoment(moment)}
+              onOpenMemories={() => setTab('memories')}
+            />
+          )}
+          {tab === 'memories' && (
+            <MemoriesTimeline
+              familyId={familyId}
+              memories={memories.memories}
+              status={memories.status}
+              error={memories.error}
+              hasMore={memories.cursor !== null}
+              onBack={() => setTab('moments')}
+              onRetry={() => void loadMemories()}
+              onLoadMore={() => void loadMemories(true)}
+              onAddText={addMemoryText}
+              onAddAudio={addMemoryAudio}
             />
           )}
           {tab === 'directory' && (
@@ -663,6 +917,8 @@ export function FamilyApp() {
               base={base}
               rootMemberId={onboarding.member_id}
               members={members}
+              selectionRequest={treeSelectionRequest}
+              onSelectionConsumed={() => setTreeSelectionRequest(null)}
               onError={fail}
             />
           )}
@@ -737,6 +993,11 @@ export function FamilyApp() {
           onLoadMore={() => void loadMoreNotifications()}
           onOpenNotification={(notification) => void openNotification(notification)}
           onSavePreferences={saveNotificationPreferences}
+        />
+        <MomentComposer
+          open={composerOpen}
+          onClose={() => setComposerOpen(false)}
+          onPublish={publishMoment}
         />
       </main>
     );

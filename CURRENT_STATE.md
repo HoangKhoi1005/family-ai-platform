@@ -3,10 +3,18 @@
 - Cập nhật: 2026-09-14. Context version: **1.5.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat, moments và AI chưa có backend hoàn chỉnh.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat và AI chưa có backend hoàn chỉnh; Moments/Media/Memories đang được hoàn thiện trên nhánh feature bên dưới.
 - Gói đồng bộ Project Brain và PWA foundation riêng tư đã merge vào `main` tại `ac8fb16` qua PR #19. Manifest, launcher icons, service-worker lifecycle và hướng dẫn cài đặt trong Tôi đã có code và browser test; push, offline data và production hosting vẫn chưa triển khai.
 
 ## Hệ thống trải nghiệm mobile A+B+C — đang ở nhánh feature
+
+- Nhánh `feat/connected-family-experience` đã đưa A vào `/app`: shell mobile/desktop dùng tokens mới, Nhà lấy tên nhà, thành viên, lịch, thông báo và Khoảnh khắc gần nhất từ API thật; có loading/error/empty/revoke và không dùng preview fixture.
+- C đã vào Gia phả thật: lớp “Quanh người thân” chỉ đọc quan hệ đã duyệt từ relationship API, mở hồ sơ thật khi chạm; canvas React Flow, tìm kiếm, zoom, kéo node, thu nhánh và luồng đề xuất/duyệt quan hệ được giữ nguyên.
+- B đã có contracts, migration, API, private S3-compatible storage, media worker và UI `/app`. Thành viên có thể tải một ảnh, đăng Khoảnh khắc cho Cả nhà, phản ứng “Thương”, lưu thành Kỷ niệm, thêm lời kể chữ hoặc bản ghi âm và phát âm thanh bằng thao tác chủ động. Draft không vào browser storage; content URL được cấp tối đa 60 giây.
+- Media đi qua `pending → processing → ready/rejected → deleted`. Runtime không thể tự giả trạng thái ready; helper database kiểm actor cho upload completion và soft-delete. Ảnh được decode/re-encode để bỏ metadata, audio được kiểm signature/thời lượng. Raw quarantine được purge sau xử lý; upload pending quá một giờ, media rejected và media không còn parent đều được xếp hàng xóa. Worker kiểm lại parent ngay trước claim, dùng lease và retry có giới hạn.
+- MinIO local đã khởi động thành công trên loopback; bài tích hợp thật đã upload bằng presigned URL, HEAD/read bằng URL 60 giây rồi xóa object. Schema/RLS, Moments/Memories API, worker processing/cleanup và browser flow mobile đều đạt ở lần kiểm chứng gần nhất trong nhánh.
+- Toàn bộ Playwright đạt **193 pass, 3 skip đúng theo project** trên Chromium desktop và Pixel 7. Luồng mới bao phủ upload ảnh, đăng Khoảnh khắc, xuất hiện lại ở Nhà, lưu thành Kỷ niệm, thêm lời kể chữ/audio, phát audio theo thao tác, kéo node có phản hồi và các trạng thái offline/revoke.
+- Full `npm run check` đạt ngày 2026-09-14: boundaries, tokens, PWA safety, lint, format, typecheck **15/15 Turbo tasks**, **189/189 unit tests trong 41 file**, Project Brain **76 Markdown / 4 JSON / 24 seed cases** và production build đủ 9 workspace. Review độc lập đã phát hiện rồi xác nhận sửa race Moment→Memory/delete, quyền đọc metadata draft và cleanup quarantine; schema/RLS, API, worker và browser flow liên quan đều đạt lại.
 
 - Chủ dự án duyệt **A — Nhà đang sống** làm nền tảng cho Nhà/Khoảnh khắc, **B — Dòng ký ức** cho Kỷ niệm và **C — Quanh người thân** cho Gia phả. Quyết định ở PAD-023 và spec ngày 2026-09-14; năm tab chính không đổi, Kỷ niệm mở theo ngữ cảnh.
 - `feat/mobile-experience-redesign` đã đổi tokens sang sans-serif hệ thống, nền trung tính ấm, xanh lá trầm và đỏ sơn mài; màu manifest/theme bar PWA đã đồng bộ. Home preview có lời chào, hàng người vừa cập nhật, một Khoảnh khắc chính, hành động gửi, ngày gần nhất và lối vào Kỷ niệm/Gia phả.
@@ -49,8 +57,8 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 - Hồ sơ có quick actions Gọi/Nhắn/Email và view/edit/saving/error/conflict. Quản trị có pending/empty/conflict, quyết định cục bộ và state lưu trong URL.
 - `/design-preview/tree` dùng 15 người hư cấu và 22 relationship fixtures tường minh. SVG sinh một cạnh cho mỗi quan hệ đã xác nhận; Hoàng An chưa rõ nhánh chỉ ở danh bạ. Cây có ba thế hệ, zoom cục bộ, “Về tôi”, URL-backed selection, reload/deep-link, danh bạ tìm không dấu và member bottom sheet có focus trap, Escape, backdrop và trả focus đúng nút trên mobile. Desktop dùng vùng bổ trợ liền kề.
 - Graph thật trong `/app` đã dùng `@xyflow/react`: kéo nền, pinch/wheel zoom, **Thu nhỏ**, **Phóng to**, **Vừa cây**, **Về tôi**, kéo node bằng tay nắm riêng và thu/mở nhánh. Thanh điều khiển bám dưới app bar trên mobile; node, chữ và màu tiếp tục dùng ngôn ngữ album gia đình thay vì giao diện mặc định của trình sửa sơ đồ.
-- Membership active trong `/app` đã dùng app bar, tab bar mobile có safe-area và desktop rail. Home chỉ hiển thị tên nhà, danh tính và số thành viên từ API thật. Gia phả tải graph đã duyệt quanh hồ sơ đang liên kết, giữ danh bạ làm lối tương đương, mở hồ sơ đã lọc liên hệ phía server và gửi đề xuất quan hệ chờ duyệt. Moments và Chat là trạng thái chưa sẵn sàng trung thực, không gửi API giả hoặc trộn fixture. Guest, invitation, pending và revoked vẫn dùng luồng truy cập đã ổn định.
-- Đây vẫn chưa phải UI cuối. Hướng A+B+C mới nằm ở design preview; `/app` connected vẫn giữ UI trước đó cho đến khi browser test, visual review và thử với thành viên gia đình thật đạt.
+- Membership active trong `/app` đã dùng app bar, tab bar mobile có safe-area và desktop rail. Home hiển thị tên nhà, danh tính, thành viên, lịch và Khoảnh khắc từ API thật. Gia phả tải graph đã duyệt quanh hồ sơ đang liên kết, giữ danh bạ làm lối tương đương, mở hồ sơ đã lọc liên hệ phía server và gửi đề xuất quan hệ chờ duyệt. Moments/Memories đã nối API và private storage; Chat vẫn là trạng thái chưa sẵn sàng trung thực. Guest, invitation, pending và revoked vẫn dùng luồng truy cập đã ổn định.
+- Đây vẫn chưa phải UI cuối. A+B+C đã được nối vào `/app` và qua visual review tự động ở Pixel 7; pan/pinch, camera/micro và khả năng hiểu luồng của người lớn tuổi vẫn cần thử trên điện thoại thật trước pilot.
 
 ## Quan hệ gia đình và canvas — đã merge
 
@@ -96,11 +104,11 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Duyệt trực quan Home, Kỷ niệm và lớp Quanh người thân mới; sau đó nâng Khoảnh khắc, hồ sơ, Tôi, onboarding và admin theo đúng nhiệm vụ riêng của từng màn hình.
-2. Thử pan/pinch, kéo node và luồng đề xuất trên điện thoại thật; ghi nhận khả năng hiểu cây với người lớn tuổi, tên dài và nhánh đông.
-3. Nối Home A+B+C vào `/app` bằng dữ liệu thật theo từng vertical slice; không mang fixture Kỷ niệm hoặc Khoảnh khắc sang connected app.
-4. Chọn hosting/domain HTTPS, mail production, storage và quy trình bootstrap admin trước pilot; chỉ bật push sau khi có thiết bị thật để thử app đóng.
-5. Chuẩn bị backend vertical slice Moments trước Chat; Chat chỉ bắt đầu khi contract retry, delivery và privacy rõ.
+1. Duyệt trực quan A+B+C trên điện thoại thật, đặc biệt camera/micro, pan/pinch, thanh trình duyệt động và khả năng hiểu cây của người lớn tuổi với tên dài hoặc nhánh đông.
+2. Theo dõi dead-letter media và bổ sung cảnh báo/vận hành thủ công cho object storage trước pilot; retry tự động hiện dừng sau năm lần.
+3. Chọn hosting/domain HTTPS, mail và object storage production; đặt quota, rate limit, retention và quy trình bootstrap admin trước pilot 15 người.
+4. Nâng hồ sơ, Tôi, onboarding và admin theo ngôn ngữ thị giác A+B+C, dựa trên kết quả thử người dùng thay vì nhân bản một bố cục chung.
+5. Thiết kế Chat realtime thành vertical slice kế tiếp với contract retry, delivery, thu hồi quyền và privacy rõ trước khi triển khai; AI bắt đầu sau khi permission/RAG có tập đánh giá đủ dùng.
 
 ## Calendar Core và Mobile Calendar — đã merge
 
@@ -116,7 +124,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Giới hạn
 
-Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. PWA có nền cài đặt nhưng chưa được thử Add to Home Screen trên thiết bị thật, không hỗ trợ cold-start offline và chưa có push. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline, CRUD/RSVP, Event-to-outbox, worker và inbox trong app; chưa có cơ chế bổ sung occurrence khi cửa sổ thời gian trôi. Chưa có chat realtime, moments hoặc AI. Moments/Chat trong preview chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
+Chưa phải MVP production: email hiện qua Mailpit local và chưa deploy. PWA có nền cài đặt nhưng chưa được thử Add to Home Screen trên thiết bị thật, không hỗ trợ cold-start offline và chưa có push. Cây connected đã có pan/pinch/wheel zoom, kéo node, thu nhánh, cụm cặp đôi và căn con theo cha mẹ; trạng thái kéo/thu và bố cục không được lưu. Lịch nhà đã có timeline, CRUD/RSVP, Event-to-outbox, worker và inbox trong app; chưa có cơ chế bổ sung occurrence khi cửa sổ thời gian trôi. Moments/Memories đã có vertical slice thật nhưng provider production, quota/rate limit, cảnh báo dead-letter và chính sách backup/retention chưa được chốt. Chưa có chat realtime hoặc AI. Moments/Chat trong preview vẫn chỉ là tương tác cục bộ có nhãn. Danh bạ pilot lấy tối đa 100 hồ sơ và chưa phân trang UI. Claim hiện do admin chỉ định rồi người nhận xác nhận; chưa có self-service request.
 
 ## Cập nhật cây tương tác 2026-09-13
 

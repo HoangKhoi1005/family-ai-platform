@@ -19,3 +19,6 @@ export * from './profile.js';
 export * from './relationships.js';
 export * from './calendar.js';
 export * from './notifications.js';
+export * from './media.js';
+export * from './moments.js';
+export * from './memories.js';

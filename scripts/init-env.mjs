@@ -19,6 +19,12 @@ const DEFAULTS = {
   PORT: '3200',
   WEB_PORT: '3200',
   COMPOSE_PROJECT_NAME: 'family-ai-onboarding',
+  MINIO_PORT: '9030',
+  MINIO_CONSOLE_PORT: '9031',
+  MEDIA_STORAGE_ENDPOINT: 'http://127.0.0.1:9030',
+  MEDIA_STORAGE_REGION: 'us-east-1',
+  MEDIA_STORAGE_BUCKET: 'family-private',
+  MEDIA_STORAGE_FORCE_PATH_STYLE: 'true',
 };
 
 function parseEnvValue(raw) {
@@ -172,6 +178,8 @@ ensure(
   postgresUrl('family_worker', randomPassword(), dbHost, dbPort, dbName),
 );
 ensure('BETTER_AUTH_SECRET', randomBytes(32).toString('base64url'));
+ensure('MEDIA_STORAGE_ACCESS_KEY_ID', randomBytes(12).toString('hex'));
+ensure('MEDIA_STORAGE_SECRET_ACCESS_KEY', randomBytes(32).toString('base64url'));
 for (const [name, value] of Object.entries(DEFAULTS)) ensure(name, value);
 
 if (additions.length > 0) {

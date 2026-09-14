@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Pool } from 'pg';
 import type { CalendarConverter } from '@family/domain';
+import type { MediaStorage } from '@family/media';
 import {
   createRelationshipChangeRequestBodySchema,
   createMemberBodySchema,
@@ -21,6 +22,17 @@ import {
   upsertEventRsvpBodySchema,
   notificationListQuerySchema,
   updateNotificationPreferencesBodySchema,
+  createMediaUploadBodySchema,
+  mediaParamsSchema,
+  createMomentBodySchema,
+  momentListQuerySchema,
+  momentParamsSchema,
+  updateMomentReactionBodySchema,
+  createMemoryBodySchema,
+  createMemoryFromMomentBodySchema,
+  createMemoryItemBodySchema,
+  memoryListQuerySchema,
+  memoryParamsSchema,
   type CancelEventInput,
   type CreateEventInput,
   type CreateRelationshipChangeRequestInput,
@@ -30,6 +42,12 @@ import {
   type UpdateEventInput,
   type UpdateMemberInput,
   type UpdateNotificationPreferencesInput,
+  type CreateMediaUploadInput,
+  type CreateMomentInput,
+  type UpdateMomentReactionInput,
+  type AddMemoryItemInput,
+  type CreateMemoryFromMomentInput,
+  type CreateMemoryInput,
 } from '@family/contracts';
 import { withActorTransaction } from '@family/database';
 import type { Auth } from '../auth/auth.js';
@@ -80,6 +98,15 @@ import {
   markNotificationRead,
   updateNotificationPreferences,
 } from './notifications.js';
+import { completeMediaUpload, createMediaUpload, getMedia, getMediaContentGrant } from './media.js';
+import { createMoment, deleteMoment, listMoments, setMomentReaction } from './moments.js';
+import {
+  addMemoryItem,
+  createMemory,
+  createMemoryFromMoment,
+  deleteMemory,
+  listMemories,
+} from './memories.js';
 
 interface FamilyParams {
   familyId: string;
@@ -87,6 +114,28 @@ interface FamilyParams {
 
 interface NotificationParams extends FamilyParams {
   notificationId: string;
+}
+
+interface MediaParams extends FamilyParams {
+  mediaId: string;
+}
+
+interface MomentParams extends FamilyParams {
+  momentId: string;
+}
+
+interface MomentListQuery {
+  cursor?: string;
+  limit?: number;
+}
+
+interface MemoryParams extends FamilyParams {
+  memoryId: string;
+}
+
+interface MemoryListQuery {
+  cursor?: string;
+  limit?: number;
 }
 
 interface NotificationListQuery {
@@ -426,6 +475,7 @@ export interface FamilyRouteOptions {
   runtimePool: Pool;
   webOrigin: string;
   calendarConverter?: CalendarConverter;
+  mediaStorage?: MediaStorage;
 }
 
 async function authenticatedActor(
@@ -450,6 +500,7 @@ function replyError(reply: FastifyReply, request: FastifyRequest, error: unknown
 export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteOptions): void {
   const mutationLimiter = new BoundedRateLimiter(30, 60_000, 4096);
   const claimLimiter = new BoundedRateLimiter(30, 60_000, 4096);
+  const uploadLimiter = new BoundedRateLimiter(20, 60_000, 4096);
 
   app.get<{ Params: FamilyParams }>(
     '/api/v1/families/:familyId/onboarding',
@@ -1325,6 +1376,331 @@ export function registerFamilyRoutes(app: FastifyInstance, options: FamilyRouteO
             }),
           ),
         );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  if (options.mediaStorage) {
+    const mediaStorage = options.mediaStorage;
+    app.post<{ Params: FamilyParams; Body: CreateMediaUploadInput }>(
+      '/api/v1/families/:familyId/media/uploads',
+      {
+        schema: { params: familyParams, body: createMediaUploadBodySchema },
+        preValidation: rejectUnknownBodyKeys(['mime_type', 'byte_size', 'purpose']),
+      },
+      async (request, reply) => {
+        try {
+          assertMutationRequest(request, options.webOrigin);
+          const { familyId } = familyParamsOf(request);
+          const actor = await authenticatedActor(options.auth, request);
+          requireRateLimit(uploadLimiter, actor.userId, `media.upload:${familyId}`);
+          const response = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            createMediaUpload(client, mediaStorage, {
+              familyId,
+              actorId: actor.userId,
+              input: request.body,
+            }),
+          );
+          return reply.code(201).send(response);
+        } catch (error) {
+          return replyError(reply, request, error);
+        }
+      },
+    );
+
+    app.post<{ Params: MediaParams; Body: Record<string, never> }>(
+      '/api/v1/families/:familyId/media/:mediaId/complete',
+      {
+        schema: {
+          params: mediaParamsSchema,
+          body: { type: 'object', additionalProperties: false },
+        },
+        preValidation: rejectUnknownBodyKeys([]),
+      },
+      async (request, reply) => {
+        try {
+          assertMutationRequest(request, options.webOrigin);
+          const { familyId, mediaId } = request.params;
+          const actor = await authenticatedActor(options.auth, request);
+          requireRateLimit(uploadLimiter, actor.userId, `media.complete:${familyId}`);
+          return reply.send(
+            await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+              completeMediaUpload(client, mediaStorage, {
+                familyId,
+                mediaId,
+                actorId: actor.userId,
+              }),
+            ),
+          );
+        } catch (error) {
+          return replyError(reply, request, error);
+        }
+      },
+    );
+
+    app.get<{ Params: MediaParams }>(
+      '/api/v1/families/:familyId/media/:mediaId',
+      { schema: { params: mediaParamsSchema } },
+      async (request, reply) => {
+        try {
+          const { familyId, mediaId } = request.params;
+          const actor = await authenticatedActor(options.auth, request);
+          return reply.send(
+            await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+              getMedia(client, { familyId, mediaId, actorId: actor.userId }),
+            ),
+          );
+        } catch (error) {
+          return replyError(reply, request, error);
+        }
+      },
+    );
+
+    app.get<{ Params: MediaParams }>(
+      '/api/v1/families/:familyId/media/:mediaId/content',
+      { schema: { params: mediaParamsSchema } },
+      async (request, reply) => {
+        try {
+          const { familyId, mediaId } = request.params;
+          const actor = await authenticatedActor(options.auth, request);
+          const grant = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            getMediaContentGrant(client, mediaStorage, {
+              familyId,
+              mediaId,
+              actorId: actor.userId,
+            }),
+          );
+          return reply.redirect(grant.url);
+        } catch (error) {
+          return replyError(reply, request, error);
+        }
+      },
+    );
+  }
+
+  app.get<{ Params: FamilyParams; Querystring: MomentListQuery }>(
+    '/api/v1/families/:familyId/moments',
+    { schema: { params: familyParams, querystring: momentListQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            listMoments(client, {
+              familyId,
+              actorId: actor.userId,
+              limit: request.query.limit ?? 20,
+              ...(request.query.cursor ? { cursor: request.query.cursor } : {}),
+            }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: FamilyParams; Body: CreateMomentInput }>(
+    '/api/v1/families/:familyId/moments',
+    {
+      schema: { params: familyParams, body: createMomentBodySchema },
+      preValidation: rejectUnknownBodyKeys([
+        'client_request_id',
+        'media_id',
+        'caption',
+        'audience',
+      ]),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `moment.create:${familyId}`);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          createMoment(client, {
+            familyId,
+            actorId: actor.userId,
+            idempotencyKey: idempotencyKeyOf(request),
+            input: request.body,
+          }),
+        );
+        return reply.code(result.created ? 201 : 200).send(result.moment);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.delete<{ Params: MomentParams }>(
+    '/api/v1/families/:familyId/moments/:momentId',
+    { schema: { params: momentParamsSchema } },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, momentId } = request.params;
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `moment.delete:${familyId}`);
+        await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          deleteMoment(client, { familyId, momentId, actorId: actor.userId }),
+        );
+        return reply.code(204).send();
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.put<{ Params: MomentParams; Body: UpdateMomentReactionInput }>(
+    '/api/v1/families/:familyId/moments/:momentId/reaction',
+    {
+      schema: { params: momentParamsSchema, body: updateMomentReactionBodySchema },
+      preValidation: rejectUnknownBodyKeys(['reaction']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, momentId } = request.params;
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `moment.reaction:${familyId}`);
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            setMomentReaction(client, {
+              familyId,
+              momentId,
+              actorId: actor.userId,
+              reaction: request.body.reaction,
+            }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.get<{ Params: FamilyParams; Querystring: MemoryListQuery }>(
+    '/api/v1/families/:familyId/memories',
+    { schema: { params: familyParams, querystring: memoryListQuerySchema } },
+    async (request, reply) => {
+      try {
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        return reply.send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            listMemories(client, {
+              familyId,
+              actorId: actor.userId,
+              limit: request.query.limit ?? 20,
+              ...(request.query.cursor ? { cursor: request.query.cursor } : {}),
+            }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: FamilyParams; Body: CreateMemoryInput }>(
+    '/api/v1/families/:familyId/memories',
+    {
+      schema: { params: familyParams, body: createMemoryBodySchema },
+      preValidation: rejectUnknownBodyKeys(['title', 'occurred_on', 'audience', 'items'], {
+        key: 'items',
+        allowedKeys: ['kind', 'position', 'media_id', 'body'],
+      }),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId } = familyParamsOf(request);
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `memory.create:${familyId}`);
+        return reply
+          .code(201)
+          .send(
+            await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+              createMemory(client, { familyId, actorId: actor.userId, input: request.body }),
+            ),
+          );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: MomentParams; Body: CreateMemoryFromMomentInput }>(
+    '/api/v1/families/:familyId/moments/:momentId/memory',
+    {
+      schema: { params: momentParamsSchema, body: createMemoryFromMomentBodySchema },
+      preValidation: rejectUnknownBodyKeys(['title']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, momentId } = request.params;
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `memory.from-moment:${familyId}`);
+        const result = await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          createMemoryFromMoment(client, {
+            familyId,
+            momentId,
+            actorId: actor.userId,
+            input: request.body,
+          }),
+        );
+        return reply.code(result.created ? 201 : 200).send(result.memory);
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.post<{ Params: MemoryParams; Body: AddMemoryItemInput }>(
+    '/api/v1/families/:familyId/memories/:memoryId/items',
+    {
+      schema: { params: memoryParamsSchema, body: createMemoryItemBodySchema },
+      preValidation: rejectUnknownBodyKeys(['version', 'kind', 'position', 'media_id', 'body']),
+    },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, memoryId } = request.params;
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `memory.item:${familyId}`);
+        return reply.code(201).send(
+          await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+            addMemoryItem(client, {
+              familyId,
+              memoryId,
+              actorId: actor.userId,
+              input: request.body,
+            }),
+          ),
+        );
+      } catch (error) {
+        return replyError(reply, request, error);
+      }
+    },
+  );
+
+  app.delete<{ Params: MemoryParams }>(
+    '/api/v1/families/:familyId/memories/:memoryId',
+    { schema: { params: memoryParamsSchema } },
+    async (request, reply) => {
+      try {
+        assertMutationRequest(request, options.webOrigin);
+        const { familyId, memoryId } = request.params;
+        const actor = await authenticatedActor(options.auth, request);
+        requireRateLimit(mutationLimiter, actor.userId, `memory.delete:${familyId}`);
+        await withActorTransaction(options.runtimePool, actor.userId, (client) =>
+          deleteMemory(client, { familyId, memoryId, actorId: actor.userId }),
+        );
+        return reply.code(204).send();
       } catch (error) {
         return replyError(reply, request, error);
       }

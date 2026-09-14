@@ -186,6 +186,12 @@ async function mockActiveFamily(
       },
     });
   });
+  await page.route('**/api/v1/families/family-1/moments?*', (route) =>
+    route.fulfill({ json: { moments: [], next_cursor: null } }),
+  );
+  await page.route('**/api/v1/families/family-1/memories?*', (route) =>
+    route.fulfill({ json: { memories: [], next_cursor: null } }),
+  );
 }
 
 const calendarOccurrences = [
@@ -398,10 +404,9 @@ test('notification inbox keeps its last good reminders when refresh loses the ne
     unread_count: 1,
     next_cursor: null,
   });
-  let requests = 0;
+  let loseNetwork = false;
   await page.route('**/api/v1/families/family-1/notifications?*', (route) => {
-    requests++;
-    if (requests === 1) {
+    if (!loseNetwork) {
       return route.fulfill({
         json: { notifications: [{ ...notification }], unread_count: 1, next_cursor: null },
       });
@@ -410,7 +415,12 @@ test('notification inbox keeps its last good reminders when refresh loses the ne
   });
 
   await page.goto('/app');
-  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+  const unreadButton = page.locator(
+    'button[aria-label="Thông báo, có 1 lời nhắc chưa đọc"]:visible',
+  );
+  await expect(unreadButton).toBeVisible();
+  loseNetwork = true;
+  await unreadButton.click();
 
   await expect(page.getByText('Nhà mình có một ngày quan trọng sắp tới.')).toBeVisible();
   await expect(page.getByText('Những lời nhắc đã tải vẫn được giữ lại.')).toBeVisible();
@@ -424,10 +434,9 @@ test('notification refresh removes cached family data after access is revoked', 
     unread_count: 1,
     next_cursor: null,
   });
-  let requests = 0;
+  let revokeAccess = false;
   await page.route('**/api/v1/families/family-1/notifications?*', (route) => {
-    requests++;
-    if (requests === 1) {
+    if (!revokeAccess) {
       return route.fulfill({
         json: { notifications: [{ ...notification }], unread_count: 1, next_cursor: null },
       });
@@ -439,30 +448,40 @@ test('notification refresh removes cached family data after access is revoked', 
   });
 
   await page.goto('/app');
-  await expect(page.locator('button[aria-label^="Thông báo"]:visible')).toBeVisible();
-  await page.locator('button[aria-label^="Thông báo"]:visible').click();
+  const unreadButton = page.locator(
+    'button[aria-label="Thông báo, có 1 lời nhắc chưa đọc"]:visible',
+  );
+  await expect(unreadButton).toBeVisible();
+  revokeAccess = true;
+  await unreadButton.click();
 
   await expect(page.getByRole('heading', { name: 'Một lời mời là đủ để về nhà.' })).toBeVisible();
   await expect(page.getByText('Nhà mình có một ngày quan trọng sắp tới.')).toHaveCount(0);
 });
 
-test('active member gets the five-destination mobile shell without preview data', async ({
+test('active member gets the living home and five-destination shell without preview data', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await mockActiveFamily(page);
+  await mockActiveFamily(page, 'member', calendarOccurrences);
   await page.goto('/app');
 
   const navigation = page.getByRole('navigation', { name: 'Điều hướng chính' });
   for (const label of ['Nhà', 'Khoảnh khắc', 'Gia phả', 'Trò chuyện', 'Tôi']) {
     await expect(navigation.getByText(label, { exact: true })).toBeVisible();
   }
-  await expect(page.getByRole('heading', { name: 'Nhà mình ở đây.' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Chào Gia Bảo, nhà mình có gì mới?' }),
+  ).toBeVisible();
   await expect(page.getByText('3 người trong nhà')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Gửi Khoảnh khắc đầu tiên' })).toBeVisible();
+  await expect(page.getByText('Ngày giỗ cụ Nguyễn Văn Bình')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Mở Gia phả', exact: true })).toBeVisible();
+  await expect(page.getByText('Bữa cơm nhà')).toHaveCount(0);
 
   await navigation.getByRole('button', { name: 'Khoảnh khắc' }).click();
   await expect(
-    page.getByRole('heading', { name: 'Khoảnh khắc đang được chuẩn bị.' }),
+    page.getByRole('heading', { name: 'Ảnh đầu tiên sẽ bắt đầu câu chuyện.' }),
   ).toBeVisible();
   await navigation.getByRole('button', { name: 'Trò chuyện' }).click();
   await expect(page.getByRole('heading', { name: 'Trò chuyện đang được chuẩn bị.' })).toBeVisible();
@@ -475,6 +494,44 @@ test('active member gets the five-destination mobile shell without preview data'
   await expect(page.getByText('Quyền riêng tư của bạn')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Đăng xuất', exact: true })).toBeVisible();
   await expect(page.getByText('Bữa cơm chủ nhật')).toHaveCount(0);
+});
+
+test('home opens the selected real member in the family tree', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let selectedProfileRequests = 0;
+  await page.route('**/api/v1/families/family-1/members/member-2', async (route) => {
+    selectedProfileRequests++;
+    await route.fallback();
+  });
+  await page.goto('/app');
+
+  await page
+    .getByRole('button', { name: 'Mở Gia phả để xem Nguyễn Minh Anh', exact: true })
+    .click();
+
+  await expect.poll(() => selectedProfileRequests).toBe(1);
+  await expect(page.getByRole('dialog', { name: 'Nguyễn Minh Anh' })).toBeVisible();
+  await expect(page.getByText('Người luôn nhắc cả nhà gọi điện cho nhau.')).toBeVisible();
+});
+
+test('relationship orbit shows approved direct connections and opens their real profile', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  await page.goto('/app');
+  await page.getByRole('button', { name: 'Người thân', exact: true }).click();
+
+  const orbit = page.getByRole('navigation', { name: 'Quanh người thân' });
+  await expect(orbit).toBeVisible();
+  await expect(
+    orbit.getByRole('button', { name: 'Cha / mẹ · Nguyễn Minh Anh', exact: true }),
+  ).toBeVisible();
+  await expect(orbit.getByText('Thảo Chi', { exact: true })).toHaveCount(0);
+
+  await orbit.getByRole('button', { name: 'Cha / mẹ · Nguyễn Minh Anh', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Nguyễn Minh Anh' })).toBeVisible();
 });
 
 test('member opens the family timeline, keeps a selected day in the URL and responds once', async ({
@@ -1092,7 +1149,9 @@ test('member explores the approved tree and submits a reviewed relationship prop
 
   await expect(page.getByRole('heading', { name: 'Gia phả nhà mình.' })).toBeVisible();
   await expect(page.getByText('Quanh Gia Bảo')).toBeVisible();
-  await expect(page.getByText('Cha / mẹ', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-tree-node-id="member-2"]').getByText('Cha / mẹ', { exact: true }),
+  ).toBeVisible();
   await expect(page.locator('[data-approved-relationship]')).toHaveCount(2);
   await expect(page.getByText('Nguyễn Minh Anh ↔ Trần Nguyễn Thị Thảo Chi')).toBeVisible();
   await page.getByRole('button', { name: 'Mở hồ sơ Nguyễn Minh Anh' }).click();
@@ -1318,14 +1377,25 @@ test('dragging a family node changes only its session position and does not open
 
   const node = page.locator('.react-flow__node:has([data-tree-node-id="member-2"])');
   const handle = node.locator('[data-tree-drag-handle]');
+  await handle.evaluate((element) => {
+    const root = document.documentElement;
+    const previousBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = 'auto';
+    window.scrollBy(0, element.getBoundingClientRect().top - window.innerHeight * 0.45);
+    root.style.scrollBehavior = previousBehavior;
+  });
+  await handle.hover();
   const before = await node.getAttribute('style');
-  const box = await handle.boundingBox();
-  expect(box).not.toBeNull();
-  if (!box) return;
-
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const handleBox = await handle.boundingBox();
+  expect(handleBox).not.toBeNull();
+  if (!handleBox) return;
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 42, box.y + box.height / 2 + 18, { steps: 5 });
+  await page.mouse.move(
+    handleBox.x + handleBox.width / 2 + 42,
+    handleBox.y + handleBox.height / 2 + 18,
+    { steps: 5 },
+  );
   await page.mouse.up();
 
   await expect.poll(() => node.getAttribute('style')).not.toBe(before);
@@ -1545,3 +1615,181 @@ for (const width of [320, 390, 768]) {
     await expect(page.getByRole('navigation', { name: 'Điều hướng chính' })).toBeVisible();
   });
 }
+
+test('mobile member publishes a private Moment and preserves it as a Memory', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockActiveFamily(page);
+  let momentCreated = false;
+  let lastPurpose: 'moment_image' | 'memory_audio' = 'moment_image';
+  const media = {
+    id: '40000000-0000-4000-8000-000000000001',
+    purpose: 'moment_image',
+    status: 'ready',
+    mime_type: 'image/jpeg',
+    byte_size: 4,
+    width: 1200,
+    height: 900,
+    duration_ms: null,
+    rejection_code: null,
+    version: 2,
+    created_at: '2026-09-14T04:00:00.000Z',
+    updated_at: '2026-09-14T04:00:01.000Z',
+  };
+  const moment = {
+    id: '50000000-0000-4000-8000-000000000001',
+    caption: 'Bữa cơm chiều ở quê',
+    audience: 'family',
+    author: {
+      id: 'member-1',
+      display_name: 'Nguyễn Gia Bảo',
+      familiar_name: 'Gia Bảo',
+      hometown: 'Cần Thơ',
+      birth_date: null,
+      birth_year: 1996,
+      deceased: false,
+      version: 1,
+    },
+    media,
+    my_reaction: null,
+    can_delete: true,
+    version: 1,
+    created_at: '2026-09-14T04:00:02.000Z',
+  };
+  await page.route('**/api/v1/families/family-1/moments?*', (route) =>
+    route.fulfill({ json: { moments: momentCreated ? [moment] : [], next_cursor: null } }),
+  );
+  await page.route('**/api/v1/families/family-1/media/uploads', (route) => {
+    lastPurpose = (route.request().postDataJSON() as { purpose: typeof lastPurpose }).purpose;
+    return route.fulfill({
+      status: 201,
+      json: {
+        media: { ...media, purpose: lastPurpose, status: 'pending', version: 1 },
+        upload: {
+          url: 'http://storage.invalid/upload',
+          method: 'PUT',
+          headers: { 'content-type': 'image/jpeg' },
+          expires_at: '2026-09-14T04:10:00.000Z',
+        },
+      },
+    });
+  });
+  await page.route('http://storage.invalid/upload', (route) => route.fulfill({ status: 200 }));
+  await page.route('**/api/v1/families/family-1/media/*/complete', (route) =>
+    route.fulfill({ json: { ...media, purpose: lastPurpose } }),
+  );
+  await page.route('**/api/v1/families/family-1/moments', (route) => {
+    if (route.request().method() === 'POST') {
+      momentCreated = true;
+      return route.fulfill({ status: 201, json: moment });
+    }
+    return route.fallback();
+  });
+  await page.route('**/api/v1/families/family-1/media/*/content', (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="4" height="3"><rect width="4" height="3" fill="#8f4b32"/></svg>',
+    }),
+  );
+  await page.route('**/api/v1/families/family-1/memories?*', (route) =>
+    route.fulfill({ json: { memories: [], next_cursor: null } }),
+  );
+  let savedMemory = {
+    id: '60000000-0000-4000-8000-000000000001',
+    source_moment_id: moment.id,
+    title: moment.caption,
+    occurred_on: '2026-09-14',
+    audience: 'family',
+    items: [
+      {
+        id: '70000000-0000-4000-8000-000000000001',
+        kind: 'image',
+        position: 0,
+        body: null,
+        media,
+        contributor: moment.author,
+        created_at: moment.created_at,
+      },
+    ],
+    can_edit: true,
+    version: 1,
+    created_at: moment.created_at,
+    updated_at: moment.created_at,
+  };
+  await page.route('**/api/v1/families/family-1/moments/*/memory', (route) =>
+    route.fulfill({
+      status: 201,
+      json: savedMemory,
+    }),
+  );
+  await page.route('**/api/v1/families/family-1/memories/*/items', (route) => {
+    const body = route.request().postDataJSON() as {
+      kind: 'text' | 'audio';
+      body?: string;
+      position: number;
+    };
+    savedMemory = {
+      ...savedMemory,
+      version: savedMemory.version + 1,
+      items: [
+        ...savedMemory.items,
+        {
+          id: `70000000-0000-4000-8000-00000000000${body.position + 1}`,
+          kind: body.kind,
+          position: body.position,
+          body: body.body ?? null,
+          media: body.kind === 'audio' ? { ...media, purpose: 'memory_audio' } : null,
+          contributor: moment.author,
+          created_at: moment.created_at,
+        },
+      ],
+    };
+    return route.fulfill({ status: 201, json: savedMemory });
+  });
+
+  await page.goto('/app');
+  const navigation = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  await navigation.getByRole('button', { name: 'Khoảnh khắc', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Ảnh đầu tiên sẽ bắt đầu câu chuyện.' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Gửi Khoảnh khắc đầu tiên' }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'bua-com.jpg',
+    mimeType: 'image/jpeg',
+    buffer: Buffer.from([0xff, 0xd8, 0xff, 0xd9]),
+  });
+  await page.getByLabel('Kể một câu ngắn').fill('Bữa cơm chiều ở quê');
+  await expect(page.getByText('Cả nhà', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Gửi về nhà', exact: true }).click();
+  await expect(page.getByText('Bữa cơm chiều ở quê', { exact: true })).toBeVisible();
+  await navigation.getByRole('button', { name: 'Nhà mình', exact: true }).click();
+  await expect(page.getByAltText('Khoảnh khắc: Bữa cơm chiều ở quê')).toBeVisible();
+  await navigation.getByRole('button', { name: 'Khoảnh khắc', exact: true }).click();
+  await page.getByRole('button', { name: 'Lưu thành Kỷ niệm' }).click();
+  await expect(page.getByRole('heading', { name: 'Kỷ niệm', exact: true })).toBeVisible();
+  await expect(page.getByText('Được giữ từ Khoảnh khắc')).toBeVisible();
+  await page.getByRole('button', { name: 'Thêm lời kể' }).click();
+  await page.getByLabel('Chuyện bạn muốn giữ lại').fill('Bà kể hôm ấy trời vừa tạnh mưa.');
+  await page.getByRole('button', { name: 'Lưu lời kể' }).click();
+  await expect(page.getByText('Bà kể hôm ấy trời vừa tạnh mưa.')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Thêm lời kể' }).click();
+  await page.getByRole('button', { name: 'Gửi giọng nói' }).click();
+  await page.locator('input[accept^="audio/webm"]').setInputFiles({
+    name: 'loi-ke.webm',
+    mimeType: 'audio/webm',
+    buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3]),
+  });
+  await page.getByRole('button', { name: 'Lưu lời kể' }).click();
+  await expect(page.getByText('Lời kể của Gia Bảo')).toBeVisible();
+  await expect(page.locator('audio[autoplay]')).toHaveCount(0);
+  expect(
+    await page.evaluate(() => ({
+      local: Object.keys(localStorage),
+      session: Object.keys(sessionStorage),
+    })),
+  ).toEqual({ local: [], session: [] });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});

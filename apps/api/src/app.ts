@@ -2,6 +2,7 @@ import Fastify, { LogController } from 'fastify';
 import { healthResponseSchema, type HealthResponse, type ApiError } from '@family/contracts';
 import type { Pool } from 'pg';
 import type { CalendarConverter } from '@family/domain';
+import type { MediaStorage } from '@family/media';
 import { withActorTransaction } from '@family/database';
 import type { Auth } from './auth/auth.js';
 import { registerAuthRoutes, toAuthHeaders } from './auth/routes.js';
@@ -14,6 +15,7 @@ export interface AppOptions {
   publicOrigin?: string;
   runtimePool?: Pool;
   calendarConverter?: CalendarConverter;
+  mediaStorage?: MediaStorage;
 }
 
 export function buildApp(options: AppOptions = {}) {
@@ -49,6 +51,7 @@ export function buildApp(options: AppOptions = {}) {
         runtimePool: options.runtimePool,
         webOrigin: publicOrigin,
         ...(options.calendarConverter ? { calendarConverter: options.calendarConverter } : {}),
+        ...(options.mediaStorage ? { mediaStorage: options.mediaStorage } : {}),
       });
     }
     app.get('/api/v1/me', async (request, reply) => {

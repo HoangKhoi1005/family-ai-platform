@@ -14,7 +14,13 @@
     "HOST",
     "SMTP_HOST",
     "SMTP_PORT",
-    "MAIL_FROM"
+    "MAIL_FROM",
+    "MEDIA_STORAGE_ENDPOINT",
+    "MEDIA_STORAGE_REGION",
+    "MEDIA_STORAGE_BUCKET",
+    "MEDIA_STORAGE_ACCESS_KEY_ID",
+    "MEDIA_STORAGE_SECRET_ACCESS_KEY",
+    "MEDIA_STORAGE_FORCE_PATH_STYLE"
   ],
   "tasks": {
     "build": {
@@ -45,7 +51,13 @@
         "HOST",
         "SMTP_HOST",
         "SMTP_PORT",
-        "MAIL_FROM"
+        "MAIL_FROM",
+        "MEDIA_STORAGE_ENDPOINT",
+        "MEDIA_STORAGE_REGION",
+        "MEDIA_STORAGE_BUCKET",
+        "MEDIA_STORAGE_ACCESS_KEY_ID",
+        "MEDIA_STORAGE_SECRET_ACCESS_KEY",
+        "MEDIA_STORAGE_FORCE_PATH_STYLE"
       ]
     }
   }

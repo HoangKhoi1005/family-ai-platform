@@ -15,7 +15,7 @@ Nguồn chuẩn cho nghĩa dữ liệu; schema tham chiếu ở [07](07_DATABASE
 | Branch                  | Nhãn nhánh được quản trị xác định; nội/ngoại có thể phụ thuộc người đang xem; hoãn quản lý riêng      |
 | Event / EventOccurrence | Định nghĩa sự kiện và lần diễn ra cụ thể sau tính lịch/lặp                                            |
 | Moment                  | Ảnh chia sẻ gần thời điểm hiện tại, không mặc định tự biến mất                                        |
-| Memory                  | Nội dung được chọn/lưu giữ dài hạn, có thể tham chiếu Moment; giai đoạn sau                           |
+| Memory                  | Nội dung được chọn/lưu giữ dài hạn, có thể tham chiếu Moment và chứa ảnh, lời kể chữ hoặc âm thanh    |
 | ChatThread / Message    | Phòng trò chuyện và tin nhắn; MVP chỉ phòng chung của nhà                                             |
 | Document                | Tài liệu gia đình có chủ sở hữu, quyền và nguồn; giai đoạn sau                                        |
 | Notification            | Nhắc/thông báo cho một người nhận, không đồng nghĩa push đã được nhìn thấy                            |
@@ -37,5 +37,5 @@ Nguồn chuẩn cho nghĩa dữ liệu; schema tham chiếu ở [07](07_DATABASE
 
 - ChangeRequest: pending → approved/rejected/cancelled; chỉ một chuyển trạng thái cuối, phát hiện version conflict trước apply.
 - Invitation: active → consumed/expired/revoked; nhận link không đồng nghĩa có quyền xem nhà.
-- MediaAsset: pending → ready/failed → deleted; chưa ready không phát tán tới người nhận.
+- MediaAsset: pending → processing → ready/rejected → deleted; chỉ worker media được tạo ready/rejected, chưa ready không phát tán tới người nhận.
 - EventOccurrence: scheduled → cancelled/completed; sửa lịch tăng revision, vô hiệu job cũ.
