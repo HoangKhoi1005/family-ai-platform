@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import s from './connected.module.css';
 
 export type ConnectedTab =
-  'home' | 'calendar' | 'moments' | 'directory' | 'chat' | 'profile' | 'admin';
+  'home' | 'calendar' | 'moments' | 'memories' | 'directory' | 'chat' | 'profile' | 'admin';
 
 const destinations = [
   { key: 'home', label: 'Nhà', accessibleName: 'Nhà mình', icon: 'home' },
@@ -65,6 +65,7 @@ export function ConnectedAppShell({
             const active =
               destination.key === tab ||
               (destination.key === 'home' && tab === 'calendar') ||
+              (destination.key === 'moments' && tab === 'memories') ||
               (destination.key === 'profile' && tab === 'admin');
             return (
               <button
