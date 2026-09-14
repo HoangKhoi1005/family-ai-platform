@@ -135,7 +135,7 @@ Thiết kế hosting/mail/backup sớm sau B, kiểm nghiệm release sau C–F 
 
 - [ ] G1. Xác nhận ngân sách tháng, thiết bị/email của 15 người và hai admin; chọn hosting/DB/mail/storage, tên miền và HTTPS. Không tự mua hoặc gửi lời mời thật.
 - [ ] G2. Secrets, migration deploy, readiness, log lọc PII, rate limit phù hợp số instance, giám sát lỗi; backup có phục hồi thử và quy trình rollback.
-- [ ] G3. PWA manifest/icons/install guidance; không cache riêng tư mặc định bằng service worker. Test logout/revoke/mở từ màn hình chính.
+- [x] G3. PWA manifest/icons/install guidance; không cache riêng tư mặc định bằng service worker. Test logout/revoke/mở từ màn hình chính.
 - [ ] G4. Thử một iPhone, một Android và một người lớn tuổi: nhận lời mời, xem cây, gọi người thân, xem ngày quan trọng, gửi ảnh. Ghi thời gian/lỗi, không bịa kết quả.
 - [ ] G5. Sau khi được giao deploy/mời: nhóm nhỏ trước, rồi 15 người; theo dõi 4 tuần bằng phản hồi và số liệu tổng hợp tối thiểu. Có hướng dẫn hỗ trợ/xóa/export theo quyền.
 

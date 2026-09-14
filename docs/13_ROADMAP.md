@@ -14,7 +14,7 @@ Chưa ước lượng ngày phát hành khi chưa chọn hosting và năng lực
 ## Trạng thái hiện tại — 2026-09-14
 
 - Đã triển khai trên `main`: stack/ADR, auth và tenant isolation, onboarding, hồ sơ/account link, quan hệ/duyệt, cây tương tác, lịch/âm lịch/RSVP, outbox/worker và inbox trong app.
-- Đang thực hiện: PWA foundation riêng tư và đồng bộ tài liệu trạng thái.
+- Hoàn thiện trên nhánh, chờ merge: PWA foundation riêng tư và đồng bộ tài liệu trạng thái.
 - Preview có nhãn, chưa có backend thật: Moments và Chat.
 - Chưa triển khai: private media/storage, realtime, push, AI runtime, hosting/mail production, readiness, backup/restore và pilot thiết bị thật.
 

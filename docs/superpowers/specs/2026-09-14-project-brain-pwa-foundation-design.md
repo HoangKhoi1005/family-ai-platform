@@ -1,7 +1,7 @@
 # Project Brain sync and PWA foundation — design
 
 **Date:** 2026-09-14  
-**Status:** Awaiting owner review  
+**Status:** Approved and implemented on feature branch
 **Scope:** Project Brain truthfulness, installable web app foundation, mobile install guidance  
 **Out of scope:** Web push delivery, offline family data, hosting/provider selection, native app packaging
 
