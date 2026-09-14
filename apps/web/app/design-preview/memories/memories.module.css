@@ -1,0 +1,270 @@
+.page {
+  margin: 0 auto;
+  max-width: 760px;
+  overflow-x: clip;
+  padding: 0 16px 40px;
+}
+
+.header {
+  padding: 20px 2px 24px;
+}
+
+.header > a {
+  align-items: center;
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 750;
+  min-height: 44px;
+}
+
+.header p {
+  color: var(--color-accent);
+  font-size: 11px;
+  font-weight: 720;
+  margin: 11px 0 6px;
+}
+
+.header h1 {
+  font-size: clamp(29px, 8.5vw, 40px);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.header > span {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: 14px;
+  line-height: 1.55;
+  margin-top: 10px;
+  max-width: 580px;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 25px;
+  position: relative;
+}
+
+.timeline::before {
+  background: var(--color-border-soft);
+  bottom: 0;
+  content: '';
+  left: 6px;
+  position: absolute;
+  top: 8px;
+  width: 2px;
+}
+
+.timelineItem {
+  margin-bottom: 22px;
+  position: relative;
+}
+
+.timelineItem::before {
+  background: var(--color-accent);
+  border: 4px solid var(--color-background-primary);
+  border-radius: 50%;
+  content: '';
+  height: 14px;
+  left: -25px;
+  position: absolute;
+  top: 3px;
+  width: 14px;
+}
+
+.timelineItem > time {
+  color: var(--color-text-secondary);
+  display: block;
+  font-size: 11px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
+.memory {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 5px 24px 24px 24px;
+  overflow: hidden;
+}
+
+.memoryvoice {
+  background: #293348;
+  border-color: #293348;
+  color: #f8f4e8;
+}
+
+.memoryPhoto {
+  aspect-ratio: 16 / 10;
+  background-image:
+    linear-gradient(180deg, transparent 55%, rgba(25, 37, 32, 0.38)),
+    url('/illustrations/family-dinner-preview.svg');
+  background-position: center 58%;
+  background-size: cover;
+  padding: 12px;
+}
+
+.memoryPhoto span {
+  background: rgba(25, 37, 32, 0.74);
+  border-radius: var(--radius-px-pill);
+  color: var(--color-on-brand);
+  display: inline-flex;
+  font-size: 10px;
+  padding: 6px 9px;
+}
+
+.memoryBody {
+  padding: 16px;
+}
+
+.memoryIndex {
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.memoryBody h2 {
+  font-size: 19px;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin: 7px 0;
+}
+
+.memoryBody > p {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.memoryvoice .memoryBody > p,
+.memoryvoice .contributor small {
+  color: #cfd5d1;
+}
+
+.contributor {
+  align-items: center;
+  display: flex;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+.contributor > span:last-child {
+  display: grid;
+}
+
+.contributor strong {
+  font-size: 11px;
+}
+
+.contributor small {
+  color: var(--color-text-secondary);
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.voiceButton {
+  align-items: center;
+  background: #e2e7db;
+  border: 0;
+  border-radius: 15px;
+  color: #293b34;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  min-height: 50px;
+  padding: 7px 12px;
+  width: 100%;
+}
+
+.voiceButton > span:first-child {
+  align-items: center;
+  background: var(--color-brand-primary);
+  border-radius: 50%;
+  color: var(--color-on-brand);
+  display: flex;
+  flex: 0 0 30px;
+  height: 30px;
+  justify-content: center;
+  padding-left: 2px;
+}
+
+.voiceButton > span:last-child {
+  display: grid;
+  text-align: left;
+}
+
+.voiceButton strong {
+  font-size: 12px;
+}
+
+.voiceButton small {
+  color: #607068;
+  font-size: 10px;
+}
+
+.localStatus {
+  color: var(--color-brand-primary);
+  font-size: 12px;
+  min-height: 42px;
+  padding-left: 25px;
+}
+
+.privacyNote {
+  border-top: 1px solid var(--color-border-soft);
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 14px 25px;
+  padding: 18px 0;
+}
+
+.privacyNote strong {
+  font-size: 12px;
+}
+
+.privacyNote span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.page a:focus-visible,
+.page button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+@media (min-width: 900px) {
+  .page {
+    max-width: 880px;
+    padding-inline: 34px;
+  }
+
+  .header {
+    padding-top: 42px;
+  }
+
+  .timeline {
+    padding-left: 36px;
+  }
+
+  .timelineItem::before {
+    left: -36px;
+  }
+
+  .timeline::before {
+    left: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after {
+    transition-duration: 0.001ms !important;
+  }
+}

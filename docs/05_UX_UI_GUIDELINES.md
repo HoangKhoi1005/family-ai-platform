@@ -8,13 +8,17 @@ Nhà ưu tiên: một lời chào ngắn → sự kiện thật sự cần chú 
 
 ## Cá tính và tokens
 
-Ấm áp, sáng, nhiều ảnh thật khi có sự đồng ý; nền giấy ấm, xanh lá trầm làm màu chính, đất nung làm điểm nhấn. [Tokens](../design/tokens.json) là nguồn chuẩn, CSS tại packages/ui được sinh bằng `npm run tokens:generate`. Design preview dùng chân dung minh họa xác định theo fixture; sản phẩm thật chỉ dùng ảnh gia đình khi có dữ liệu và quyền phù hợp. Font không phụ thuộc tải mạng; serif cho display/person name phải dùng fallback đã kiểm glyph tiếng Việt, tránh tách khoảng trắng sau ký tự có dấu trên Windows hoặc Chromium CI.
+Ấm áp, sáng, nhiều ảnh thật khi có sự đồng ý; nền trung tính ấm, xanh lá trầm làm màu chính, đỏ sơn mài làm điểm nhấn có tiết chế. [Tokens](../design/tokens.json) là nguồn chuẩn, CSS tại packages/ui được sinh bằng `npm run tokens:generate`. Design preview dùng chân dung hoặc minh họa xác định theo fixture; sản phẩm thật chỉ dùng ảnh gia đình khi có dữ liệu và quyền phù hợp. Font không phụ thuộc tải mạng; toàn bộ UI dùng sans-serif có glyph tiếng Việt ổn định. Phân cấp dựa vào cỡ, trọng lượng và khoảng trắng thay cho serif lớn hoặc kiểu tạp chí.
 
 Cỡ chữ nội dung mặc định 16 px, chế độ chữ lớn 20 px; không khóa zoom. Nút chính tối thiểu 44×44 CSS px. Trạng thái không chỉ dùng màu; icon luôn có tên truy cập. Mục tiêu độ tương phản: chữ thường 4.5:1, chữ lớn 3:1; kiểm tra trên thiết kế thực, đặc biệt chữ đè lên ảnh.
 
 ## Tiêu chí tránh giao diện chung chung
 
-Yêu cầu trực tiếp của chủ dự án ngày 2026-09-08: không AI slop, AI-generated UI hoặc generic AI app. Hướng **Album gia đình Việt đương đại** đang được thử bằng bản mẫu; chưa coi là thiết kế đã duyệt.
+Yêu cầu trực tiếp của chủ dự án ngày 2026-09-08: không AI slop, AI-generated UI hoặc generic AI app. Ngày 2026-09-14, chủ dự án duyệt mô hình **A — Nhà đang sống làm nền tảng + B — Dòng ký ức cho Kỷ niệm + C — Quanh người thân cho Gia phả**. [Spec thiết kế](superpowers/specs/2026-09-14-mobile-experience-redesign-design.md) là hướng hiện hành; việc áp dụng vào từng surface vẫn qua visual review trước khi chuyển sang `/app`.
+
+- Nhà và Khoảnh khắc tạo nhịp dùng hằng ngày bằng nội dung của người thân và một hành động chia sẻ rõ. Kỷ niệm kể chuyện theo thời gian. Gia phả bắt đầu quanh người được chọn rồi mở rộng vào canvas chính xác.
+- Kỷ niệm không thêm tab thứ sáu trong pilot; truy cập theo ngữ cảnh từ Nhà, hồ sơ và Khoảnh khắc.
+- Không dùng giant serif heading, nhãn chữ hoa có tracking và đường kẻ mảnh như một công thức lặp trên mọi màn hình.
 
 - Dùng nhịp bố cục có chủ đích: tên người, ảnh và câu chuyện là điểm nhấn; không xếp mọi nội dung vào các thẻ bo góc giống nhau.
 - Không gradient tím xanh, hiệu ứng kính, emoji trang trí, thống kê giả hoặc lời quảng cáo sáo rỗng. Màu, kiểu chữ, khoảng cách và chuyển động dùng tokens, mỗi lựa chọn phục vụ phân cấp và thao tác.

@@ -25,6 +25,19 @@ export type PreviewRelationship = {
   kind: 'parent' | 'partner' | 'adoptive-parent';
 };
 
+export type PreviewMemory = {
+  id: string;
+  synthetic: true;
+  contributorId: string;
+  dateTime: string;
+  dateLabel: string;
+  title: string;
+  excerpt: string;
+  kind: 'voice' | 'photo' | 'note';
+  duration?: string;
+  relatedEvent?: string;
+};
+
 export const previewMembers: PreviewMember[] = [
   {
     id: 'van-binh',
@@ -265,6 +278,42 @@ export const previewGathering = {
   location: 'Nhà bà Mai · Cần Thơ',
   description: 'Cả nhà gặp nhau, ăn cơm và nghe bà kể lại chuyện cũ.',
 } as const;
+
+export const previewMemories: ReadonlyArray<PreviewMemory> = [
+  {
+    id: 'first-home-story',
+    synthetic: true,
+    contributorId: 'thi-mai',
+    dateTime: '1982-09-12',
+    dateLabel: 'Tháng 9 · 1982',
+    title: 'Căn nhà đầu tiên của ông bà',
+    excerpt:
+      'Ngày dọn về chỉ có một chiếc bàn gỗ và mấy cái ghế mượn. Tối đó cả nhà ăn canh chua đến khuya.',
+    kind: 'voice',
+    duration: '1 phút 42 giây',
+  },
+  {
+    id: 'river-lunch',
+    synthetic: true,
+    contributorId: 'thanh-huong',
+    dateTime: '2008-09-21',
+    dateLabel: '21 tháng 9 · 2008',
+    title: 'Bữa trưa bên bến sông',
+    excerpt: 'Dì Hương ghi lại lần đầu đủ mặt ba thế hệ trong ngày giỗ ông cố.',
+    kind: 'photo',
+    relatedEvent: 'Ngày giỗ ông cố',
+  },
+  {
+    id: 'sour-soup-note',
+    synthetic: true,
+    contributorId: 'minh-anh',
+    dateTime: '2026-09-09',
+    dateLabel: 'Hôm nay',
+    title: 'Món canh chua của nhà mình',
+    excerpt: 'Minh Anh lưu lại công thức từ lời kể của bà Mai để lần họp nhà sau cùng nấu.',
+    kind: 'note',
+  },
+];
 
 export function getPreviewMember(id: string | null | undefined) {
   return previewMembers.find((member) => member.id === id) ?? previewMembers[8]!;

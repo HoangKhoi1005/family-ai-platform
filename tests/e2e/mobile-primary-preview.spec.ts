@@ -1,5 +1,60 @@
 import { expect, test } from '@playwright/test';
 
+test('home centers the daily loop on one family moment', async ({ page }) => {
+  const apiRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+  });
+
+  await page.goto('/design-preview');
+
+  await expect(
+    page.getByRole('heading', { name: 'Chào Gia Bảo, nhà mình có gì mới?' }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Gửi Khoảnh khắc', exact: true })).toHaveAttribute(
+    'href',
+    '/design-preview/moments?compose=true',
+  );
+  await expect(page.getByText('Canh chua đã lên bếp, ai về trễ vẫn còn phần.')).toBeVisible();
+  await expect(page.getByText('Bữa cơm chủ nhật')).toBeVisible();
+  expect(apiRequests).toEqual([]);
+});
+
+test('memories opens from home as a sourced timeline without pretending to play audio', async ({
+  page,
+}) => {
+  const apiRequests: string[] = [];
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
+  });
+
+  await page.goto('/design-preview');
+  await page.getByRole('link', { name: /Nghe bà Mai kể chuyện căn nhà đầu tiên/ }).click();
+
+  await expect(page).toHaveURL(/\/design-preview\/memories$/);
+  await expect(page.getByRole('heading', { name: 'Dòng ký ức nhà mình' })).toBeVisible();
+  await expect(page.getByText('Được Bà Mai kể lại')).toBeVisible();
+  const navigation = page.getByRole('navigation', { name: 'Điều hướng chính' });
+  await expect(navigation.getByRole('link', { name: 'Nhà', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(navigation.getByRole('link', { name: 'Tôi', exact: true })).not.toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await page.getByRole('button', { name: 'Nghe lời kể của Bà Mai' }).click();
+  await expect(page.getByRole('status')).toContainText('Bản mẫu chưa phát âm thanh');
+  expect(apiRequests).toEqual([]);
+});
+
+test('desktop home keeps the main sharing action in the first viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/design-preview');
+
+  await expect(page.getByRole('link', { name: 'Gửi Khoảnh khắc', exact: true })).toBeInViewport();
+});
+
 test('mobile bottom navigation stays visible after scrolling', async ({ page }, testInfo) => {
   test.skip(!testInfo.project.name.includes('mobile'));
   await page.goto('/design-preview');

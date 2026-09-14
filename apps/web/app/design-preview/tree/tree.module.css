@@ -25,7 +25,6 @@
 }
 .treeMasthead {
   align-items: end;
-  border-bottom: 1px solid var(--color-text-primary);
   display: grid;
   gap: clamp(32px, 8vw, 110px);
   grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
@@ -37,15 +36,15 @@
   color: var(--color-accent);
   font-size: 11px;
   font-weight: 750;
-  letter-spacing: 0.14em;
-  margin: 0 0 12px;
+  letter-spacing: 0;
+  margin: 0 0 7px;
 }
 .treeMasthead h1 {
   font-family: var(--typography-font-title);
-  font-size: clamp(48px, 7vw, 82px);
-  font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 1;
+  font-size: clamp(34px, 5vw, 54px);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
   margin: 0;
   max-width: 780px;
 }
@@ -67,6 +66,83 @@
   font-weight: 750;
   min-height: 44px;
   text-decoration: none;
+}
+
+.relationshipOrbit {
+  align-items: center;
+  background: var(--color-brand-secondary);
+  border-radius: 26px 26px 8px 26px;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(190px, 0.55fr) minmax(0, 1.45fr);
+  margin: 20px 0;
+  padding: 18px;
+}
+
+.orbitCenter {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.orbitCenter > span:last-child,
+.orbitConnections button > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+
+.orbitCenter small,
+.orbitConnections small {
+  color: color-mix(in srgb, var(--color-brand-primary) 72%, transparent);
+  font-size: 10px;
+}
+
+.orbitCenter strong {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.orbitCenter > span:last-child > span {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+.orbitConnections {
+  display: flex;
+  gap: 9px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+
+.orbitConnections::-webkit-scrollbar {
+  display: none;
+}
+
+.orbitConnections button {
+  align-items: center;
+  background: var(--color-surface-primary);
+  border: 1px solid color-mix(in srgb, var(--color-brand-primary) 18%, transparent);
+  border-radius: 16px;
+  display: flex;
+  flex: 0 0 150px;
+  gap: 9px;
+  padding: 7px 9px;
+  text-align: left;
+}
+
+.orbitConnections strong {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orbitConnections > p {
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 .treeWorkspace {
   background: var(--color-surface-primary);
@@ -435,7 +511,7 @@
     padding-bottom: 16px;
   }
   .treeMasthead h1 {
-    font-size: 36px;
+    font-size: 28px;
   }
   .treeMasthead > div:first-child > p {
     font-size: 11px;
@@ -446,6 +522,24 @@
   }
   .treeIntro a {
     font-size: 12px;
+  }
+  .relationshipOrbit {
+    border-radius: 0;
+    gap: 14px;
+    grid-template-columns: 1fr;
+    margin: 0 0 12px;
+    padding: 14px 16px;
+  }
+  .orbitCenter > :first-child {
+    height: 46px;
+    width: 46px;
+  }
+  .orbitConnections {
+    margin-inline: -16px;
+    padding: 2px 16px;
+  }
+  .orbitConnections button {
+    flex-basis: 142px;
   }
   .treeWorkspace {
     grid-template-columns: minmax(0, 1fr);

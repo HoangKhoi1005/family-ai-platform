@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 const previewRoutes = [
   '/design-preview',
   '/design-preview/moments',
+  '/design-preview/memories',
   '/design-preview/tree',
   '/design-preview/chat',
   '/design-preview/me',
