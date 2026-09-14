@@ -11,6 +11,7 @@ import type {
 import { explain, request, RequestError } from './api';
 import type { Member } from './types';
 import { ConnectedIdentity } from './connected-app-shell';
+import { ConnectedRelationshipOrbit } from './connected-relationship-orbit';
 import { InteractiveTreeCanvas } from './interactive-tree-canvas';
 import {
   connectionsFor,
@@ -38,11 +39,15 @@ export function RelationshipTree({
   base,
   rootMemberId,
   members,
+  selectionRequest,
+  onSelectionConsumed,
   onError,
 }: {
   base: string;
   rootMemberId: string | null;
   members: Member[];
+  selectionRequest?: { memberId: string; requestId: number } | null;
+  onSelectionConsumed?: () => void;
   onError: (error: unknown) => void;
 }) {
   const [view, setView] = useState<TreeView>('tree');
@@ -58,6 +63,7 @@ export function RelationshipTree({
   const [pending, setPending] = useState<RelationshipChangeRequestDto[]>([]);
   const opener = useRef<HTMLButtonElement | null>(null);
   const profileSequence = useRef(0);
+  const handledSelectionRequest = useRef(0);
 
   const loadGraph = useCallback(
     async (signal?: AbortSignal) => {
@@ -118,6 +124,12 @@ export function RelationshipTree({
   );
   const root = rootMemberId ? graphMembers.get(rootMemberId) : undefined;
   const statements = useMemo(() => (graph ? relationshipStatements(graph) : []), [graph]);
+  const orbitMemberId = selectedId ?? rootMemberId;
+  const orbitMember = orbitMemberId ? graphMembers.get(orbitMemberId) : undefined;
+  const orbitConnections = useMemo(
+    () => (graph && orbitMemberId ? connectionsFor(graph, orbitMemberId) : []),
+    [graph, orbitMemberId],
+  );
 
   const openProfile = useCallback(
     async (memberId: string, button?: HTMLButtonElement) => {
@@ -147,6 +159,18 @@ export function RelationshipTree({
     setProposalOpen(false);
     requestAnimationFrame(() => opener.current?.focus());
   }, []);
+
+  useEffect(() => {
+    if (!selectionRequest || !graph) return;
+    if (handledSelectionRequest.current === selectionRequest.requestId) return;
+    const exists = graph.nodes.some((member) => member.id === selectionRequest.memberId);
+    if (!exists) return;
+    handledSelectionRequest.current = selectionRequest.requestId;
+    requestAnimationFrame(() => {
+      void openProfile(selectionRequest.memberId);
+      onSelectionConsumed?.();
+    });
+  }, [graph, onSelectionConsumed, openProfile, selectionRequest]);
 
   return (
     <section className={styles.page} aria-labelledby="connected-tree-title">
@@ -236,6 +260,14 @@ export function RelationshipTree({
                 <span>QUANH HỒ SƠ CỦA BẠN · {graph.depth} BƯỚC KẾT NỐI</span>
                 <h2>Quanh {root?.familiar_name ?? root?.display_name ?? 'bạn'}</h2>
               </div>
+              {orbitMember ? (
+                <ConnectedRelationshipOrbit
+                  selected={orbitMember}
+                  connections={orbitConnections}
+                  membersById={graphMembers}
+                  onSelectMember={(memberId, button) => void openProfile(memberId, button)}
+                />
+              ) : null}
               <InteractiveTreeCanvas
                 graph={graph}
                 rootMemberId={rootMemberId}
