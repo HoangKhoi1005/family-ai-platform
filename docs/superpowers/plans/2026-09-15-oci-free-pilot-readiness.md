@@ -23,6 +23,13 @@
 - Oracle resources must remain explicitly Always Free; no automatic paid fallback.
 - Existing applied migrations are immutable; all schema changes use new migration files.
 
+## Execution status — 2026-09-15
+
+- Tasks 1–3 and 6 are complete and committed.
+- Task 4 source/config/CI work and Task 5 source/static checks are complete; the final image gate remains open.
+- Task 7 source, database/storage, and browser gates passed. External cloud provisioning remains intentionally open.
+- ARM64 API image passed locally. Web encountered a Docker Hub TLS timeout, and the follow-up Docker permission session ended before completion; Web, Worker, Tools, and Backup remain unverified until rerun.
+
 ---
 
 ### Task 1: Environment and SMTP configuration
@@ -46,7 +53,7 @@
 - Produces: `readServerConfig(env, portVariable, fallbackPortVariable?)` so API uses `API_PORT` locally and `PORT` in containers.
 - Preserves: local Mailpit behavior without SMTP credentials.
 
-- [ ] **Step 1: Add failing environment tests**
+- [x] **Step 1: Add failing environment tests**
 
 Add staging cases to `apps/api/tests/auth-config.test.ts`:
 
@@ -99,13 +106,13 @@ it('uses platform PORT when API_PORT is absent', () =>
   }));
 ```
 
-- [ ] **Step 2: Run the focused tests and confirm RED**
+- [x] **Step 2: Run the focused tests and confirm RED**
 
 Run: `npx vitest run apps/api/tests/auth-config.test.ts packages/config/src/index.test.ts`
 
 Expected: staging config and fallback-port assertions fail because only local/loopback is supported.
 
-- [ ] **Step 3: Implement environment-aware validation**
+- [x] **Step 3: Implement environment-aware validation**
 
 In `apps/api/src/auth/config.ts`, separate reusable URL parsing from environment policy:
 
@@ -149,11 +156,11 @@ return nodemailer.createTransport({
 
 Use `readServerConfig(process.env, 'API_PORT', 'PORT')` in `apps/api/src/server.ts`.
 
-- [ ] **Step 4: Add a transport-options seam and verify SMTP without exposing credentials**
+- [x] **Step 4: Add a transport-options seam and verify SMTP without exposing credentials**
 
 Export a pure `authTransportOptions(config)` helper. Test that staging returns `requireTLS: true`, `secure: false`, and Resend auth, while local returns no `auth`. Keep the existing generic failure log assertion.
 
-- [ ] **Step 5: Update environment contracts and run focused GREEN**
+- [x] **Step 5: Update environment contracts and run focused GREEN**
 
 Add `SMTP_SECURE`, `SMTP_USER`, and `SMTP_PASSWORD` to `.env.example` and `turbo.json`. Local values remain empty/false. Run:
 
@@ -164,7 +171,7 @@ npm run typecheck
 
 Expected: all focused tests and typecheck pass.
 
-- [ ] **Step 6: Commit Task 1**
+- [x] **Step 6: Commit Task 1**
 
 ```sh
 git add .env.example turbo.json apps/api/src/auth/config.ts apps/api/src/auth/mailer.ts apps/api/src/server.ts apps/api/tests/auth-config.test.ts apps/api/tests/mailer.test.ts packages/config/src/index.ts packages/config/src/index.test.ts
@@ -190,7 +197,7 @@ git commit -m "feat(config): support secure staging runtime"
 - Produces: `GET /health/ready` returning `{status:'ok', service:'family-api'}` or generic `503 SERVICE_UNAVAILABLE`.
 - Consumes: restricted auth/runtime pools already validated by `assertSafeApplicationRoles`.
 
-- [ ] **Step 1: Write failing readiness tests**
+- [x] **Step 1: Write failing readiness tests**
 
 ```ts
 it('returns 200 only when every readiness probe succeeds', async () => {
@@ -213,13 +220,13 @@ it('returns a generic 503 without the dependency error', async () => {
 });
 ```
 
-- [ ] **Step 2: Run tests and confirm RED**
+- [x] **Step 2: Run tests and confirm RED**
 
 Run: `npx vitest run apps/api/src/app.test.ts apps/api/src/readiness.test.ts`
 
 Expected: `readinessProbes` and `/health/ready` do not exist.
 
-- [ ] **Step 3: Implement focused readiness probes**
+- [x] **Step 3: Implement focused readiness probes**
 
 Create `readiness.ts`:
 
@@ -238,7 +245,7 @@ export async function runReadiness(probes: readonly ReadinessProbe[]): Promise<v
 
 Extend `AppOptions` with `readinessProbes?: readonly ReadinessProbe[]`, register `/health/ready`, and map probe failures to a fixed 503 response. In `server.ts`, pass probes for both auth and runtime pools. Do not probe SMTP by sending mail and do not reveal dependency names in the response.
 
-- [ ] **Step 4: Verify readiness and regression tests**
+- [x] **Step 4: Verify readiness and regression tests**
 
 Run:
 
@@ -249,7 +256,7 @@ npm run build --workspace @family/api
 
 Expected: liveness remains process-only, readiness is dependency-aware, and auth routes still pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```sh
 git add packages/contracts/src/index.ts apps/api/src/app.ts apps/api/src/app.test.ts apps/api/src/server.ts apps/api/src/readiness.ts apps/api/src/readiness.test.ts
@@ -275,7 +282,7 @@ git commit -m "feat(api): add dependency readiness endpoint"
 - Produces: `assertProvisioningEnvironment(env, owner, roles)` allowing local or staging only and requiring every role URL to target the same host/port/database.
 - Produces commands `db:provision-roles` and `db:verify-staging`.
 
-- [ ] **Step 1: Extract target parsing behind tests**
+- [x] **Step 1: Extract target parsing behind tests**
 
 Add `database-target.test.mjs` cases that accept local URLs, accept `postgres` Docker DNS only for `APP_ENV=staging`, reject production, reject missing password/database, reject role mismatch, and reject owner/role targets that differ.
 
@@ -294,19 +301,19 @@ assert.throws(
 );
 ```
 
-- [ ] **Step 2: Run parser tests and confirm RED**
+- [x] **Step 2: Run parser tests and confirm RED**
 
 Run: `node --test packages/database/scripts/database-target.test.mjs`
 
 Expected: module is missing.
 
-- [ ] **Step 3: Implement fail-closed target guards**
+- [x] **Step 3: Implement fail-closed target guards**
 
 Move URL parsing to `database-target.mjs`. Export pure functions and keep passwords out of thrown messages. `assertProvisioningEnvironment` accepts only `local` or `staging`; staging requires explicit `ALLOW_STAGING_PROVISION=true`. Production always fails in this command.
 
 Refactor `provision-auth.mjs` to consume the helper and change the success message to `Provisioned restricted application role passwords.` without target details.
 
-- [ ] **Step 4: Add staging verification command**
+- [x] **Step 4: Add staging verification command**
 
 Create `db:verify-staging` as a sequence documented and invoked explicitly:
 
@@ -319,7 +326,7 @@ Create `db:verify-staging` as a sequence documented and invoked explicitly:
 
 Do not place role integration tests in the application container image. The deployment runbook invokes existing auth/tenant/calendar/notification/media suites from a temporary admin tool container before staging acceptance.
 
-- [ ] **Step 5: Run local migration/role regression**
+- [x] **Step 5: Run local migration/role regression**
 
 Run:
 
@@ -334,7 +341,7 @@ npm run test:tenant
 
 Expected: second migration is a no-op; restricted-role and tenant checks pass.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```sh
 git add package.json .env.example docs/DEVELOPMENT.md packages/database/scripts/database-target.mjs packages/database/scripts/database-target.test.mjs packages/database/scripts/provision-auth.mjs
@@ -363,7 +370,7 @@ git commit -m "feat(database): guard staging role provisioning"
 - Produces private Compose services named `postgres`, `api`, `worker`, `web`.
 - Produces `npm run deploy:check`, a static fail-closed validation of Compose, Dockerfile, env template, and R2 CORS.
 
-- [ ] **Step 1: Write failing deployment safety checks**
+- [x] **Step 1: Write failing deployment safety checks**
 
 `test-deployment-config.mjs` creates temporary unsafe fixtures and asserts the checker rejects:
 
@@ -377,13 +384,13 @@ git commit -m "feat(database): guard staging role provisioning"
 
 It also asserts the committed deployment files pass.
 
-- [ ] **Step 2: Run deployment test and confirm RED**
+- [x] **Step 2: Run deployment test and confirm RED**
 
 Run: `node scripts/test-deployment-config.mjs`
 
 Expected: deployment checker or committed deployment files are missing.
 
-- [ ] **Step 3: Add multi-stage ARM64-compatible Dockerfile**
+- [x] **Step 3: Add multi-stage ARM64-compatible Dockerfile**
 
 Use one root build context and named targets. Required shape:
 
@@ -416,7 +423,7 @@ CMD ["node", "apps/api/dist/server.js"]
 
 Create corresponding `web`, `worker`, and `tools` targets. The `tools` target may run migration/provision commands but is never a long-running service.
 
-- [ ] **Step 4: Add private staging Compose topology**
+- [x] **Step 4: Add private staging Compose topology**
 
 Compose requirements:
 
@@ -427,13 +434,13 @@ Compose requirements:
 - Every application service uses `security_opt: [no-new-privileges:true]`, restart policy, resource limits, and non-root image users.
 - `migrate` is a tools profile and receives owner plus role URLs only when explicitly invoked.
 
-- [ ] **Step 5: Add staging env and R2 CORS templates**
+- [x] **Step 5: Add staging env and R2 CORS templates**
 
 `staging.env.example` contains placeholders only, sets `APP_ENV=staging`, `HOST=0.0.0.0`, public HTTPS `WEB_ORIGIN`, private API URL, Resend SMTP settings, R2 `region=auto`, and `MEDIA_STORAGE_FORCE_PATH_STYLE=false`.
 
 `r2-cors.json` permits `PUT`, `GET`, and `HEAD` only from `https://REPLACE_WITH_TS_NET_HOST`, allows `content-type`, exposes `etag`, and contains no wildcard origin.
 
-- [ ] **Step 6: Wire deployment validation into CI**
+- [x] **Step 6: Wire deployment validation into CI**
 
 Add `deploy:check` to root `check`. In CI, build `api`, `web`, and `worker` targets for `linux/arm64` without pushing:
 
@@ -483,7 +490,7 @@ git commit -m "feat(deploy): add ARM64 staging package"
 - Restore additionally requires `APP_ENV=staging`, `RESTORE_DATABASE` ending `_restore_drill`, `BACKUP_OBJECT_KEY`, and an age identity mounted read-only.
 - Neither script prints connection values, credentials, object URLs, or database row data.
 
-- [ ] **Step 1: Write failing backup safety fixtures**
+- [x] **Step 1: Write failing backup safety fixtures**
 
 The checker rejects scripts that:
 
@@ -494,13 +501,13 @@ The checker rejects scripts that:
 - upload an unencrypted `.dump`;
 - omit cleanup trap or 30-day retention documentation.
 
-- [ ] **Step 2: Run backup safety test and confirm RED**
+- [x] **Step 2: Run backup safety test and confirm RED**
 
 Run: `node scripts/test-backup-safety.mjs`
 
 Expected: backup files/checker are missing.
 
-- [ ] **Step 3: Implement the backup container and script**
+- [x] **Step 3: Implement the backup container and script**
 
 Base the image on `postgres:17-alpine`; install `age`, `aws-cli`, and CA certificates. Run as an unprivileged user with a tmpfs work directory.
 
@@ -523,11 +530,11 @@ printf '%s\n' 'BACKUP_COMPLETED'
 
 PostgreSQL tools consume `PG*` environment variables; the connection URL never appears in command arguments.
 
-- [ ] **Step 4: Implement isolated restore guards**
+- [x] **Step 4: Implement isolated restore guards**
 
 Restore refuses unless `APP_ENV=staging`, `RESTORE_DATABASE` ends `_restore_drill`, and differs from `PGDATABASE`. It downloads only the explicit object key, decrypts to tmpfs, creates the target through the owner connection, runs `pg_restore --no-owner`, executes migration status and restricted-role/RLS smoke checks, then emits only `RESTORE_DRILL_COMPLETED` plus duration/checksum metadata.
 
-- [ ] **Step 5: Add Compose profiles and CI static verification**
+- [x] **Step 5: Add Compose profiles and CI static verification**
 
 Add `backup` and `restore-drill` profiles with no exposed ports, read-only age key mount for restore, and tmpfs `/work`. CI builds the backup image and runs shell syntax/static safety checks without real credentials.
 
@@ -567,7 +574,7 @@ git commit -m "feat(ops): add encrypted backup restore drill"
 - Produces an ordered, copy-safe operator workflow with placeholders that cannot be mistaken for real credentials.
 - Produces a staging acceptance record template containing evidence metadata only.
 
-- [ ] **Step 1: Document account and quota gates**
+- [x] **Step 1: Document account and quota gates**
 
 `ORACLE_STAGING.md` must require:
 
@@ -577,7 +584,7 @@ git commit -m "feat(ops): add encrypted backup restore drill"
 4. Clone the public code repo without secrets, create `/opt/family-ai/secrets/staging.env` mode `0600`, and deploy through the explicit Compose profiles.
 5. Configure a private R2 media bucket, separate backup bucket/token, exact CORS origin, and Resend sender verification.
 
-- [ ] **Step 2: Document deploy and rollback commands**
+- [x] **Step 2: Document deploy and rollback commands**
 
 The runbook uses exact commands with placeholder paths, including:
 
@@ -590,15 +597,15 @@ tailscale funnel --bg --https=443 http://127.0.0.1:3200
 
 Rollback uses the previous Git tag/image and never reverses applied SQL. Restore instructions always target `_restore_drill` first.
 
-- [ ] **Step 3: Document incidents and privacy-safe evidence**
+- [x] **Step 3: Document incidents and privacy-safe evidence**
 
 Cover VM unavailable, disk pressure, database unavailable, R2 failure, SMTP failure, worker retry exhaustion, suspected secret leak, membership revoke, and backup failure. Each response names the event code and action without instructing operators to copy PII into logs/issues.
 
-- [ ] **Step 4: Add staging acceptance checklist**
+- [x] **Step 4: Add staging acceptance checklist**
 
 The checklist captures commit SHA, image digest, migration count/checksum status, role/RLS result, HTTPS hostname, synthetic onboarding outcome, media outcome, backup object checksum, restore duration, RPO, Android/iPhone status, and seven-day alert status. It contains no email, token, member name, contact, signed URL, or media content.
 
-- [ ] **Step 5: Validate documentation and commit**
+- [x] **Step 5: Validate documentation and commit**
 
 Run:
 
@@ -630,7 +637,7 @@ git commit -m "docs: add free cloud staging runbook"
 - Consumes every prior task.
 - Produces verified source artifacts ready for Oracle account provisioning.
 
-- [ ] **Step 1: Run the full source quality gate**
+- [x] **Step 1: Run the full source quality gate**
 
 Run:
 
@@ -643,7 +650,7 @@ npm run backup:check
 
 Expected: all commands pass with exact counts recorded from output.
 
-- [ ] **Step 2: Run database and storage integration**
+- [x] **Step 2: Run database and storage integration**
 
 Start local PostgreSQL, Mailpit, and MinIO using existing generated `.env`, then run:
 
@@ -667,7 +674,7 @@ npm run test:media-storage
 
 Expected: all integration suites pass without changing the local data contract.
 
-- [ ] **Step 3: Run browser regression**
+- [x] **Step 3: Run browser regression**
 
 Run: `npm run test:e2e`
 
@@ -686,11 +693,11 @@ docker build --platform linux/arm64 -f deploy/backup/Dockerfile deploy/backup
 
 Expected: every ARM64 image builds successfully.
 
-- [ ] **Step 5: Update Project Brain with evidence only**
+- [x] **Step 5: Update Project Brain with evidence only**
 
 Record completed source/config/runbook work and exact test results. Keep Oracle resource creation, live R2/Resend credentials, HTTPS smoke, restore drill, device testing, and pilot invite explicitly incomplete until performed.
 
-- [ ] **Step 6: Commit the verified source package**
+- [x] **Step 6: Commit the verified source package**
 
 ```sh
 git add CURRENT_STATE.md docs/13_ROADMAP.md docs/context.json docs/superpowers/plans/2026-09-15-oci-free-pilot-readiness.md

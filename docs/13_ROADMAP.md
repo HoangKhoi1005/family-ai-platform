@@ -1,6 +1,6 @@
 # Lộ trình theo điều kiện hoàn thành
 
-Chưa ước lượng ngày phát hành khi chưa chọn hosting và năng lực vận hành. Các phase là thứ tự phụ thuộc; tiến độ thực tế được ghi riêng trong [CURRENT_STATE](../CURRENT_STATE.md).
+Chưa ước lượng ngày phát hành khi staging thật và năng lực vận hành chưa được kiểm chứng. Các phase là thứ tự phụ thuộc; tiến độ thực tế được ghi riêng trong [CURRENT_STATE](../CURRENT_STATE.md).
 
 | Phase                     | Kết quả                                                        | Điều kiện đi tiếp                                                 |
 | ------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -14,14 +14,14 @@ Chưa ước lượng ngày phát hành khi chưa chọn hosting và năng lực
 ## Trạng thái hiện tại — 2026-09-15
 
 - Đã triển khai trên `main`: stack/ADR, auth và tenant isolation, onboarding, hồ sơ/account link, quan hệ/duyệt, cây tương tác, lịch/âm lịch/RSVP, outbox/worker, inbox trong app, PWA foundation, private media, Moments, Memories và rollout A+B+C vào `/app`.
-- Đã kiểm chứng gần nhất: 15/15 Turbo typecheck tasks, 189/189 unit tests trong 41 file, production build 9 workspace, Project Brain 76 Markdown/4 JSON/24 seed cases và Playwright 193 pass/3 skip theo project.
+- Đã kiểm chứng gần nhất trên nhánh readiness: 15/15 Turbo typecheck tasks, 203/203 unit tests trong 42 file, production build 9 workspace, Project Brain 83 Markdown/4 JSON/24 seed cases và Playwright 193 pass/3 skip theo project.
 - Preview có nhãn, chưa có backend thật: Chat. Moments/Kỷ niệm trong `/app` đã dùng API và storage adapter thật.
-- Đang chuẩn bị triển khai thiết kế staging miễn phí đã chọn: Oracle Ampere A1, R2 private, Resend, Tailscale Funnel, backup/restore, monitoring và pilot thiết bị thật.
-- Chưa triển khai: realtime/Chat, push, AI runtime, readiness production hoàn chỉnh và pilot 15 người.
+- Đã hoàn thành source package staging: cấu hình fail closed, readiness phụ thuộc, role provisioning, Docker Compose ARM64, private R2/Resend/Tailscale templates, backup mã hóa, restore drill và runbook vận hành. API image ARM64 đã build; bốn image còn lại chờ kiểm chứng lại sau lỗi registry/quyền Docker.
+- Chưa tạo tài nguyên cloud hoặc deploy staging thật. Chưa triển khai: realtime/Chat, push, AI runtime và pilot 15 người.
 
 ## Thứ tự tiếp theo
 
-Dựng staging Oracle/R2/Resend/Tailscale → diễn tập migration và backup/restore → thử thiết bị thật → realtime/Chat → push trên HTTPS → pilot 15 người → đánh giá AI.
+Hoàn tất image gate → tạo Oracle/R2/Resend/Tailscale miễn phí → deploy dữ liệu tổng hợp → diễn tập migration và backup/restore → thử thiết bị thật và theo dõi bảy ngày → realtime/Chat → push trên HTTPS → pilot 15 người → đánh giá AI.
 
 ## Kiểm soát phạm vi
 
