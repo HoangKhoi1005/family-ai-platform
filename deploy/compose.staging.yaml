@@ -148,5 +148,68 @@ services:
         node packages/database/scripts/provision-auth.mjs &&
         node packages/database/scripts/status.mjs
 
+  backup:
+    profiles: [backup]
+    image: ${IMAGE_REPOSITORY:-family-ai}/backup:${IMAGE_TAG:?Set IMAGE_TAG}
+    build:
+      context: ..
+      dockerfile: deploy/backup/Dockerfile
+    restart: 'no'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /work:uid=70,gid=70,mode=0700
+    environment:
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:?Set BACKUP_AGE_RECIPIENT}
+      BACKUP_R2_ENDPOINT: ${BACKUP_R2_ENDPOINT:?Set BACKUP_R2_ENDPOINT}
+      BACKUP_R2_BUCKET: ${BACKUP_R2_BUCKET:?Set BACKUP_R2_BUCKET}
+      AWS_ACCESS_KEY_ID: ${BACKUP_R2_ACCESS_KEY_ID:?Set BACKUP_R2_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_R2_SECRET_ACCESS_KEY:?Set BACKUP_R2_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: auto
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  restore-drill:
+    profiles: [restore-drill]
+    image: ${IMAGE_REPOSITORY:-family-ai}/backup:${IMAGE_TAG:?Set IMAGE_TAG}
+    build:
+      context: ..
+      dockerfile: deploy/backup/Dockerfile
+    entrypoint: [restore-postgres]
+    restart: 'no'
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /work:uid=70,gid=70,mode=0700
+    volumes:
+      - ${AGE_IDENTITY_PATH:?Set AGE_IDENTITY_PATH}:/run/secrets/age-key.txt:ro
+    environment:
+      APP_ENV: staging
+      PGHOST: postgres
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB:?Set POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      RESTORE_DATABASE: ${RESTORE_DATABASE:?Set RESTORE_DATABASE}
+      BACKUP_OBJECT_KEY: ${BACKUP_OBJECT_KEY:?Set BACKUP_OBJECT_KEY}
+      BACKUP_R2_ENDPOINT: ${BACKUP_R2_ENDPOINT:?Set BACKUP_R2_ENDPOINT}
+      BACKUP_R2_BUCKET: ${BACKUP_R2_BUCKET:?Set BACKUP_R2_BUCKET}
+      AWS_ACCESS_KEY_ID: ${BACKUP_R2_ACCESS_KEY_ID:?Set BACKUP_R2_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${BACKUP_R2_SECRET_ACCESS_KEY:?Set BACKUP_R2_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: auto
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:
