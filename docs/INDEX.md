@@ -1,6 +1,6 @@
 # Mục lục và quản lý context
 
-Context **1.5.0** — 2026-09-14. [Metadata](context.json) là nơi duy nhất khai báo phiên bản bằng máy.
+Context **1.6.0** — 2026-09-15. [Metadata](context.json) là nơi duy nhất khai báo phiên bản bằng máy.
 
 ## Đọc theo nhu cầu
 
@@ -48,6 +48,8 @@ Trạng thái quyết định:
 
 ## Lịch sử context
 
+- 1.6.0 / 2026-09-15: chủ dự án chọn staging cloud miễn phí trên Oracle Ampere A1 Always Free, Cloudflare R2 private, Resend SMTP và Tailscale Funnel HTTPS. Gate bắt buộc gồm ARM64 build, migration replay, application-role/RLS check, backup/restore tách biệt và dữ liệu hư cấu trước pilot.
+- 1.5.1 / 2026-09-15: đồng bộ trạng thái sau khi A — Nhà đang sống, B — Dòng ký ức, C — Quanh người thân cùng private media/Moments/Memories và PWA foundation đã merge vào `main`. Dự án chuyển trọng tâm sang staging, provider production, backup/restore và thử thiết bị thật; không thay đổi domain hoặc phạm vi sản phẩm.
 - 1.5.0 / 2026-09-14: chủ dự án duyệt A — Nhà đang sống làm nền tảng, B — Dòng ký ức cho Kỷ niệm và C — Quanh người thân cho Gia phả. Kỷ niệm mở theo ngữ cảnh, không thêm tab thứ sáu. Design preview bắt đầu áp dụng hệ thống sans-serif và ba lớp trải nghiệm trước khi rollout vào `/app`.
 - 1.4.0 / 2026-09-09: chủ dự án xác nhận điện thoại là trải nghiệm chính. Design preview chuyển sang năm tab Nhà, Khoảnh khắc, Gia phả, Trò chuyện, Tôi; PWA/web vẫn là cách phát hành pilot và desktop mở rộng từ cùng cấu trúc mobile.
 - 1.3.0 / 2026-09-09: onboarding đã được tích hợp và ổn định thêm cho mất mạng, claim thay đổi/hết hạn, thu hồi quyền và response cũ; browser flow thật trở thành gate CI. Làm trực tiếp là mặc định để tiết kiệm context, subagent chỉ dùng khi có lợi ích rõ.

@@ -11,17 +11,17 @@ Chưa ước lượng ngày phát hành khi chưa chọn hosting và năng lực
 | 4 — AI và kỷ niệm         | Structured Q&A có nguồn, sau đó tư liệu nếu cần                | Eval gate, provider/privacy, quota; spec kỷ niệm trước code       |
 | 5 — Native và mở rộng     | Widget, nhiều nhà trong UI, vận hành lớn hơn                   | Nhu cầu chứng minh, chi phí bền vững, test isolation và phân phối |
 
-## Trạng thái hiện tại — 2026-09-14
+## Trạng thái hiện tại — 2026-09-15
 
-- Đã triển khai trên `main`: stack/ADR, auth và tenant isolation, onboarding, hồ sơ/account link, quan hệ/duyệt, cây tương tác, lịch/âm lịch/RSVP, outbox/worker và inbox trong app.
-- Hoàn thiện trên nhánh, chờ merge: PWA foundation riêng tư và đồng bộ tài liệu trạng thái.
-- Preview có nhãn, chưa có backend thật: Moments và Chat.
-- Đang hoàn thiện trên nhánh feature: private media/storage, Moments, Memories và rollout A+B+C vào `/app`.
-- Chưa triển khai: realtime, push, AI runtime, hosting/mail/storage production, readiness, backup/restore và pilot thiết bị thật.
+- Đã triển khai trên `main`: stack/ADR, auth và tenant isolation, onboarding, hồ sơ/account link, quan hệ/duyệt, cây tương tác, lịch/âm lịch/RSVP, outbox/worker, inbox trong app, PWA foundation, private media, Moments, Memories và rollout A+B+C vào `/app`.
+- Đã kiểm chứng gần nhất: 15/15 Turbo typecheck tasks, 189/189 unit tests trong 41 file, production build 9 workspace, Project Brain 76 Markdown/4 JSON/24 seed cases và Playwright 193 pass/3 skip theo project.
+- Preview có nhãn, chưa có backend thật: Chat. Moments/Kỷ niệm trong `/app` đã dùng API và storage adapter thật.
+- Đang chuẩn bị triển khai thiết kế staging miễn phí đã chọn: Oracle Ampere A1, R2 private, Resend, Tailscale Funnel, backup/restore, monitoring và pilot thiết bị thật.
+- Chưa triển khai: realtime/Chat, push, AI runtime, readiness production hoàn chỉnh và pilot 15 người.
 
 ## Thứ tự tiếp theo
 
-Merge A+B+C + media vertical slice → chọn hosting/mail/storage production → thử thiết bị thật → realtime/Chat → pilot 15 người → đánh giá AI. Push chỉ tiếp tục sau khi có HTTPS và thiết bị hỗ trợ để thử app đóng.
+Dựng staging Oracle/R2/Resend/Tailscale → diễn tập migration và backup/restore → thử thiết bị thật → realtime/Chat → push trên HTTPS → pilot 15 người → đánh giá AI.
 
 ## Kiểm soát phạm vi
 

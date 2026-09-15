@@ -2,7 +2,7 @@
 
 Đợt nối UI 2026-09-09: thêm `GET /api/v1/families/{familyId}/onboarding`, trả `{ member_id: string | null, claims: [{ id, version }] }` của chính actor active. Không trả contacts hoặc claim của người khác. Guest trả 401; pending/revoked/cross-family trả 404 theo quy tắc che tài nguyên. Xem [luồng đã nối](CONNECTED_ONBOARDING.md). Danh bạ/hồ sơ API đã được merge vào `main` tại `c07a225`.
 
-Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ, quan hệ gia phả, Event/Occurrence/RSVP và notification inbox/preferences. Media, Moments và Memories đã triển khai trên `feat/connected-family-experience`; chat và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
+Đã triển khai health, auth Better Auth, `GET /api/v1/me`, invitation accept, các routes invitation/membership/claim, danh bạ/hồ sơ, quan hệ gia phả, Event/Occurrence/RSVP, notification inbox/preferences, Media, Moments và Memories trên `main`; chat và AI vẫn là thiết kế. Không có dev-auth bypass. Health chỉ phản ánh process, không khẳng định database/provider sẵn sàng.
 
 ## Quy ước
 
@@ -56,7 +56,7 @@ Error: `{"error":{"code":"VALIDATION_ERROR","message":"Thông tin chưa hợp l�
 
 `POST /events` bắt buộc header `Idempotency-Key` dài 8–128 ký tự an toàn. Server gắn khóa với active membership và hash body đã chuẩn hóa; retry cùng nội dung không tạo Event/Occurrence thứ hai. Body không nhận `family_id`, `creator_membership_id`, actor hoặc membership RSVP. Lỗi converter trả `503 CALENDAR_UNAVAILABLE` và transaction không ghi Event dở dang.
 
-## Media, Khoảnh khắc và Kỷ niệm — đã triển khai trên nhánh feature
+## Media, Khoảnh khắc và Kỷ niệm — đã triển khai trên `main`
 
 Upload chỉ nhận JPEG/PNG/WebP tối đa 10 MB cho ảnh và WebM/MP4/MP3/Ogg tối đa 25 MB cho âm thanh. API xác minh object tồn tại và đúng byte size trước khi chuyển `pending → processing`; worker mới có quyền xác nhận signature, decode/re-encode ảnh bỏ metadata, kiểm audio tối đa 10 phút và chuyển `ready/rejected`. Raw source được purge sau xử lý; pending quá một giờ và rejected được xếp hàng xóa. Client không được gửi `family_id`, owner hoặc status trong body.
 
