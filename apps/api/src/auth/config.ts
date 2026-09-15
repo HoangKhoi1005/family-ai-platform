@@ -1,7 +1,9 @@
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
+export type AppEnvironment = 'local' | 'staging' | 'production';
+
 export interface AuthConfig {
-  appEnv: 'local';
+  appEnv: AppEnvironment;
   secret: string;
   webOrigin: string;
   apiInternalUrl: string;
@@ -9,6 +11,9 @@ export interface AuthConfig {
   runtimeDatabaseUrl: string;
   smtpHost: string;
   smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser?: string;
+  smtpPassword?: string;
   mailFrom: string;
 }
 
@@ -18,16 +23,21 @@ function required(env: NodeJS.ProcessEnv, name: string): string {
   return value;
 }
 
-function parseLoopbackHttpUrl(name: string, value: string): string {
+function parseHttpOrigin(
+  name: string,
+  value: string,
+  policy: { loopback: boolean; https: boolean },
+): string {
   let parsed: URL;
   try {
     parsed = new URL(value);
   } catch {
     throw new Error(`${name} must be a valid URL`);
   }
-  if (!['http:', 'https:'].includes(parsed.protocol) || !LOOPBACK_HOSTS.has(parsed.hostname)) {
+  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error(`${name} must use HTTP`);
+  if (policy.loopback && !LOOPBACK_HOSTS.has(parsed.hostname))
     throw new Error(`${name} must use a loopback HTTP URL`);
-  }
+  if (policy.https && parsed.protocol !== 'https:') throw new Error(`${name} must use HTTPS`);
   if (
     parsed.username ||
     parsed.password ||
@@ -40,7 +50,7 @@ function parseLoopbackHttpUrl(name: string, value: string): string {
   return parsed.origin;
 }
 
-function parseLocalPostgresUrl(name: string, value: string): string {
+function parsePostgresUrl(name: string, value: string, loopback: boolean): string {
   let parsed: URL;
   try {
     parsed = new URL(value);
@@ -50,24 +60,26 @@ function parseLocalPostgresUrl(name: string, value: string): string {
   if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) {
     throw new Error(`${name} must use the PostgreSQL protocol`);
   }
-  if (!LOOPBACK_HOSTS.has(parsed.hostname) || !parsed.username || !parsed.password) {
-    throw new Error(`${name} must use a credentialed loopback PostgreSQL URL`);
-  }
+  if (loopback && !LOOPBACK_HOSTS.has(parsed.hostname))
+    throw new Error(`${name} must use a loopback PostgreSQL URL`);
+  if (!parsed.username || !parsed.password)
+    throw new Error(`${name} must use a credentialed PostgreSQL URL`);
   if (!parsed.pathname || parsed.pathname === '/')
     throw new Error(`${name} must include a database`);
   return value;
 }
 
 export function readAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
-  if (env.APP_ENV !== 'local') {
-    throw new Error('APP_ENV=local is required for auth configuration in this phase');
-  }
+  const appEnv = required(env, 'APP_ENV');
+  if (!['local', 'staging', 'production'].includes(appEnv))
+    throw new Error('APP_ENV must be local, staging, or production');
+  const external = appEnv !== 'local';
 
   const secret = required(env, 'BETTER_AUTH_SECRET');
   if (secret.length < 32) throw new Error('BETTER_AUTH_SECRET must be at least 32 characters');
 
   const smtpHost = required(env, 'SMTP_HOST');
-  if (!LOOPBACK_HOSTS.has(smtpHost.toLowerCase())) {
+  if (!external && !LOOPBACK_HOSTS.has(smtpHost.toLowerCase())) {
     throw new Error('SMTP_HOST must be a loopback host in local mode');
   }
 
@@ -77,22 +89,46 @@ export function readAuthConfig(env: NodeJS.ProcessEnv): AuthConfig {
     throw new Error('SMTP_PORT must be an integer between 1 and 65535');
   }
 
+  const smtpSecureRaw = env.SMTP_SECURE?.trim() || 'false';
+  if (!['true', 'false'].includes(smtpSecureRaw))
+    throw new Error('SMTP_SECURE must be true or false');
+  const smtpSecure = smtpSecureRaw === 'true';
+  const smtpUser = env.SMTP_USER?.trim() || undefined;
+  const smtpPassword = env.SMTP_PASSWORD?.trim() || undefined;
+  if ((smtpUser && !smtpPassword) || (!smtpUser && smtpPassword) || (external && !smtpUser)) {
+    throw new Error('SMTP_USER and SMTP_PASSWORD are required together outside local mode');
+  }
+
   const mailFrom = required(env, 'MAIL_FROM');
   if (/\s/.test(mailFrom) || !mailFrom.includes('@'))
     throw new Error('MAIL_FROM must be an email address');
 
   return {
-    appEnv: 'local',
+    appEnv: appEnv as AppEnvironment,
     secret,
-    webOrigin: parseLoopbackHttpUrl('WEB_ORIGIN', required(env, 'WEB_ORIGIN')),
-    apiInternalUrl: parseLoopbackHttpUrl('API_INTERNAL_URL', required(env, 'API_INTERNAL_URL')),
-    authDatabaseUrl: parseLocalPostgresUrl('AUTH_DATABASE_URL', required(env, 'AUTH_DATABASE_URL')),
-    runtimeDatabaseUrl: parseLocalPostgresUrl(
+    webOrigin: parseHttpOrigin('WEB_ORIGIN', required(env, 'WEB_ORIGIN'), {
+      loopback: !external,
+      https: external,
+    }),
+    apiInternalUrl: parseHttpOrigin('API_INTERNAL_URL', required(env, 'API_INTERNAL_URL'), {
+      loopback: !external,
+      https: false,
+    }),
+    authDatabaseUrl: parsePostgresUrl(
+      'AUTH_DATABASE_URL',
+      required(env, 'AUTH_DATABASE_URL'),
+      !external,
+    ),
+    runtimeDatabaseUrl: parsePostgresUrl(
       'RUNTIME_DATABASE_URL',
       required(env, 'RUNTIME_DATABASE_URL'),
+      !external,
     ),
     smtpHost,
     smtpPort,
+    smtpSecure,
+    ...(smtpUser ? { smtpUser } : {}),
+    ...(smtpPassword ? { smtpPassword } : {}),
     mailFrom,
   };
 }

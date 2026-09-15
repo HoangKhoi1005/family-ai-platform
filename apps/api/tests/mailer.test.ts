@@ -1,7 +1,37 @@
 import { describe, expect, it } from 'vitest';
-import { createAuthMailer } from '../src/auth/mailer.js';
+import { authTransportOptions, createAuthMailer } from '../src/auth/mailer.js';
 
 describe('AuthMailer', () => {
+  it('requires STARTTLS and authenticated SMTP outside local development', () => {
+    expect(
+      authTransportOptions({
+        smtpHost: 'smtp.resend.com',
+        smtpPort: 587,
+        smtpSecure: false,
+        smtpUser: 'resend',
+        smtpPassword: 'private-secret',
+        mailFrom: 'no-reply@example.test',
+      }),
+    ).toMatchObject({
+      host: 'smtp.resend.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: { user: 'resend', pass: 'private-secret' },
+    });
+  });
+
+  it('keeps local Mailpit transport unauthenticated', () => {
+    expect(
+      authTransportOptions({
+        smtpHost: '127.0.0.1',
+        smtpPort: 1035,
+        smtpSecure: false,
+        mailFrom: 'no-reply@family-ai.local',
+      }),
+    ).not.toHaveProperty('auth');
+  });
+
   it('tracks delivery and drains all pending messages', async () => {
     let resolveDelivery!: () => void;
     const delivery = new Promise<void>((resolve) => {
