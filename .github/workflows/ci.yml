@@ -177,5 +177,6 @@ jobs:
       - run: docker build --platform linux/arm64 --target api --tag family-ai/api:ci -f deploy/Dockerfile .
       - run: docker build --platform linux/arm64 --target web --tag family-ai/web:ci -f deploy/Dockerfile .
       - run: docker build --platform linux/arm64 --target worker --tag family-ai/worker:ci -f deploy/Dockerfile .
+      - run: docker build --platform linux/arm64 --target tools --tag family-ai/tools:ci -f deploy/Dockerfile .
       - run: sh -n deploy/scripts/backup-postgres.sh deploy/scripts/restore-postgres.sh
       - run: docker build --platform linux/arm64 --tag family-ai/backup:ci -f deploy/backup/Dockerfile .
