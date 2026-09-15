@@ -9,6 +9,7 @@ import { registerAuthRoutes, toAuthHeaders } from './auth/routes.js';
 import { getVerifiedActor } from './auth/session.js';
 import { registerFamilyRoutes } from './family/routes.js';
 import { listOwnMemberships } from './family/memberships.js';
+import { runReadiness, type ReadinessProbe } from './readiness.js';
 
 export interface AppOptions {
   auth?: Auth;
@@ -16,6 +17,7 @@ export interface AppOptions {
   runtimePool?: Pool;
   calendarConverter?: CalendarConverter;
   mediaStorage?: MediaStorage;
+  readinessProbes?: readonly ReadinessProbe[];
 }
 
 export function buildApp(options: AppOptions = {}) {
@@ -41,6 +43,21 @@ export function buildApp(options: AppOptions = {}) {
     { schema: { response: { 200: healthResponseSchema } } },
     async (): Promise<HealthResponse> => ({ status: 'ok', service: 'family-api' }),
   );
+  app.get('/health/ready', async (request, reply) => {
+    try {
+      await runReadiness(options.readinessProbes ?? []);
+      return { status: 'ok', service: 'family-api' } satisfies HealthResponse;
+    } catch {
+      const response: ApiError = {
+        error: {
+          code: 'SERVICE_UNAVAILABLE',
+          message: 'Dịch vụ chưa sẵn sàng.',
+          request_id: request.id,
+        },
+      };
+      return reply.code(503).send(response);
+    }
+  });
 
   if (options.auth && options.publicOrigin) {
     const { auth, publicOrigin } = options;

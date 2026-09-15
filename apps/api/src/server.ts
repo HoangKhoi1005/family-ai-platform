@@ -5,6 +5,7 @@ import { buildApp } from './app.js';
 import { createAuth } from './auth/auth.js';
 import { readAuthConfig } from './auth/config.js';
 import { createAuthMailer } from './auth/mailer.js';
+import { databaseReadinessProbe } from './readiness.js';
 
 const AUTH_ENV_KEYS = [
   'APP_ENV',
@@ -15,10 +16,13 @@ const AUTH_ENV_KEYS = [
   'RUNTIME_DATABASE_URL',
   'SMTP_HOST',
   'SMTP_PORT',
+  'SMTP_SECURE',
+  'SMTP_USER',
+  'SMTP_PASSWORD',
   'MAIL_FROM',
 ] as const;
 
-const config = readServerConfig(process.env, 'API_PORT');
+const config = readServerConfig(process.env, 'API_PORT', 'PORT');
 const authEnvPresent = AUTH_ENV_KEYS.some((key) => process.env[key] !== undefined);
 const authConfig = authEnvPresent ? readAuthConfig(process.env) : undefined;
 const authPool = authConfig ? createDatabasePool(authConfig.authDatabaseUrl) : undefined;
@@ -36,11 +40,12 @@ try {
   const auth =
     authConfig && authPool && mailer ? createAuth(authConfig, authPool, mailer) : undefined;
   const app = buildApp(
-    auth && authConfig && runtimePool
+    auth && authConfig && authPool && runtimePool
       ? {
           auth,
           publicOrigin: authConfig.webOrigin,
           runtimePool,
+          readinessProbes: [databaseReadinessProbe(authPool), databaseReadinessProbe(runtimePool)],
           ...(mediaStorage ? { mediaStorage } : {}),
         }
       : undefined,

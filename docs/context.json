@@ -1,10 +1,10 @@
 {
   "project": "family-ai-platform",
-  "context_version": "1.5.0",
-  "updated_at": "2026-09-14",
-  "stage": "pilot-core-mobile-experience-redesign",
+  "context_version": "1.6.0",
+  "updated_at": "2026-09-15",
+  "stage": "pilot-core-staging-readiness",
   "pilot_people": 15,
   "implementation_exists": true,
-  "baseline": "pwa-delivery-mobile-primary-abc-experience",
-  "technical_stack_status": "npm-turbo-typescript-next-fastify-postgresql; better-auth-selected; hosting-storage-llm-not-selected"
+  "baseline": "pwa-delivery-mobile-primary-abc-experience-oci-staging-package",
+  "technical_stack_status": "npm-turbo-typescript-next-fastify-postgresql; better-auth-selected; oracle-always-free-r2-resend-tailscale-staging-package-implemented; external-staging-not-provisioned; llm-not-selected"
 }

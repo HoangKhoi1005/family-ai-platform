@@ -1,0 +1,12 @@
+.git
+.worktrees
+node_modules
+**/node_modules
+**/dist
+**/.next
+.env
+.env.*
+!.env.example
+!deploy/staging.env.example
+test-results
+.superpowers/ui-preview-evidence

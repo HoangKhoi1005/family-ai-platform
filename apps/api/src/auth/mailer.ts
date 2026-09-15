@@ -10,6 +10,9 @@ export interface AuthMailer {
 export interface AuthMailerConfig {
   smtpHost: string;
   smtpPort: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPassword?: string;
   mailFrom: string;
 }
 
@@ -66,12 +69,23 @@ export function createAuthMailer(
 }
 
 function createTransport(config: AuthMailerConfig): Transporter {
-  return nodemailer.createTransport({
+  return nodemailer.createTransport(authTransportOptions(config));
+}
+
+export function authTransportOptions(config: AuthMailerConfig) {
+  return {
     host: config.smtpHost,
     port: config.smtpPort,
-    secure: false,
+    secure: config.smtpSecure ?? false,
+    ...(config.smtpUser && config.smtpPassword
+      ? { auth: { user: config.smtpUser, pass: config.smtpPassword } }
+      : {}),
+    requireTLS:
+      !(config.smtpSecure ?? false) && !LOOPBACK_SMTP_HOSTS.has(config.smtpHost.toLowerCase()),
     connectionTimeout: SMTP_TIMEOUT_MS,
     greetingTimeout: SMTP_TIMEOUT_MS,
     socketTimeout: SMTP_TIMEOUT_MS,
-  });
+  };
 }
+
+const LOOPBACK_SMTP_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);

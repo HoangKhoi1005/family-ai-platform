@@ -56,6 +56,12 @@ Migration `0002_authentication.sql` adds Better Auth's global tables and preserv
 
 `db:migrate` is safe to run twice: the second run verifies checksums and does not reapply migrations. `test:auth-schema` seeds only synthetic rows inside a transaction, tests actual role restrictions and legacy identity preservation, and rolls every fixture back. Do not run provisioning against a non-local URL, use the owner URL in an application process, or use `docker compose down -v`; the named volumes are intentionally retained and isolated from the main checkout.
 
+### Staging database verification
+
+`npm run db:provision-roles` is the canonical role-password command; `db:provision-auth` remains as a compatibility alias for local development. Local provisioning accepts loopback targets only. Staging provisioning accepts the internal Compose hostname `postgres` only, requires `APP_ENV=staging` and the one-run acknowledgement `ALLOW_STAGING_PROVISION=true`, and requires the owner/auth/runtime/worker URLs to target the same host, port, and database. The command always refuses `APP_ENV=production` and never prints connection URLs or passwords.
+
+Run `npm run db:verify-staging` from the temporary deployment tools container after PostgreSQL becomes healthy. It applies migrations, immediately replays them to verify idempotency and checksums, and prints migration status. Provision restricted role passwords in a separate explicit step before starting API and worker containers; unset `ALLOW_STAGING_PROVISION` after that step.
+
 `test:auth` runs the real Fastify/Better Auth flow against PostgreSQL and Mailpit. It requires both restricted database URLs, `WEB_ORIGIN`, `API_INTERNAL_URL`, and loopback SMTP settings. The test verifies email verification, database sessions, password reset expiry and replay, session revocation, origin checks, rate limiting, and the empty membership result after signup. Auth model IDs have database defaults in additive migrations because Better Auth 1.7.3 omits IDs for some Kysely inserts; do not edit an applied migration.
 
 ## Troubleshooting

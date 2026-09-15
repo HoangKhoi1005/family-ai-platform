@@ -1,8 +1,8 @@
-# Family AI — Monorepo · Context v1.5.0
+# Family AI — Monorepo · Context v1.6.0
 
 Ngôi nhà số riêng tư cho gia đình Việt: **Biết nhau · Kết nối nhau · Lưu giữ nhau**.
 
-Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác, lịch nhà và hộp thư thông báo trong app nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, xem timeline, tạo/sửa/hủy ngày quan trọng, RSVP, đọc lời nhắc và chọn mốc nhắc theo quyền. Design preview đã áp dụng hướng **Nhà đang sống + Dòng ký ức + Quanh người thân**; Khoảnh khắc, Kỷ niệm và Chat vẫn chưa có backend hoàn chỉnh. AI, push và phát hành production chưa triển khai. Dự án chưa phải MVP đầy đủ. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md).
+Thử nghiệm đầu tiên dành cho **15 người**, phát hành web/PWA trước nhưng **điện thoại là trải nghiệm chính**; native và widget ảnh là bước sau. Đã có luồng đăng nhập, lời mời/duyệt, nhận/chỉnh hồ sơ, cây gia phả tương tác, lịch nhà, hộp thư thông báo, Khoảnh khắc và Kỷ niệm nối API/PostgreSQL thật. Thành viên có thể đề xuất quan hệ, xem timeline, tạo/sửa/hủy ngày quan trọng, RSVP, đăng ảnh riêng tư, phản ứng và lưu nội dung thành Kỷ niệm. Hướng **Nhà đang sống + Dòng ký ức + Quanh người thân** đã được rollout vào `/app`. Chat, AI, push và phát hành production chưa triển khai. Dự án chưa phải MVP đầy đủ. Xem [hướng dẫn dùng thử](docs/CONNECTED_ONBOARDING.md).
 
 ## Chạy local
 
@@ -61,6 +61,10 @@ Không tạo mobile app giả; khi đến phase native, thêm `apps/mobile` và 
 Lần đầu chạy E2E: `npx playwright install chromium`; sau đó `npm run build` và `npm run test:e2e`. CI cài browser tự động. Không có tác vụ tự deploy.
 
 Chi tiết biên package, môi trường và troubleshooting: [Development guide](docs/DEVELOPMENT.md). Lý do chọn stack: [ADR-001](docs/decisions/ADR-001-monorepo.md).
+
+## Staging miễn phí
+
+Gói Oracle Ampere A1 ARM64, private PostgreSQL/R2, Resend SMTP, Tailscale Funnel, encrypted backup và restore drill nằm trong [runbook vận hành](docs/operations/README.md). `npm run deploy:check` và `npm run backup:check` kiểm tra fail-closed trước khi build. Chưa có tác vụ tự deploy và chưa được phép nhập dữ liệu gia đình thật; owner phải hoàn tất [staging acceptance](docs/operations/STAGING_ACCEPTANCE.md) trước pilot.
 
 ## Bắt đầu
 

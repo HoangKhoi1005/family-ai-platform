@@ -1,18 +1,31 @@
 # Trạng thái dự án
 
-- Cập nhật: 2026-09-14. Context version: **1.5.0**.
+- Cập nhật: 2026-09-15. Context version: **1.6.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
-- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat và AI chưa có backend hoàn chỉnh; Moments/Media/Memories đang được hoàn thiện trên nhánh feature bên dưới.
+- Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat và AI chưa có backend hoàn chỉnh.
 - Gói đồng bộ Project Brain và PWA foundation riêng tư đã merge vào `main` tại `ac8fb16` qua PR #19. Manifest, launcher icons, service-worker lifecycle và hướng dẫn cài đặt trong Tôi đã có code và browser test; push, offline data và production hosting vẫn chưa triển khai.
+- Gói A+B+C, private media, Moments và Memories đã merge vào `main` tại `fc60ad5` qua PR #21. Sau các PR dependency #23–#28, `main` hiện ở `f8c8d97`, đồng bộ `origin/main`; CI gần nhất đạt sau khi chạy lại lỗi registry bên ngoài.
+- Chủ dự án đã chọn staging cloud miễn phí: Oracle Ampere A1 Always Free + Docker Compose ARM64, Cloudflare R2 private, Resend SMTP và Tailscale Funnel HTTPS theo PAD-024. Gói source, cấu hình và runbook đã hoàn thành trên nhánh `impl/oci-free-pilot-readiness`; chưa tạo tài nguyên Oracle/R2/Resend/Tailscale, chưa deploy và chưa đưa dữ liệu thật lên cloud.
 
-## Hệ thống trải nghiệm mobile A+B+C — đang ở nhánh feature
+## Gói OCI Free Pilot Readiness — source đã hoàn thành
 
-- Nhánh `feat/connected-family-experience` đã đưa A vào `/app`: shell mobile/desktop dùng tokens mới, Nhà lấy tên nhà, thành viên, lịch, thông báo và Khoảnh khắc gần nhất từ API thật; có loading/error/empty/revoke và không dùng preview fixture.
+- Runtime phân biệt `local`, `staging` và `production`; staging/production bắt buộc origin HTTPS, URL PostgreSQL có mật khẩu, cặp SMTP auth đầy đủ và endpoint object storage HTTPS. API dùng `API_PORT` độc lập với cổng web.
+- API có `/health/live` cho trạng thái tiến trình và `/health/ready` kiểm cả auth/runtime PostgreSQL; lỗi readiness trả phản hồi `503` cố định, không lộ dependency hoặc chi tiết kết nối. Next proxy cùng origin cho cả `/api` và `/health/ready`.
+- Provision role staging fail closed: chỉ chấp nhận đúng host/database của owner, yêu cầu `ALLOW_STAGING_PROVISION=true`, từ chối production và không in mật khẩu/target. Migration vẫn chạy lặp an toàn trước khi provision role giới hạn.
+- Deployment package có image targets `api`, `web`, `worker`, `tools`, Compose private topology, PostgreSQL volume, healthcheck, resource limits và `no-new-privileges`. Chỉ Web mở `127.0.0.1:3200`; database/API/worker không publish cổng. CI build cả bốn target cho `linux/arm64` và image backup riêng.
+- Backup PostgreSQL được mã hóa bằng `age` trước khi tải lên bucket R2 backup riêng; file tạm nằm trong tmpfs và bị dọn bằng trap. Restore chỉ chạy ở staging, chỉ vào database mới có hậu tố `_restore_drill`, sau đó kiểm migration, role giới hạn và RLS.
+- Runbook đã mô tả Oracle Always Free, Tailscale Funnel, R2 private/CORS, Resend SMTP, deploy/rollback, sự cố và checklist nghiệm thu không chứa PII/secret.
+- Source gate gần nhất đạt: typecheck **15/15 Turbo tasks**, **203/203 unit tests trong 42 file**, Project Brain **83 Markdown / 4 JSON / 24 seed cases**, production build đủ **9 workspace**. Playwright đạt **193 pass, 3 skip đúng theo project** trên Chromium desktop và Pixel 7.
+- PostgreSQL/Mailpit/MinIO local đã chạy migration hai lần, provision role, auth schema, tenant, relationships, calendar, notification, Moments/Memories, media worker/storage và Better Auth integration; mọi suite đều đạt. Năm image API/Web/Worker/Tools/Backup đã build thành công cho `linux/arm64`; bốn image ứng dụng dùng user `node`, image backup dùng user `postgres`.
+
+## Hệ thống trải nghiệm mobile A+B+C — đã merge vào `main`
+
+- A đã vào `/app`: shell mobile/desktop dùng tokens mới, Nhà lấy tên nhà, thành viên, lịch, thông báo và Khoảnh khắc gần nhất từ API thật; có loading/error/empty/revoke và không dùng preview fixture.
 - C đã vào Gia phả thật: lớp “Quanh người thân” chỉ đọc quan hệ đã duyệt từ relationship API, mở hồ sơ thật khi chạm; canvas React Flow, tìm kiếm, zoom, kéo node, thu nhánh và luồng đề xuất/duyệt quan hệ được giữ nguyên.
 - B đã có contracts, migration, API, private S3-compatible storage, media worker và UI `/app`. Thành viên có thể tải một ảnh, đăng Khoảnh khắc cho Cả nhà, phản ứng “Thương”, lưu thành Kỷ niệm, thêm lời kể chữ hoặc bản ghi âm và phát âm thanh bằng thao tác chủ động. Draft không vào browser storage; content URL được cấp tối đa 60 giây.
 - Media đi qua `pending → processing → ready/rejected → deleted`. Runtime không thể tự giả trạng thái ready; helper database kiểm actor cho upload completion và soft-delete. Ảnh được decode/re-encode để bỏ metadata, audio được kiểm signature/thời lượng. Raw quarantine được purge sau xử lý; upload pending quá một giờ, media rejected và media không còn parent đều được xếp hàng xóa. Worker kiểm lại parent ngay trước claim, dùng lease và retry có giới hạn.
-- MinIO local đã khởi động thành công trên loopback; bài tích hợp thật đã upload bằng presigned URL, HEAD/read bằng URL 60 giây rồi xóa object. Schema/RLS, Moments/Memories API, worker processing/cleanup và browser flow mobile đều đạt ở lần kiểm chứng gần nhất trong nhánh.
+- MinIO local đã khởi động thành công trên loopback; bài tích hợp thật đã upload bằng presigned URL, HEAD/read bằng URL 60 giây rồi xóa object. Schema/RLS, Moments/Memories API, worker processing/cleanup và browser flow mobile đều đạt ở lần kiểm chứng gần nhất trước khi merge.
 - Toàn bộ Playwright đạt **193 pass, 3 skip đúng theo project** trên Chromium desktop và Pixel 7. Luồng mới bao phủ upload ảnh, đăng Khoảnh khắc, xuất hiện lại ở Nhà, lưu thành Kỷ niệm, thêm lời kể chữ/audio, phát audio theo thao tác, kéo node có phản hồi và các trạng thái offline/revoke.
 - Full `npm run check` đạt ngày 2026-09-14: boundaries, tokens, PWA safety, lint, format, typecheck **15/15 Turbo tasks**, **189/189 unit tests trong 41 file**, Project Brain **76 Markdown / 4 JSON / 24 seed cases** và production build đủ 9 workspace. Review độc lập đã phát hiện rồi xác nhận sửa race Moment→Memory/delete, quyền đọc metadata draft và cleanup quarantine; schema/RLS, API, worker và browser flow liên quan đều đạt lại.
 
@@ -104,11 +117,12 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Duyệt trực quan A+B+C trên điện thoại thật, đặc biệt camera/micro, pan/pinch, thanh trình duyệt động và khả năng hiểu cây của người lớn tuổi với tên dài hoặc nhánh đông.
-2. Theo dõi dead-letter media và bổ sung cảnh báo/vận hành thủ công cho object storage trước pilot; retry tự động hiện dừng sau năm lần.
-3. Chọn hosting/domain HTTPS, mail và object storage production; đặt quota, rate limit, retention và quy trình bootstrap admin trước pilot 15 người.
-4. Nâng hồ sơ, Tôi, onboarding và admin theo ngôn ngữ thị giác A+B+C, dựa trên kết quả thử người dùng thay vì nhân bản một bố cục chung.
-5. Thiết kế Chat realtime thành vertical slice kế tiếp với contract retry, delivery, thu hồi quyền và privacy rõ trước khi triển khai; AI bắt đầu sau khi permission/RAG có tập đánh giá đủ dùng.
+1. Đẩy nhánh và để GitHub CI xác nhận lại cả source gate lẫn năm image ARM64.
+2. Chủ dự án đăng nhập Oracle, Cloudflare, Resend và Tailscale; tạo đúng tài nguyên miễn phí theo runbook, không chọn paid fallback.
+3. Deploy staging chỉ với dữ liệu tổng hợp, chạy migration/provision role, HTTPS readiness, onboarding và private-media smoke test.
+4. Chạy backup thật rồi restore vào database `_restore_drill`; ghi checksum, RPO và thời lượng vào checklist nghiệm thu.
+5. Duyệt A+B+C trên iPhone/Android thật, theo dõi cảnh báo trong bảy ngày rồi mới mời pilot 15 người.
+6. Sau khi pilot foundation đạt, thiết kế Chat realtime thành vertical slice tiếp theo; AI bắt đầu khi permission/RAG và golden dataset đủ dùng.
 
 ## Calendar Core và Mobile Calendar — đã merge
 

@@ -38,7 +38,7 @@ Native dùng lại backend/API nhưng có UI và widget riêng; không hứa tá
 
 ## Quyết định vận hành còn mở
 
-Stack development được chọn để chia sẻ TypeScript/contracts và dùng được trên Windows/CI. Hosting, auth, job delivery, media và AI provider vẫn cần so sánh khả năng export/backup, quyền tenant/field, chi phí ảnh/egress, xác thực và vận hành. Managed PostgreSQL là lựa chọn triển khai cần xác minh giá/giới hạn lúc chọn. Ghi lý do và rủi ro trong decision, không coi local Docker là thiết kế production hoàn chỉnh.
+Stack development được chọn để chia sẻ TypeScript/contracts và dùng được trên Windows/CI. Auth dùng Better Auth. Staging đã chọn Oracle Ampere A1 Always Free chạy Docker Compose ARM64, PostgreSQL trên volume VM, Cloudflare R2 private cho media/backup, Resend SMTP và Tailscale Funnel HTTPS theo [PAD-024](14_DECISION_LOG.md) và [đặc tả Pilot Readiness](superpowers/specs/2026-09-15-oci-free-pilot-readiness-design.md). LLM provider vẫn chưa chọn. Không coi local Docker hoặc staging một VM là thiết kế production hoàn chỉnh; phải xác minh quota, backup/restore, quyền tenant/field và vận hành trước dữ liệu thật.
 
 ## Vận hành tối thiểu
 

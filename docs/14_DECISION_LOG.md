@@ -46,3 +46,7 @@ Khi thay quyết định, thêm bản mới dùng [template](../templates/DECISI
 ## Hệ thống trải nghiệm mobile — 2026-09-14
 
 - **PAD-023 / Confirmed:** dùng **A — Nhà đang sống** làm nền tảng cho Nhà/Khoảnh khắc, **B — Dòng ký ức** cho Kỷ niệm và **C — Quanh người thân** cho Gia phả. Giữ năm đích chính theo PAD-020; Kỷ niệm mở theo ngữ cảnh thay vì thêm tab thứ sáu. Triển khai và duyệt ở design preview theo từng surface trước khi đưa vào `/app`. [Thiết kế](superpowers/specs/2026-09-14-mobile-experience-redesign-design.md).
+
+## Pilot Readiness miễn phí — 2026-09-15
+
+- **PAD-024 / Confirmed:** staging đầu tiên dùng Oracle Cloud Ampere A1 Always Free chạy Docker Compose trên ARM64; PostgreSQL nằm trên volume VM, Cloudflare R2 private làm media và backup tách credential, Resend SMTP gửi email, Tailscale Funnel cấp HTTPS miễn phí. Staging chỉ dùng dữ liệu hư cấu và phải qua migration replay, role/RLS check, backup/restore drill cùng device gate trước pilot 15 người. Không tự chuyển sang tài nguyên trả phí khi thiếu capacity hoặc vượt quota. [Thiết kế](superpowers/specs/2026-09-15-oci-free-pilot-readiness-design.md).

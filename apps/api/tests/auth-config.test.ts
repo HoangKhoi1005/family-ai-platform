@@ -13,6 +13,21 @@ const validEnv: NodeJS.ProcessEnv = {
   MAIL_FROM: 'no-reply@family-ai.local',
 };
 
+const stagingEnv: NodeJS.ProcessEnv = {
+  ...validEnv,
+  APP_ENV: 'staging',
+  WEB_ORIGIN: 'https://family-stage.example.test',
+  API_INTERNAL_URL: 'http://api:4010',
+  AUTH_DATABASE_URL: 'postgresql://family_auth:auth-pass@postgres:5432/family_stage',
+  RUNTIME_DATABASE_URL: 'postgresql://family_runtime:runtime-pass@postgres:5432/family_stage',
+  SMTP_HOST: 'smtp.resend.com',
+  SMTP_PORT: '587',
+  SMTP_SECURE: 'false',
+  SMTP_USER: 'resend',
+  SMTP_PASSWORD: 'resend-test-secret',
+  MAIL_FROM: 'no-reply@stage.example.test',
+};
+
 describe('readAuthConfig', () => {
   it('reads the complete local auth configuration', () => {
     expect(readAuthConfig(validEnv)).toEqual({
@@ -24,8 +39,35 @@ describe('readAuthConfig', () => {
       runtimeDatabaseUrl: validEnv.RUNTIME_DATABASE_URL,
       smtpHost: '127.0.0.1',
       smtpPort: 1035,
+      smtpSecure: false,
       mailFrom: 'no-reply@family-ai.local',
     });
+  });
+
+  it('accepts HTTPS staging with private service URLs and authenticated SMTP', () => {
+    expect(readAuthConfig(stagingEnv)).toMatchObject({
+      appEnv: 'staging',
+      webOrigin: 'https://family-stage.example.test',
+      apiInternalUrl: 'http://api:4010',
+      smtpSecure: false,
+      smtpUser: 'resend',
+      smtpPassword: 'resend-test-secret',
+    });
+  });
+
+  it('accepts the same external security policy in production', () => {
+    expect(readAuthConfig({ ...stagingEnv, APP_ENV: 'production' }).appEnv).toBe('production');
+  });
+
+  it.each([
+    ['WEB_ORIGIN', 'http://family-stage.example.test'],
+    ['WEB_ORIGIN', 'https://user:pass@family-stage.example.test'],
+    ['WEB_ORIGIN', 'https://family-stage.example.test/path'],
+    ['API_INTERNAL_URL', 'http://user:pass@api:4010'],
+    ['AUTH_DATABASE_URL', 'postgresql://family_auth@postgres:5432/family_stage'],
+    ['SMTP_PASSWORD', undefined],
+  ])('rejects unsafe staging %s', (name, value) => {
+    expect(() => readAuthConfig({ ...stagingEnv, [name]: value })).toThrow(String(name));
   });
 
   it('rejects a missing or weak secret', () => {

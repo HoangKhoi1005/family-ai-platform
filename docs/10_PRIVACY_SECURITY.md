@@ -1,6 +1,6 @@
 # Quyền và riêng tư
 
-Ma trận dưới đây là baseline sản phẩm. Auth/session, membership/invitation/claim, danh bạ/hồ sơ, quan hệ/cây, lịch và inbox đã có trên `main`. Media, Khoảnh khắc và Kỷ niệm đã có API, runtime RLS, worker và luồng web được kiểm thử trên `feat/connected-family-experience`; chat, export, push và AI chưa triển khai. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
+Ma trận dưới đây là baseline sản phẩm. Auth/session, membership/invitation/claim, danh bạ/hồ sơ, quan hệ/cây, lịch, inbox, Media, Khoảnh khắc và Kỷ niệm đã có trên `main`; chat, export, push và AI chưa triển khai. **Deny by default**, kiểm server-side ở từng đường truy cập. UI ẩn nút không phải authorization.
 
 PWA foundation không cache HTML, API, ảnh hoặc dữ liệu gia đình. Service worker chỉ quản lý install/activate lifecycle; offline dữ liệu riêng tư phải có threat model và quyết định riêng trước khi triển khai.
 
