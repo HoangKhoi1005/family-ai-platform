@@ -166,3 +166,14 @@ jobs:
             test-results/
             .superpowers/ui-preview-evidence/flow-failure-*.png
           retention-days: 7
+  arm64-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - run: docker build --platform linux/arm64 --target api --tag family-ai/api:ci -f deploy/Dockerfile .
+      - run: docker build --platform linux/arm64 --target web --tag family-ai/web:ci -f deploy/Dockerfile .
+      - run: docker build --platform linux/arm64 --target worker --tag family-ai/worker:ci -f deploy/Dockerfile .

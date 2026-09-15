@@ -1,0 +1,9 @@
+[
+  {
+    "AllowedOrigins": ["https://REPLACE_WITH_TS_NET_HOST"],
+    "AllowedMethods": ["PUT", "GET", "HEAD"],
+    "AllowedHeaders": ["content-type"],
+    "ExposeHeaders": ["etag"],
+    "MaxAgeSeconds": 3600
+  }
+]
