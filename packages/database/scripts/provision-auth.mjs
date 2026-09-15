@@ -1,6 +1,7 @@
-import { fileURLToPath, URL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import pg from 'pg';
+import { assertProvisioningEnvironment, parseDatabaseTarget } from './database-target.mjs';
 
 export const ROLE_NAMES = ['family_auth', 'family_runtime', 'family_worker'];
 export const TENANT_TABLES = [
@@ -27,48 +28,6 @@ const ROLE_URLS = [
   ['family_runtime', 'RUNTIME_DATABASE_URL', process.env.RUNTIME_DATABASE_URL],
   ['family_worker', 'WORKER_DATABASE_URL', process.env.WORKER_DATABASE_URL],
 ];
-const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
-
-function parseLocalDatabaseUrl(name, value, expectedUser) {
-  if (!value) throw new Error(`${name} is required`);
-  let parsed;
-  try {
-    parsed = new URL(value);
-  } catch {
-    throw new Error(`${name} must be a valid PostgreSQL URL`);
-  }
-  if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) {
-    throw new Error(`${name} must use the PostgreSQL protocol`);
-  }
-  if (!LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase())) {
-    throw new Error(`${name} must point to a loopback host in APP_ENV=local`);
-  }
-  if (!parsed.username || !parsed.pathname || parsed.pathname === '/') {
-    throw new Error(`${name} must include a role username and database`);
-  }
-  let user;
-  let database;
-  let password;
-  try {
-    user = decodeURIComponent(parsed.username);
-    database = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
-    password = parsed.password ? decodeURIComponent(parsed.password) : undefined;
-  } catch {
-    throw new Error(`${name} contains an invalid encoded password`);
-  }
-  if (expectedUser && user !== expectedUser) {
-    throw new Error(`${name} must use the ${expectedUser} role`);
-  }
-  if (!password) throw new Error(`${name} must include a role password`);
-  return {
-    user,
-    host: parsed.hostname.toLowerCase(),
-    port: parsed.port || '5432',
-    database,
-    password,
-  };
-}
-
 export function quoteIdentifier(identifier) {
   return `"${identifier.replaceAll('"', '""')}"`;
 }
@@ -258,23 +217,13 @@ export async function assertSafeApplicationRoles(client) {
 }
 
 async function provision() {
-  if (process.env.APP_ENV !== 'local') {
-    throw new Error('APP_ENV=local is required for local auth role provisioning');
-  }
-
   const ownerUrl = process.env.DATABASE_URL;
-  const owner = parseLocalDatabaseUrl('DATABASE_URL', ownerUrl);
-  const passwords = ROLE_URLS.map(([role, name, value]) => {
-    const target = parseLocalDatabaseUrl(name, value, role);
-    if (
-      target.host !== owner.host ||
-      target.port !== owner.port ||
-      target.database !== owner.database
-    ) {
-      throw new Error(`${name} must target the same local database as DATABASE_URL`);
-    }
-    return [role, target.password];
-  });
+  const owner = parseDatabaseTarget('DATABASE_URL', ownerUrl);
+  const roleTargets = ROLE_URLS.map(([role, name, value]) =>
+    parseDatabaseTarget(name, value, role),
+  );
+  assertProvisioningEnvironment(process.env, owner, roleTargets);
+  const passwords = ROLE_URLS.map(([role], index) => [role, roleTargets[index].password]);
 
   const client = new pg.Client({
     connectionString: ownerUrl,
@@ -294,7 +243,7 @@ async function provision() {
     }
     await client.query('COMMIT');
     inTransaction = false;
-    console.log('Provisioned local passwords for auth, runtime and worker roles.');
+    console.log('Provisioned restricted application role passwords.');
   } finally {
     if (inTransaction) await client.query('ROLLBACK');
     await client.end();
