@@ -26,6 +26,7 @@ Monorepo: [Development guide](DEVELOPMENT.md), [ADR-001](decisions/ADR-001-monor
 | [15 Glossary](15_PRODUCT_GLOSSARY.md)         | Thuật ngữ code/UI                      |
 | [Feature specs](../specs/README.md)           | Luồng và nghiệm thu chi tiết           |
 | [CURRENT_STATE](../CURRENT_STATE.md)          | Điều đã làm, chưa làm, bằng chứng      |
+| [Operations](operations/README.md)            | Staging, backup, sự cố và nghiệm thu   |
 
 ## Tránh nhiều nguồn sự thật
 

@@ -62,6 +62,10 @@ Lần đầu chạy E2E: `npx playwright install chromium`; sau đó `npm run bu
 
 Chi tiết biên package, môi trường và troubleshooting: [Development guide](docs/DEVELOPMENT.md). Lý do chọn stack: [ADR-001](docs/decisions/ADR-001-monorepo.md).
 
+## Staging miễn phí
+
+Gói Oracle Ampere A1 ARM64, private PostgreSQL/R2, Resend SMTP, Tailscale Funnel, encrypted backup và restore drill nằm trong [runbook vận hành](docs/operations/README.md). `npm run deploy:check` và `npm run backup:check` kiểm tra fail-closed trước khi build. Chưa có tác vụ tự deploy và chưa được phép nhập dữ liệu gia đình thật; owner phải hoàn tất [staging acceptance](docs/operations/STAGING_ACCEPTANCE.md) trước pilot.
+
 ## Bắt đầu
 
 Đã thiết lập Superpowers skills và quy trình subagents: [hướng dẫn sử dụng/cài trên máy khác](docs/SUPERPOWERS.md). Bản cài cá nhân không tự đi theo Git clone; repo lưu revision cố định và script setup.
