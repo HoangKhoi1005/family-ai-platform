@@ -5,6 +5,7 @@ import { buildApp } from './app.js';
 import { createAuth } from './auth/auth.js';
 import { readAuthConfig } from './auth/config.js';
 import { createAuthMailer } from './auth/mailer.js';
+import { databaseReadinessProbe } from './readiness.js';
 
 const AUTH_ENV_KEYS = [
   'APP_ENV',
@@ -39,11 +40,12 @@ try {
   const auth =
     authConfig && authPool && mailer ? createAuth(authConfig, authPool, mailer) : undefined;
   const app = buildApp(
-    auth && authConfig && runtimePool
+    auth && authConfig && authPool && runtimePool
       ? {
           auth,
           publicOrigin: authConfig.webOrigin,
           runtimePool,
+          readinessProbes: [databaseReadinessProbe(authPool), databaseReadinessProbe(runtimePool)],
           ...(mediaStorage ? { mediaStorage } : {}),
         }
       : undefined,

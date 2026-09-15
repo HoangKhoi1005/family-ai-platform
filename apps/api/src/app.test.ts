@@ -33,3 +33,28 @@ it('sanitizes server errors without leaking their details', async () => {
     await failingApp.close();
   }
 });
+it('returns 200 only when every readiness probe succeeds', async () => {
+  const readinessApp = buildApp({
+    readinessProbes: [async () => undefined, async () => undefined],
+  });
+  try {
+    const response = await readinessApp.inject('/health/ready');
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ status: 'ok', service: 'family-api' });
+  } finally {
+    await readinessApp.close();
+  }
+});
+it('returns a generic 503 without exposing the dependency error', async () => {
+  const readinessApp = buildApp({
+    readinessProbes: [async () => Promise.reject(new Error('postgres-secret-host'))],
+  });
+  try {
+    const response = await readinessApp.inject('/health/ready');
+    expect(response.statusCode).toBe(503);
+    expect(response.json().error.code).toBe('SERVICE_UNAVAILABLE');
+    expect(response.body).not.toContain('postgres-secret-host');
+  } finally {
+    await readinessApp.close();
+  }
+});
