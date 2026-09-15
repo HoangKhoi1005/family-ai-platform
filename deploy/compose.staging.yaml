@@ -118,9 +118,21 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3200/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
 
   migrate:
-    profiles: [tools]
+    profiles: [migrate]
     image: ${IMAGE_REPOSITORY:-family-ai}/tools:${IMAGE_TAG:?Set IMAGE_TAG}
     build:
       context: ..

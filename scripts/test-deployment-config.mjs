@@ -34,7 +34,7 @@ services:
     ports: ['127.0.0.1:3200:3200']
   migrate:
     image: family-tools:\${IMAGE_TAG:?Set IMAGE_TAG}
-    profiles: [tools]
+    profiles: [migrate]
     security_opt: [no-new-privileges:true]
     environment:
       DATABASE_URL: value
@@ -131,8 +131,8 @@ test('requires the narrow R2 methods and headers used by private media', () => {
   }
 });
 
-test('keeps owner credentials behind the explicit tools profile', () => {
+test('keeps owner credentials behind the explicit migration profile', () => {
   const files = safeFiles();
-  files.compose = files.compose.replace('    profiles: [tools]\n', '');
-  assert.throws(() => assertDeploymentConfig(files), /tools profile/i);
+  files.compose = files.compose.replace('    profiles: [migrate]\n', '');
+  assert.throws(() => assertDeploymentConfig(files), /migration profile/i);
 });

@@ -43,8 +43,8 @@ export function assertDeploymentConfig({ dockerfile, compose, envTemplate, cors 
   }
 
   const migrate = serviceBlock(compose, 'migrate');
-  if (!migrate || !/^ {4}profiles:\s*\[tools\]\s*$/m.test(migrate)) {
-    errors.push('Owner credentials must stay behind the explicit tools profile');
+  if (!migrate || !/^ {4}profiles:\s*\[migrate\]\s*$/m.test(migrate)) {
+    errors.push('Owner credentials must stay behind the explicit migration profile');
   }
 
   if (/\bimage:\s*[^\s]+:latest(?:\s|$)/i.test(compose)) {

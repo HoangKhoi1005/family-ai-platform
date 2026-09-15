@@ -13,6 +13,10 @@ describe('Next same-origin API proxy', () => {
         source: '/api/:path*',
         destination: 'http://127.0.0.1:4010/api/:path*',
       },
+      {
+        source: '/health/ready',
+        destination: 'http://127.0.0.1:4010/health/ready',
+      },
     ]);
   });
 
