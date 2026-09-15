@@ -17,7 +17,7 @@
 - Backup PostgreSQL được mã hóa bằng `age` trước khi tải lên bucket R2 backup riêng; file tạm nằm trong tmpfs và bị dọn bằng trap. Restore chỉ chạy ở staging, chỉ vào database mới có hậu tố `_restore_drill`, sau đó kiểm migration, role giới hạn và RLS.
 - Runbook đã mô tả Oracle Always Free, Tailscale Funnel, R2 private/CORS, Resend SMTP, deploy/rollback, sự cố và checklist nghiệm thu không chứa PII/secret.
 - Source gate gần nhất đạt: typecheck **15/15 Turbo tasks**, **203/203 unit tests trong 42 file**, Project Brain **83 Markdown / 4 JSON / 24 seed cases**, production build đủ **9 workspace**. Playwright đạt **193 pass, 3 skip đúng theo project** trên Chromium desktop và Pixel 7.
-- PostgreSQL/Mailpit/MinIO local đã chạy migration hai lần, provision role, auth schema, tenant, relationships, calendar, notification, Moments/Memories, media worker/storage và Better Auth integration; mọi suite đều đạt. Image API ARM64 đã build thành công. Web/Worker/Tools/Backup ARM64 còn chờ chạy lại vì Docker Hub timeout và phiên cấp quyền Docker bị ngắt; chưa được ghi nhận là đạt.
+- PostgreSQL/Mailpit/MinIO local đã chạy migration hai lần, provision role, auth schema, tenant, relationships, calendar, notification, Moments/Memories, media worker/storage và Better Auth integration; mọi suite đều đạt. Năm image API/Web/Worker/Tools/Backup đã build thành công cho `linux/arm64`; bốn image ứng dụng dùng user `node`, image backup dùng user `postgres`.
 
 ## Hệ thống trải nghiệm mobile A+B+C — đã merge vào `main`
 
@@ -117,7 +117,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Hoàn tất build Web/Worker/Tools/Backup ARM64, sau đó đẩy nhánh và để GitHub CI xác nhận lại cả source gate lẫn image gate.
+1. Đẩy nhánh và để GitHub CI xác nhận lại cả source gate lẫn năm image ARM64.
 2. Chủ dự án đăng nhập Oracle, Cloudflare, Resend và Tailscale; tạo đúng tài nguyên miễn phí theo runbook, không chọn paid fallback.
 3. Deploy staging chỉ với dữ liệu tổng hợp, chạy migration/provision role, HTTPS readiness, onboarding và private-media smoke test.
 4. Chạy backup thật rồi restore vào database `_restore_drill`; ghi checksum, RPO và thời lượng vào checklist nghiệm thu.

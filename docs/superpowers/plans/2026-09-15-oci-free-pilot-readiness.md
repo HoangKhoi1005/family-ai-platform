@@ -26,9 +26,9 @@
 ## Execution status — 2026-09-15
 
 - Tasks 1–3 and 6 are complete and committed.
-- Task 4 source/config/CI work and Task 5 source/static checks are complete; the final image gate remains open.
+- Tasks 4–5 are complete, including the five local `linux/arm64` image builds and non-root runtime metadata check.
 - Task 7 source, database/storage, and browser gates passed. External cloud provisioning remains intentionally open.
-- ARM64 API image passed locally. Web encountered a Docker Hub TLS timeout, and the follow-up Docker permission session ended before completion; Web, Worker, Tools, and Backup remain unverified until rerun.
+- ARM64 API, Web, Worker, Tools, and Backup images passed locally. Application images use `USER node`; Backup uses `USER postgres`.
 
 ---
 
@@ -450,7 +450,7 @@ docker build --platform linux/arm64 --target web -f deploy/Dockerfile .
 docker build --platform linux/arm64 --target worker -f deploy/Dockerfile .
 ```
 
-- [ ] **Step 7: Run deployment checks and commit**
+- [x] **Step 7: Run deployment checks and commit**
 
 Run:
 
@@ -538,7 +538,7 @@ Restore refuses unless `APP_ENV=staging`, `RESTORE_DATABASE` ends `_restore_dril
 
 Add `backup` and `restore-drill` profiles with no exposed ports, read-only age key mount for restore, and tmpfs `/work`. CI builds the backup image and runs shell syntax/static safety checks without real credentials.
 
-- [ ] **Step 6: Verify and commit Task 5**
+- [x] **Step 6: Verify and commit Task 5**
 
 Run:
 
@@ -680,7 +680,7 @@ Run: `npm run test:e2e`
 
 Expected: existing onboarding, Home, tree, calendar, inbox, Moments, Memories, and PWA suites pass on configured desktop/mobile projects.
 
-- [ ] **Step 4: Build deployment images**
+- [x] **Step 4: Build deployment images**
 
 Run:
 

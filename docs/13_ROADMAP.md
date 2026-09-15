@@ -16,12 +16,12 @@ Chưa ước lượng ngày phát hành khi staging thật và năng lực vận
 - Đã triển khai trên `main`: stack/ADR, auth và tenant isolation, onboarding, hồ sơ/account link, quan hệ/duyệt, cây tương tác, lịch/âm lịch/RSVP, outbox/worker, inbox trong app, PWA foundation, private media, Moments, Memories và rollout A+B+C vào `/app`.
 - Đã kiểm chứng gần nhất trên nhánh readiness: 15/15 Turbo typecheck tasks, 203/203 unit tests trong 42 file, production build 9 workspace, Project Brain 83 Markdown/4 JSON/24 seed cases và Playwright 193 pass/3 skip theo project.
 - Preview có nhãn, chưa có backend thật: Chat. Moments/Kỷ niệm trong `/app` đã dùng API và storage adapter thật.
-- Đã hoàn thành source package staging: cấu hình fail closed, readiness phụ thuộc, role provisioning, Docker Compose ARM64, private R2/Resend/Tailscale templates, backup mã hóa, restore drill và runbook vận hành. API image ARM64 đã build; bốn image còn lại chờ kiểm chứng lại sau lỗi registry/quyền Docker.
+- Đã hoàn thành source package staging: cấu hình fail closed, readiness phụ thuộc, role provisioning, Docker Compose ARM64, private R2/Resend/Tailscale templates, backup mã hóa, restore drill và runbook vận hành. Cả năm image API/Web/Worker/Tools/Backup đã build thành công cho `linux/arm64` bằng runtime user không phải root.
 - Chưa tạo tài nguyên cloud hoặc deploy staging thật. Chưa triển khai: realtime/Chat, push, AI runtime và pilot 15 người.
 
 ## Thứ tự tiếp theo
 
-Hoàn tất image gate → tạo Oracle/R2/Resend/Tailscale miễn phí → deploy dữ liệu tổng hợp → diễn tập migration và backup/restore → thử thiết bị thật và theo dõi bảy ngày → realtime/Chat → push trên HTTPS → pilot 15 người → đánh giá AI.
+GitHub CI xác nhận image gate → tạo Oracle/R2/Resend/Tailscale miễn phí → deploy dữ liệu tổng hợp → diễn tập migration và backup/restore → thử thiết bị thật và theo dõi bảy ngày → realtime/Chat → push trên HTTPS → pilot 15 người → đánh giá AI.
 
 ## Kiểm soát phạm vi
 
