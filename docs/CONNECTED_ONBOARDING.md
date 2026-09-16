@@ -15,6 +15,8 @@ npm run db:bootstrap-family -- --user-id <UUID-user-da-xac-minh> --family-id <UU
 
 Lệnh phải chạy ở worktree onboarding với `.env` local đúng. Không chia sẻ `.env`, mật khẩu hoặc token. CLI không thay quyền một nhà đã tồn tại.
 
+Trên staging, không chạy trực tiếp bằng shell env chung. Dùng profile `bootstrap`, cờ một lần `ALLOW_STAGING_BOOTSTRAP=true` và dữ liệu hư cấu theo [runbook Oracle](operations/ORACLE_STAGING.md). Script từ chối production và database host ngoài service `postgres`.
+
 ## Luồng hai người
 
 1. Admin đăng nhập `/app`, mở Quản trị nhà, tạo link lời mời rồi tự chia sẻ cho đúng người. App không tự gửi tin/email mời.

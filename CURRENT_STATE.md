@@ -1,6 +1,6 @@
 # Trạng thái dự án
 
-- Cập nhật: 2026-09-15. Context version: **1.6.0**.
+- Cập nhật: 2026-09-16. Context version: **1.6.0**.
 - Pilot 15 người. Gói onboarding và ổn định đã được merge vào `main` tại `9854d39` qua PR #9.
 - GitHub `Monorepo CI / quality (push)` của merge commit đạt 1/1. Gói trải nghiệm mobile-primary và backend quan hệ đã được merge vào `main`; PR #11 hiện ở `579fb82`.
 - Gói connected family tree đã merge vào `main` tại `ccabad3` qua PR #12. Gói cây tương tác và thao tác quan hệ đã merge tại `a67371a` qua PR #13. Calendar Core và Mobile Calendar đã merge vào `main` tại `00e826c` qua PR #14–#15; notification schema/contracts đã merge tại `76e976c` qua PR #16; Event-to-outbox và worker inbox đã merge tại `b0d939d` qua PR #17. Task 11 API và inbox mobile đã merge vào `main` tại `0cc7f0f` qua PR #18; CI của merge commit đạt. Chat và AI chưa có backend hoàn chỉnh.
@@ -13,11 +13,13 @@
 - Runtime phân biệt `local`, `staging` và `production`; staging/production bắt buộc origin HTTPS, URL PostgreSQL có mật khẩu, cặp SMTP auth đầy đủ và endpoint object storage HTTPS. API dùng `API_PORT` độc lập với cổng web.
 - API có `/health/live` cho trạng thái tiến trình và `/health/ready` kiểm cả auth/runtime PostgreSQL; lỗi readiness trả phản hồi `503` cố định, không lộ dependency hoặc chi tiết kết nối. Next proxy cùng origin cho cả `/api` và `/health/ready`.
 - Provision role staging fail closed: chỉ chấp nhận đúng host/database của owner, yêu cầu `ALLOW_STAGING_PROVISION=true`, từ chối production và không in mật khẩu/target. Migration vẫn chạy lặp an toàn trước khi provision role giới hạn.
+- Bootstrap nhà hư cấu đầu tiên có profile Compose và cờ một lần riêng. Lệnh chỉ nhận local loopback hoặc staging service `postgres`, luôn từ chối production, yêu cầu tài khoản đã xác minh và family UUID chưa dùng, rồi tạo admin active cùng audit trong một transaction. Không có public bootstrap endpoint và log thành công không in UUID.
 - Deployment package có image targets `api`, `web`, `worker`, `tools`, Compose private topology, PostgreSQL volume, healthcheck, resource limits và `no-new-privileges`. Chỉ Web mở `127.0.0.1:3200`; database/API/worker không publish cổng. CI build cả bốn target cho `linux/arm64` và image backup riêng.
 - Backup PostgreSQL được mã hóa bằng `age` trước khi tải lên bucket R2 backup riêng; file tạm nằm trong tmpfs và bị dọn bằng trap. Restore chỉ chạy ở staging, chỉ vào database mới có hậu tố `_restore_drill`, sau đó kiểm migration, role giới hạn và RLS.
 - Runbook đã mô tả Oracle Always Free, Tailscale Funnel, R2 private/CORS, Resend SMTP, deploy/rollback, sự cố và checklist nghiệm thu không chứa PII/secret.
 - Source gate gần nhất đạt: typecheck **15/15 Turbo tasks**, **203/203 unit tests trong 42 file**, Project Brain **83 Markdown / 4 JSON / 24 seed cases**, production build đủ **9 workspace**. Playwright đạt **193 pass, 3 skip đúng theo project** trên Chromium desktop và Pixel 7.
 - PostgreSQL/Mailpit/MinIO local đã chạy migration hai lần, provision role, auth schema, tenant, relationships, calendar, notification, Moments/Memories, media worker/storage và Better Auth integration; mọi suite đều đạt. Năm image API/Web/Worker/Tools/Backup đã build thành công cho `linux/arm64`; bốn image ứng dụng dùng user `node`, image backup dùng user `postgres`.
+- Bootstrap integration local đã chứng minh tài khoản chưa xác minh bị chặn, lần hợp lệ tạo đúng một membership admin/audit và family ID lặp không nhân dữ liệu. Full `npm run check` sau thay đổi đạt **203/203 unit tests trong 42 file**, typecheck **15/15 tasks**, Project Brain **83 Markdown / 4 JSON / 24 seed cases** và build đủ **9 workspace**.
 
 ## Hệ thống trải nghiệm mobile A+B+C — đã merge vào `main`
 
@@ -117,7 +119,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Đẩy nhánh và để GitHub CI xác nhận lại cả source gate lẫn năm image ARM64.
+1. Duyệt PR follow-up #30 và để GitHub CI xác nhận lại cả source gate lẫn năm image ARM64.
 2. Chủ dự án đăng nhập Oracle, Cloudflare, Resend và Tailscale; tạo đúng tài nguyên miễn phí theo runbook, không chọn paid fallback.
 3. Deploy staging chỉ với dữ liệu tổng hợp, chạy migration/provision role, HTTPS readiness, onboarding và private-media smoke test.
 4. Chạy backup thật rồi restore vào database `_restore_drill`; ghi checksum, RPO và thời lượng vào checklist nghiệm thu.

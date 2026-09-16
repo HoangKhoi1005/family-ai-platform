@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertProvisioningEnvironment, parseDatabaseTarget } from './database-target.mjs';
+import * as databaseTarget from './database-target.mjs';
+
+const { assertProvisioningEnvironment, parseDatabaseTarget } = databaseTarget;
 
 const owner = parseDatabaseTarget(
   'DATABASE_URL',
@@ -117,5 +119,52 @@ test('rejects non-loopback local targets and mismatched staging targets', () => 
         [...roles.slice(0, 2), mismatched],
       ),
     /WORKER_DATABASE_URL must target the same database as DATABASE_URL/,
+  );
+});
+
+test('allows family bootstrap only for local loopback or explicitly confirmed staging postgres', () => {
+  const local = parseDatabaseTarget(
+    'DATABASE_URL',
+    'postgresql://family_owner:owner-secret@127.0.0.1:54339/family_dev',
+  );
+
+  assert.doesNotThrow(() => databaseTarget.assertBootstrapEnvironment({ APP_ENV: 'local' }, local));
+  assert.doesNotThrow(() =>
+    databaseTarget.assertBootstrapEnvironment(
+      { APP_ENV: 'staging', ALLOW_STAGING_BOOTSTRAP: 'true' },
+      owner,
+    ),
+  );
+});
+
+test('family bootstrap refuses production, an unconfirmed staging run, and a non-compose target', () => {
+  assert.throws(
+    () =>
+      databaseTarget.assertBootstrapEnvironment(
+        { APP_ENV: 'production', ALLOW_STAGING_BOOTSTRAP: 'true' },
+        owner,
+      ),
+    /bootstrap refuses APP_ENV=production/,
+  );
+  assert.throws(
+    () => databaseTarget.assertBootstrapEnvironment({ APP_ENV: 'staging' }, owner),
+    /ALLOW_STAGING_BOOTSTRAP/,
+  );
+
+  const remote = parseDatabaseTarget(
+    'DATABASE_URL',
+    'postgresql://family_owner:owner-secret@db.example.test:5432/family_stage',
+  );
+  assert.throws(
+    () =>
+      databaseTarget.assertBootstrapEnvironment(
+        { APP_ENV: 'staging', ALLOW_STAGING_BOOTSTRAP: 'true' },
+        remote,
+      ),
+    /postgres service target/,
+  );
+  assert.throws(
+    () => databaseTarget.assertBootstrapEnvironment({ APP_ENV: 'local' }, remote),
+    /loopback/,
   );
 });

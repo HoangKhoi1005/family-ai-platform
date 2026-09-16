@@ -38,6 +38,14 @@ services:
     security_opt: [no-new-privileges:true]
     environment:
       DATABASE_URL: value
+  bootstrap:
+    image: family-tools:\${IMAGE_TAG:?Set IMAGE_TAG}
+    profiles: [bootstrap]
+    security_opt: [no-new-privileges:true]
+    environment:
+      APP_ENV: staging
+      ALLOW_STAGING_BOOTSTRAP: \${ALLOW_STAGING_BOOTSTRAP:-false}
+      DATABASE_URL: value
 `;
 
 const safeEnv = `
@@ -135,4 +143,17 @@ test('keeps owner credentials behind the explicit migration profile', () => {
   const files = safeFiles();
   files.compose = files.compose.replace('    profiles: [migrate]\n', '');
   assert.throws(() => assertDeploymentConfig(files), /migration profile/i);
+});
+
+test('keeps synthetic family bootstrap behind its own explicit profile and acknowledgement', () => {
+  const missingProfile = safeFiles();
+  missingProfile.compose = missingProfile.compose.replace('    profiles: [bootstrap]\n', '');
+  assert.throws(() => assertDeploymentConfig(missingProfile), /bootstrap profile/i);
+
+  const missingAcknowledgement = safeFiles();
+  missingAcknowledgement.compose = missingAcknowledgement.compose.replace(
+    '      ALLOW_STAGING_BOOTSTRAP: ${ALLOW_STAGING_BOOTSTRAP:-false}\n',
+    '',
+  );
+  assert.throws(() => assertDeploymentConfig(missingAcknowledgement), /bootstrap acknowledgement/i);
 });

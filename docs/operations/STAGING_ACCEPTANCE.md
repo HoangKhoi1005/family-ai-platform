@@ -26,6 +26,7 @@ Sao chép mẫu này vào kho evidence riêng tư, không commit bản đã đi�
 - HTTPS hostname: `REPLACE_WITH_TS_NET_HOST` (không ghi auth key)
 - Readiness qua web: `PASS | FAIL`
 - Synthetic signup/email verification/login: `PASS | FAIL`
+- Synthetic family/admin bootstrap có audit: `PASS | FAIL`
 - Synthetic invitation/pending/approval/revoke: `PASS | FAIL`
 - Synthetic calendar/inbox: `PASS | FAIL`
 - Synthetic media upload/process/Moment/Memory: `PASS | FAIL`

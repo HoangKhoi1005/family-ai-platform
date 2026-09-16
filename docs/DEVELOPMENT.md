@@ -62,6 +62,8 @@ Migration `0002_authentication.sql` adds Better Auth's global tables and preserv
 
 Run `npm run db:verify-staging` from the temporary deployment tools container after PostgreSQL becomes healthy. It applies migrations, immediately replays them to verify idempotency and checksums, and prints migration status. Provision restricted role passwords in a separate explicit step before starting API and worker containers; unset `ALLOW_STAGING_PROVISION` after that step.
 
+Bootstrap nhà đầu tiên là command quản trị tách riêng, không phải API. Local chỉ chấp nhận database loopback. Staging chỉ chấp nhận Docker hostname `postgres`, yêu cầu `APP_ENV=staging` và `ALLOW_STAGING_BOOTSTRAP=true` trong đúng process một lần; production luôn bị từ chối. Command yêu cầu `user.id` đã xác minh, family UUID chưa dùng, tạo admin active cùng audit trong một transaction và không in UUID hoặc connection target. Dùng service profile `bootstrap` theo [Oracle staging runbook](operations/ORACLE_STAGING.md); giữ cờ mặc định `false` trong secret env.
+
 `test:auth` runs the real Fastify/Better Auth flow against PostgreSQL and Mailpit. It requires both restricted database URLs, `WEB_ORIGIN`, `API_INTERNAL_URL`, and loopback SMTP settings. The test verifies email verification, database sessions, password reset expiry and replay, session revocation, origin checks, rate limiting, and the empty membership result after signup. Auth model IDs have database defaults in additive migrations because Better Auth 1.7.3 omits IDs for some Kysely inserts; do not edit an applied migration.
 
 ## Troubleshooting
@@ -74,7 +76,7 @@ Run `npm run db:verify-staging` from the temporary deployment tools container af
 
 Kết thúc task cập nhật [CURRENT_STATE](../CURRENT_STATE.md), spec/contract liên quan và decision khi cần. Không ghi done cho feature chỉ vì thư mục tồn tại.
 
-## Bootstrap nhà local và kiểm thử backend
+## Bootstrap nhà local/staging và kiểm thử backend
 
 Tạo tài khoản giả và xác minh email qua Mailpit trước. Lấy UUID của tài khoản đã xác minh từ response đăng nhập/me; chọn UUID mới cho nhà thử nghiệm. Script dưới đây chỉ nhận tài khoản đã xác minh, không tạo mật khẩu hoặc public admin endpoint:
 
@@ -83,6 +85,8 @@ npm run db:bootstrap-family -- --user-id <verified-user-uuid> --family-id <new-f
 ```
 
 Thay các placeholder bằng giá trị local; tên có khoảng trắng cần được quote theo shell. Chạy lại với cùng family ID bị từ chối. Chưa có UI onboarding hoàn chỉnh; không nhập dữ liệu thật để thử.
+
+`npm run test:bootstrap-family` dùng database local đã migrate để chứng minh tài khoản chưa xác minh không tạo được nhà, lần chạy hợp lệ tạo đúng một admin/audit và family ID lặp không nhân dữ liệu. Test tự dọn fixture hư cấu; CI chạy suite này sau migration.
 
 - npm run test:tenant: kiểm RLS, actor transaction, invitation acceptance và role isolation.
 - npm run test:auth: chạy chung auth/membership/profile integration với dữ liệu giả; profile thuộc Task3 đang review.
