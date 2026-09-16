@@ -47,6 +47,33 @@ export function assertDeploymentConfig({ dockerfile, compose, envTemplate, cors 
     errors.push('Owner credentials must stay behind the explicit migration profile');
   }
 
+  const bootstrap = serviceBlock(compose, 'bootstrap');
+  if (!bootstrap || !/^ {4}profiles:\s*\[bootstrap\]\s*$/m.test(bootstrap)) {
+    errors.push('Family bootstrap must stay behind the explicit bootstrap profile');
+  } else {
+    if (!/no-new-privileges:true/.test(bootstrap)) {
+      errors.push('Family bootstrap must enable no-new-privileges');
+    }
+    if (!/^ {6}APP_ENV:\s*staging\s*$/m.test(bootstrap)) {
+      errors.push('Family bootstrap must force APP_ENV=staging');
+    }
+    if (
+      !/^ {6}ALLOW_STAGING_BOOTSTRAP:\s*\$\{ALLOW_STAGING_BOOTSTRAP:-false\}\s*$/m.test(bootstrap)
+    ) {
+      errors.push('Family bootstrap acknowledgement must default to false');
+    }
+    if (!/^ {6}DATABASE_URL:/m.test(bootstrap)) {
+      errors.push('Family bootstrap requires the owner database URL');
+    }
+    if (
+      !/^ {4}entrypoint:\s*\['node', 'packages\/database\/scripts\/bootstrap-family\.mjs'\]\s*$/m.test(
+        bootstrap,
+      )
+    ) {
+      errors.push('Family bootstrap must use the audited bootstrap entrypoint');
+    }
+  }
+
   if (/\bimage:\s*[^\s]+:latest(?:\s|$)/i.test(compose)) {
     errors.push('Mutable latest image tags are forbidden');
   }

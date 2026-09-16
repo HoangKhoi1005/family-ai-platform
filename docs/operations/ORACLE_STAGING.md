@@ -41,7 +41,7 @@ sudo install -d -m 0700 -o "$USER" -g "$USER" /opt/family-ai/secrets
 install -m 0600 deploy/staging.env.example /opt/family-ai/secrets/staging.env
 ```
 
-Thay toàn bộ `REPLACE_WITH_*`. Password đặt trong PostgreSQL URL phải URL-encode. Dùng commit SHA làm `IMAGE_TAG`; không dùng `latest`. Giữ `ALLOW_STAGING_PROVISION=false` ngoài đúng một lệnh provisioning.
+Thay toàn bộ `REPLACE_WITH_*`. Password đặt trong PostgreSQL URL phải URL-encode. Dùng commit SHA làm `IMAGE_TAG`; không dùng `latest`. Giữ `ALLOW_STAGING_PROVISION=false` và `ALLOW_STAGING_BOOTSTRAP=false` ngoài đúng từng lệnh một lần tương ứng.
 
 ## 4. R2 và Resend
 
@@ -61,7 +61,7 @@ Xác thực Compose, build image từ source hiện tại và khởi động Pos
 ```sh
 cd /opt/family-ai/repo
 docker compose --env-file /opt/family-ai/secrets/staging.env -f deploy/compose.staging.yaml config --quiet
-docker compose --env-file /opt/family-ai/secrets/staging.env -f deploy/compose.staging.yaml build api worker web migrate backup
+docker compose --env-file /opt/family-ai/secrets/staging.env -f deploy/compose.staging.yaml build api worker web migrate bootstrap backup
 docker compose --env-file /opt/family-ai/secrets/staging.env -f deploy/compose.staging.yaml up -d postgres
 ```
 
@@ -80,7 +80,15 @@ curl --fail --silent http://127.0.0.1:3200/health/ready
 tailscale funnel --bg --https=443 http://127.0.0.1:3200
 ```
 
-Mở `https://REPLACE_WITH_TS_NET_HOST/app` và chỉ dùng tài khoản/dữ liệu hư cấu. Chạy onboarding, revoke membership, lịch/inbox, media upload/processing, Moment và Memory smoke theo [checklist](STAGING_ACCEPTANCE.md).
+Để tạo nhà hư cấu đầu tiên, mở `https://REPLACE_WITH_TS_NET_HOST/register`, đăng ký bằng email kiểm thử do operator quản lý, xác minh thư rồi đăng nhập. Trong cùng trình duyệt, mở `/api/v1/me` và lấy `user.id`; response lúc này phải có `memberships: []`. Tạo UUID mới và chạy command một lần:
+
+```sh
+USER_ID=REPLACE_WITH_VERIFIED_SYNTHETIC_USER_UUID
+FAMILY_ID="$(cat /proc/sys/kernel/random/uuid)"
+ALLOW_STAGING_BOOTSTRAP=true docker compose --env-file /opt/family-ai/secrets/staging.env -f deploy/compose.staging.yaml --profile bootstrap run --rm bootstrap --user-id "$USER_ID" --family-id "$FAMILY_ID" --name "Nhà thử nghiệm"
+```
+
+Command chỉ chạy khi `APP_ENV=staging`, cờ xác nhận đúng bằng `true` và `DATABASE_URL` trỏ tới service `postgres`; production, host khác, tài khoản chưa xác minh và family ID đã dùng đều bị từ chối. Không có public bootstrap endpoint. Không ghi UUID/email vào issue hoặc evidence công khai. Tải lại `/app`, sau đó chỉ dùng tài khoản/dữ liệu hư cấu để chạy onboarding, revoke membership, lịch/inbox, media upload/processing, Moment và Memory smoke theo [checklist](STAGING_ACCEPTANCE.md).
 
 ## 6. Update và rollback
 

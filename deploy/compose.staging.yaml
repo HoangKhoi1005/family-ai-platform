@@ -160,6 +160,25 @@ services:
         node packages/database/scripts/provision-auth.mjs &&
         node packages/database/scripts/status.mjs
 
+  bootstrap:
+    profiles: [bootstrap]
+    image: ${IMAGE_REPOSITORY:-family-ai}/tools:${IMAGE_TAG:?Set IMAGE_TAG}
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: tools
+    restart: 'no'
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      APP_ENV: staging
+      ALLOW_STAGING_BOOTSTRAP: ${ALLOW_STAGING_BOOTSTRAP:-false}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint: ['node', 'packages/database/scripts/bootstrap-family.mjs']
+
   backup:
     profiles: [backup]
     image: ${IMAGE_REPOSITORY:-family-ai}/backup:${IMAGE_TAG:?Set IMAGE_TAG}

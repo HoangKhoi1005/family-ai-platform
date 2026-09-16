@@ -74,3 +74,27 @@ export function assertProvisioningEnvironment(env, owner, roles) {
     }
   }
 }
+
+export function assertBootstrapEnvironment(env, owner) {
+  const appEnv = env.APP_ENV;
+  if (appEnv === 'production') {
+    throw new Error('family bootstrap refuses APP_ENV=production');
+  }
+  if (appEnv !== 'local' && appEnv !== 'staging') {
+    throw new Error('APP_ENV must be local or staging for family bootstrap');
+  }
+
+  if (appEnv === 'local') {
+    if (!LOOPBACK_HOSTS.has(owner.host)) {
+      throw new Error('local family bootstrap requires a loopback database target');
+    }
+    return;
+  }
+
+  if (env.ALLOW_STAGING_BOOTSTRAP !== 'true') {
+    throw new Error('ALLOW_STAGING_BOOTSTRAP=true is required for staging family bootstrap');
+  }
+  if (owner.host !== STAGING_DATABASE_HOST) {
+    throw new Error('staging family bootstrap requires the postgres service target');
+  }
+}

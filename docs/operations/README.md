@@ -11,6 +11,7 @@ Thứ tự chuẩn:
 3. Build image ARM64 từ commit cố định.
 4. Migrate hai lần, provision restricted roles, rồi khởi động dịch vụ.
 5. Kiểm tra readiness qua cổng web và bật Tailscale Funnel.
-6. Chạy synthetic onboarding/media smoke.
-7. Tạo encrypted backup, restore vào database `_restore_drill`, và lưu metadata không nhạy cảm.
-8. Theo dõi alert trong bảy ngày trước khi đề xuất pilot thật.
+6. Đăng ký/xác minh operator hư cấu, chạy profile bootstrap một lần để tạo nhà/admin đầu tiên.
+7. Chạy synthetic onboarding/media smoke.
+8. Tạo encrypted backup, restore vào database `_restore_drill`, và lưu metadata không nhạy cảm.
+9. Theo dõi alert trong bảy ngày trước khi đề xuất pilot thật.
