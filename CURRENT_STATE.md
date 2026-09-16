@@ -119,7 +119,7 @@ Hướng dẫn chạy và thử hai người: [docs/CONNECTED_ONBOARDING.md](doc
 
 ## Tiếp theo
 
-1. Đẩy commit bổ sung bootstrap staging vào PR #29 và để GitHub CI xác nhận lại cả source gate lẫn năm image ARM64.
+1. Duyệt PR follow-up #30 và để GitHub CI xác nhận lại cả source gate lẫn năm image ARM64.
 2. Chủ dự án đăng nhập Oracle, Cloudflare, Resend và Tailscale; tạo đúng tài nguyên miễn phí theo runbook, không chọn paid fallback.
 3. Deploy staging chỉ với dữ liệu tổng hợp, chạy migration/provision role, HTTPS readiness, onboarding và private-media smoke test.
 4. Chạy backup thật rồi restore vào database `_restore_drill`; ghi checksum, RPO và thời lượng vào checklist nghiệm thu.
